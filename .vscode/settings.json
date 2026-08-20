@@ -1,0 +1,21 @@
+{
+  "java.project.referencedLibraries": [
+    "build/classes/java/main",
+    "build/classes/java/client",
+    ".gradle/loom-cache/remapped_mods/remapped/**/*.jar"
+  ],
+  "java.project.sourcePaths": [
+    "src/main/java",
+    "src/main/resources",
+    "src/client/java",
+    "src/client/resources"
+  ],
+  "java.project.outputPath": "build/classes/java/main",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "/usr/lib/jvm/java-21-openjdk",
+      "default": true
+    }
+  ]
+}
