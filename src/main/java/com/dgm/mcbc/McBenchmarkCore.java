@@ -1,7 +1,8 @@
 package com.dgm.mcbc;
 
+import com.dgm.mcbc.command.PingCommand;
 import net.fabricmc.api.ModInitializer;
-
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.resources.Identifier;
 
 import org.slf4j.Logger;
@@ -22,6 +23,9 @@ public class McBenchmarkCore implements ModInitializer {
 		// Proceed with mild caution.
 
 		LOGGER.info("Hello Fabric world!");
+		
+		// Register the /ping command
+		CommandRegistrationCallback.EVENT.register(PingCommand::register);
 	}
 
 	public static Identifier id(String path) {
