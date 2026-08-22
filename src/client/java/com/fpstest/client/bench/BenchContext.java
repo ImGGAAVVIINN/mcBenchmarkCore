@@ -1,6 +1,6 @@
 package com.fpstest.client.bench;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -10,19 +10,18 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class BenchContext {
-    public final MinecraftClient client;
+    public final Minecraft client;
     private final List<UUID> spawned = new ArrayList<>();
-    private BlockPos arenaOrigin = BlockPos.ORIGIN;
+    private BlockPos arenaOrigin = BlockPos.ZERO;
     private RunPlan plan;
 
-    public BenchContext(MinecraftClient client) {
+    public BenchContext(Minecraft client) {
         this.client = client;
     }
 
@@ -43,7 +42,7 @@ public final class BenchContext {
     }
 
     public MinecraftServer server() {
-        return client.getServer();
+        return client.getSingleplayerServer();
     }
 
     public net.minecraft.server.level.ServerPlayer serverPlayer() {
@@ -68,7 +67,8 @@ public final class BenchContext {
     public void onServer(java.util.function.Consumer<MinecraftServer> consumer) {
         MinecraftServer server = server();
         if (server == null) return;
-        if (server.isOnThread()) {
+
+        if (Thread.currentThread() == server.getRunningThread()) {
             consumer.accept(server);
         } else {
             server.execute(() -> consumer.accept(server));
@@ -103,9 +103,9 @@ public final class BenchContext {
         }
         if (start < uuids.size()) {
             net.minecraft.world.entity.Entity entity = world.getEntity(uuids.get(start));
-            if (entity != null) {
-                world.removeEntity(entity);
-            }
+                if (entity != null) {
+                    entity.discard();
+                }
             drainBatch(server, uuids, start + 1);
         }
     }

@@ -16,8 +16,9 @@
         ]
     },
     "mixins": [
+        "mcbenchmarkcore.mixins.json",
         {
-            "config": "fpstest.client.mixins.json",
+            "config": "mcbenchmarkcore.client.mixins.json",
             "environment": "client"
         }
     ],
