@@ -80,3 +80,23 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+// Diagnostic task to compare sourceSets.client.compileClasspath, clientCompileClasspath config, and compileClientJava.classpath
+tasks.register('debugClientClasspath') {
+    doLast {
+        println "=== sourceSets.client.compileClasspath ==="
+        sourceSets.client.compileClasspath.files.each {
+            println it.absolutePath
+        }
+
+        println "\n=== clientCompileClasspath configuration ==="
+        configurations.clientCompileClasspath.files.each {
+            println it.absolutePath
+        }
+
+        println "\n=== compileClientJava.classpath ==="
+        tasks.compileClientJava.get().classpath.files.each {
+            println it.absolutePath
+        }
+    }
+}

@@ -1,0 +1,80 @@
+{
+  "mappings": {
+    "com/fpstest/client/mixin/CameraAccessor": {
+      "setPos": "method_19327(DDD)V",
+      "setRotation": "method_19325(FF)V"
+    },
+    "com/fpstest/client/mixin/CameraMixin": {
+      "update": "Lnet/minecraft/class_4184;method_19321(Lnet/minecraft/class_1922;Lnet/minecraft/class_1297;ZZF)V"
+    },
+    "com/fpstest/client/mixin/ExplosionMixin": {
+      "collectBlocksAndDamageEntities": "Lnet/minecraft/class_1927;method_8348()V"
+    },
+    "com/fpstest/client/mixin/FallingBlockEntityMixin": {
+      "tick": "Lnet/minecraft/class_1540;method_5773()V"
+    },
+    "com/fpstest/client/mixin/KeyboardInputMixin": {
+      "tick": "Lnet/minecraft/class_743;method_3129(ZF)V"
+    },
+    "com/fpstest/client/mixin/MouseHandlerMixin": {
+      "updateMouse": "Lnet/minecraft/class_312;method_1606(D)V"
+    },
+    "com/fpstest/client/mixin/PauseMenuSuppressMixin": {
+      "openGameMenu": "Lnet/minecraft/class_310;method_20539(Z)V"
+    },
+    "com/fpstest/client/mixin/SectionBuilderMixin": {
+      "build": "Lnet/minecraft/class_9810;method_60904(Lnet/minecraft/class_4076;Lnet/minecraft/class_853;Lnet/minecraft/class_8251;Lnet/minecraft/class_750;)Lnet/minecraft/class_9810$class_9811;"
+    },
+    "com/fpstest/client/mixin/ServerWorldTickBlockMixin": {
+      "tickBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;)V": "Lnet/minecraft/class_3218;method_14189(Lnet/minecraft/class_2338;Lnet/minecraft/class_2248;)V",
+      "tickFluid(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/fluid/Fluid;)V": "Lnet/minecraft/class_3218;method_14171(Lnet/minecraft/class_2338;Lnet/minecraft/class_3611;)V"
+    },
+    "com/fpstest/client/mixin/TitleScreenMixin": {
+      "init": "Lnet/minecraft/class_442;method_25426()V"
+    },
+    "com/fpstest/client/mixin/WorldSetBlockStateMixin": {
+      "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;II)Z": "Lnet/minecraft/class_1937;method_30092(Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;II)Z",
+      "updateNeighborsAlways(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;)V": "Lnet/minecraft/class_1937;method_8452(Lnet/minecraft/class_2338;Lnet/minecraft/class_2248;)V"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "com/fpstest/client/mixin/CameraAccessor": {
+        "setPos": "method_19327(DDD)V",
+        "setRotation": "method_19325(FF)V"
+      },
+      "com/fpstest/client/mixin/CameraMixin": {
+        "update": "Lnet/minecraft/class_4184;method_19321(Lnet/minecraft/class_1922;Lnet/minecraft/class_1297;ZZF)V"
+      },
+      "com/fpstest/client/mixin/ExplosionMixin": {
+        "collectBlocksAndDamageEntities": "Lnet/minecraft/class_1927;method_8348()V"
+      },
+      "com/fpstest/client/mixin/FallingBlockEntityMixin": {
+        "tick": "Lnet/minecraft/class_1540;method_5773()V"
+      },
+      "com/fpstest/client/mixin/KeyboardInputMixin": {
+        "tick": "Lnet/minecraft/class_743;method_3129(ZF)V"
+      },
+      "com/fpstest/client/mixin/MouseHandlerMixin": {
+        "updateMouse": "Lnet/minecraft/class_312;method_1606(D)V"
+      },
+      "com/fpstest/client/mixin/PauseMenuSuppressMixin": {
+        "openGameMenu": "Lnet/minecraft/class_310;method_20539(Z)V"
+      },
+      "com/fpstest/client/mixin/SectionBuilderMixin": {
+        "build": "Lnet/minecraft/class_9810;method_60904(Lnet/minecraft/class_4076;Lnet/minecraft/class_853;Lnet/minecraft/class_8251;Lnet/minecraft/class_750;)Lnet/minecraft/class_9810$class_9811;"
+      },
+      "com/fpstest/client/mixin/ServerWorldTickBlockMixin": {
+        "tickBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;)V": "Lnet/minecraft/class_3218;method_14189(Lnet/minecraft/class_2338;Lnet/minecraft/class_2248;)V",
+        "tickFluid(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/fluid/Fluid;)V": "Lnet/minecraft/class_3218;method_14171(Lnet/minecraft/class_2338;Lnet/minecraft/class_3611;)V"
+      },
+      "com/fpstest/client/mixin/TitleScreenMixin": {
+        "init": "Lnet/minecraft/class_442;method_25426()V"
+      },
+      "com/fpstest/client/mixin/WorldSetBlockStateMixin": {
+        "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;II)Z": "Lnet/minecraft/class_1937;method_30092(Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;II)Z",
+        "updateNeighborsAlways(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;)V": "Lnet/minecraft/class_1937;method_8452(Lnet/minecraft/class_2338;Lnet/minecraft/class_2248;)V"
+      }
+    }
+  }
+}
