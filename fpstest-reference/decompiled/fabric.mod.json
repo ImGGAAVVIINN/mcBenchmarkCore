@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "fpstest",
+	"version": "1.0",
+	"name": "FPS TEST | Benchmark",
+	"description": "Cinematic, automated FPS benchmark suite for Minecraft. Runs 41 scripted test scenarios — FPS, chunk loading, particles, entities, redstone, lighting, memory — and produces detailed JSON, Markdown and CSV reports.",
+	"authors": [
+		"randomfinder"
+	],
+	"license": "MIT",
+	"icon": "assets/fpstest/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.fpstest.client.FpsTestClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "fpstest.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"accessWidener": "fpstest.accesswidener",
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
