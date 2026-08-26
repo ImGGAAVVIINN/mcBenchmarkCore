@@ -1,1 +1,7 @@
 /ping
+/fpstest ephemeral create
+/fpstest ephemeral destroy
+/fpstest ephemeral create
+/fpstest ephemeral enter
+/fpstest ephemeral create
+/fpstest ephemeral enter

@@ -1,0 +1,23 @@
+{
+	"required": true,
+	"package": "com.fpstest.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"TitleScreenMixin",
+		"CameraAccessor",
+		"CameraMixin",
+		"KeyboardInputMixin",
+		"MouseHandlerMixin",
+		"PauseMenuSuppressMixin",
+		"ServerWorldTickBlockMixin",
+		"WorldSetBlockStateMixin",
+		"SectionBuilderMixin",
+		"ExplosionMixin",
+		"FallingBlockEntityMixin",
+		"MinecraftServerAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"refmap": "client-fpstest-refmap.json"
+}

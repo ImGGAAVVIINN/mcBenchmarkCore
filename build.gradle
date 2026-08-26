@@ -12,12 +12,17 @@ repositories {
 }
 
 loom {
-	splitEnvironmentSourceSets()
+	// Client-only mod - no split environment source sets needed
+}
 
-	mods {
-		"mcbenchmarkcore" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
+// Debug task to print configurations
+task printConfigurations {
+	doLast {
+		configurations.each { conf ->
+			println "Configuration: ${conf.name}"
+			conf.dependencies.each { dep ->
+				println "  Dependency: ${dep}"
+			}
 		}
 	}
 }
