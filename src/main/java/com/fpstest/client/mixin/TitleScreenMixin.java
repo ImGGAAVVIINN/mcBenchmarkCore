@@ -1,5 +1,6 @@
 package com.fpstest.client.mixin;
 
+import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.gui.BenchmarkHub;
 import com.fpstest.client.gui.I18n;
 import net.fabricmc.api.EnvType;
@@ -30,7 +31,8 @@ public abstract class TitleScreenMixin extends Screen {
         Button btn = Button.builder(
                 Component.literal("⚡ " + I18n.tr("fpstest.title")),
                 b -> {
-
+                    Minecraft mc = Minecraft.getInstance();
+                    mc.setScreen(new BenchmarkHub(this));
                 }
         )
         .bounds(this.width - 110, 4, 100, 20)

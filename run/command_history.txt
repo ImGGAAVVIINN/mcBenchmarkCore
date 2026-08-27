@@ -5,3 +5,5 @@
 /fpstest ephemeral enter
 /fpstest ephemeral create
 /fpstest ephemeral enter
+/fpstest ephemeral create
+/say the world is empty but my camera is rotating and moving
