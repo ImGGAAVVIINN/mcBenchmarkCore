@@ -2,6 +2,7 @@ package com.fpstest.client.bench.world;
 
 import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.WorldType;
+import com.fpstest.client.mixin.MinecraftServerAccessor;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -10,27 +11,36 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.UUID;
+import java.util.concurrent.Executor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.biome.FixedBiomeSource;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
@@ -43,12 +53,30 @@ import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.level.storage.WorldData;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
+import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.RandomSequences;
+import net.minecraft.util.random.WeightedRandom;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.level.CustomSpawner;
+import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Environment(EnvType.CLIENT)
 public final class EphemeralWorld {
     public static final String LEVEL_ID = "fpstest-arena";
     private static volatile String currentLevelId = "fpstest-arena";
+    private static volatile ResourceKey<Level> currentDimensionKey = null;
 
     private EphemeralWorld() {
     }
@@ -57,14 +85,8 @@ public final class EphemeralWorld {
         return currentLevelId;
     }
 
-    /**
-     * Returns the dimension key of the ephemeral world.
-     * Since the world is now created through the normal singleplayer flow,
-     * this returns the overworld dimension key.
-     */
     public static ResourceKey<Level> currentDimensionKey() {
-        // The ephemeral world is the current singleplayer world, which uses the overworld dimension
-        return Level.OVERWORLD;
+        return currentDimensionKey;
     }
 
     public static void create(long seed, WorldType type) {
@@ -82,77 +104,76 @@ public final class EphemeralWorld {
         }
 
         currentLevelId = levelId;
-        
+
+        FpsTestClient.LOG.info("[FPS Test] creating ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
+
         // Create game rules for the ephemeral world
         GameRules rules = new GameRules(FeatureFlagSet.of());
-        rules.set(GameRules.ADVANCE_TIME, false, mc);
-        rules.set(GameRules.ADVANCE_WEATHER, false, mc);
-        rules.set(GameRules.SPAWN_MOBS, false, mc);
-        rules.set(GameRules.MOB_DROPS, false, mc);
-        rules.set(GameRules.BLOCK_DROPS, false, mc);
-        rules.set(GameRules.ENTITY_DROPS, false, mc);
-        rules.set(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0, mc);
-        rules.set(GameRules.MOB_GRIEFING, false, mc);
-        rules.set(GameRules.SPAWN_PATROLS, false, mc);
-        rules.set(GameRules.SPAWN_WANDERING_TRADERS, false, mc);
-        rules.set(GameRules.SPAWN_WARDENS, false, mc);
+        rules.set(GameRules.ADVANCE_TIME, false, null);
+        rules.set(GameRules.ADVANCE_WEATHER, false, null);
+        rules.set(GameRules.SPAWN_MOBS, false, null);
+        rules.set(GameRules.MOB_DROPS, false, null);
+        rules.set(GameRules.BLOCK_DROPS, false, null);
+        rules.set(GameRules.ENTITY_DROPS, false, null);
+        rules.set(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0, null);
+        rules.set(GameRules.MOB_GRIEFING, false, null);
+        rules.set(GameRules.SPAWN_PATROLS, false, null);
+        rules.set(GameRules.SPAWN_WANDERING_TRADERS, false, null);
+        rules.set(GameRules.SPAWN_WARDENS, false, null);
 
         // Create level settings
         LevelSettings settings = new LevelSettings("FPS Test Arena", GameType.CREATIVE, false, Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT);
         WorldOptions opts = new WorldOptions(seed, false, false);
 
-        // Build the dimension (LevelStem) using the client's registry access
-        Function<RegistryAccess, LevelStem> dims = ra -> buildDimensions(ra, type);
-        
-        FpsTestClient.LOG.info("[FPS Test] creating ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
-        
-        // Use the standard Minecraft world creation flow through LevelStorageSource
-        // This properly initializes the world, connects the client, and spawns the player
-        mc.getLevelSource().createLevel(levelId, settings, opts, dims, null);
+        // Build the WorldDimensions using a function that takes HolderLookup.Provider
+        // This matches the reference implementation's approach using WorldOpenFlows.createFreshLevel
+        java.util.function.Function<HolderLookup.Provider, WorldDimensions> dims = provider -> {
+            return buildDimensions(provider, type);
+        };
+
+        // Use WorldOpenFlows.createFreshLevel() to properly create the level
+        // This replaces the manual ServerLevel construction and insertion into levels map
+        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: About to call createFreshLevel() for levelId={}", levelId);
+        mc.createWorldOpenFlows().createFreshLevel(levelId, settings, opts, dims, null);
+        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: createFreshLevel() returned (callback=null)");
+
+        FpsTestClient.LOG.info("[FPS Test] created ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
     }
 
     /**
-     * Destroys the ephemeral world by deleting its save directory.
-     * Since the world is now created through the normal singleplayer flow,
-     * we can't easily remove it from the running server. Instead, we delete
-     * the save so it won't persist.
+     * Destroys the ephemeral world by removing it from the server's levels map
+     * and cleaning up resources. Must be called on the server thread.
      */
     public static void destroy() {
         Minecraft mc = Minecraft.getInstance();
-        LevelStorageSource src = mc.getLevelSource();
-        Path saveDir = src.getLevelPath(LevelResource.ROOT.getId()).resolve(currentLevelId);
-        
-        FpsTestClient.LOG.info("[FPS Test] destroying ephemeral world levelId={}", currentLevelId);
-        
-        // Close any open access to the save
-        try {
-            LevelStorageSource.LevelStorageAccess access = src.createAccess(currentLevelId);
-            try {
-                access.close();
-            } catch (IOException e) {
-                // Ignore
-            }
-        } catch (Exception e) {
-            FpsTestClient.LOG.debug("[FPS Test] could not open arena session for cleanup: {}", e.getMessage());
+        MinecraftServer server = mc.getSingleplayerServer();
+        if (server == null || currentDimensionKey == null) {
+            FpsTestClient.LOG.debug("[FPS Test] No ephemeral world to destroy");
+            return;
         }
-        
-        // Delete the save directory
-        try {
-            Files.walkFileTree(saveDir, new SimpleFileVisitor<Path>() {
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    deleteWithRetry(file);
-                    return FileVisitResult.CONTINUE;
-                }
 
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    deleteWithRetry(dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-            FpsTestClient.LOG.info("[FPS Test] destroyed ephemeral world save at {}", saveDir);
-        } catch (IOException e) {
-            FpsTestClient.LOG.error("[FPS Test] Failed to delete ephemeral world save", e);
+        // DIAGNOSTIC: Log that destroy() is called
+        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: EphemeralWorld.destroy() called for dimensionKey={}", currentDimensionKey);
+
+        // Remove from levels map
+        ServerLevel level = ((MinecraftServerAccessor) server).fpstest$getLevels().remove(currentDimensionKey);
+        if (level != null) {
+            // DIAGNOSTIC: Log that level was removed from levels map
+            FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: Level removed from MinecraftServer.levels map");
+            
+            // Close the level resources
+            try {
+                level.close();
+                FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: Level.close() succeeded");
+            } catch (IOException e) {
+                FpsTestClient.LOG.error("[FPS Test] Failed to close ephemeral world", e);
+            }
+            FpsTestClient.LOG.info("[FPS Test] destroyed ephemeral world dimensionKey={}", currentDimensionKey);
+        } else {
+            FpsTestClient.LOG.warn("[FPS Test] Ephemeral world not found in levels map for dimensionKey={}", currentDimensionKey);
         }
+
+        currentDimensionKey = null;
     }
 
     /**
@@ -161,43 +182,44 @@ public final class EphemeralWorld {
      */
     public static void destroyAsync() {
         Minecraft mc = Minecraft.getInstance();
-        IntegratedServer server = mc.getSingleplayerServer();
+        MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) {
-            // If no server, run directly
-            destroy();
             return;
         }
         server.execute(EphemeralWorld::destroy);
     }
 
-    private static LevelStem buildDimensions(RegistryAccess registries, WorldType type) {
-        return switch (type.kind) {
-            case OVERWORLD -> buildOverworldDimensions(registries);
-            case FLAT -> buildFlatDimensions(registries);
-            case FIXED_BIOME -> buildFixedBiomeDimensions(registries, type.biome);
+    private static WorldDimensions buildDimensions(HolderLookup.Provider provider, WorldType type) {
+        LevelStem stem = switch (type.kind) {
+            case OVERWORLD -> buildOverworldDimensions(provider);
+            case FLAT -> buildFlatDimensions(provider);
+            case FIXED_BIOME -> buildFixedBiomeDimensions(provider, type.biome);
         };
+        Map<ResourceKey<LevelStem>, LevelStem> dimMap = new HashMap<>();
+        dimMap.put(LevelStem.OVERWORLD, stem);
+        return new WorldDimensions(dimMap);
     }
 
-    private static LevelStem buildOverworldDimensions(RegistryAccess registries) {
+    private static LevelStem buildOverworldDimensions(HolderLookup.Provider provider) {
         // Get the overworld dimension type from BuiltinDimensionTypes
         ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = registries.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
         // Get the overworld noise settings
         ResourceKey<NoiseGeneratorSettings> overworldNoiseKey = NoiseGeneratorSettings.OVERWORLD;
-        Holder<NoiseGeneratorSettings> noiseSettings = registries.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
+        Holder<NoiseGeneratorSettings> noiseSettings = provider.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
         
         // Create the chunk generator
         NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(
-            new FixedBiomeSource(registries.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS)),
+            new FixedBiomeSource(provider.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS)),
             noiseSettings
         );
         
         return new LevelStem(dimTypeHolder, generator);
     }
 
-    private static LevelStem buildFlatDimensions(RegistryAccess registries) {
-        Holder<Biome> biomeHolder = registries.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
+    private static LevelStem buildFlatDimensions(HolderLookup.Provider provider) {
+        Holder<Biome> biomeHolder = provider.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
         
         // FlatLayerInfo constructor takes (int, Block) not BlockState
         List<FlatLayerInfo> layers = List.of(
@@ -207,6 +229,8 @@ public final class EphemeralWorld {
         );
         
         // FlatLevelGeneratorSettings: use withBiomeAndLayers for layers
+        // Constructor: (Optional<HolderSet<StructureSet>>, Holder<Biome>, List<Holder<PlacedFeature>>)
+        // Method: withBiomeAndLayers(List<FlatLayerInfo>, Optional<HolderSet<StructureSet>>, Holder<Biome>)
         FlatLevelGeneratorSettings flatSettings = new FlatLevelGeneratorSettings(
             Optional.empty(),
             biomeHolder,
@@ -218,24 +242,25 @@ public final class EphemeralWorld {
         
         // Get the overworld dimension type from BuiltinDimensionTypes
         ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = registries.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
         return new LevelStem(dimTypeHolder, generator);
     }
 
-    private static LevelStem buildFixedBiomeDimensions(RegistryAccess registries, ResourceKey<Biome> biomeKey) {
-        Holder<Biome> biomeHolder = registries.lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
+    private static LevelStem buildFixedBiomeDimensions(HolderLookup.Provider provider, ResourceKey<Biome> biomeKey) {
+        Holder<Biome> biomeHolder = provider.lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
         
         // Get the overworld noise settings
         ResourceKey<NoiseGeneratorSettings> overworldNoiseKey = NoiseGeneratorSettings.OVERWORLD;
-        Holder<NoiseGeneratorSettings> noiseSettings = registries.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
+        Holder<NoiseGeneratorSettings> noiseSettings = provider.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
         
         FixedBiomeSource source = new FixedBiomeSource(biomeHolder);
+        // NoiseGeneratorSettings is a record, use it directly
         NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(source, noiseSettings);
         
         // Get the overworld dimension type from BuiltinDimensionTypes
         ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = registries.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
         return new LevelStem(dimTypeHolder, generator);
     }
