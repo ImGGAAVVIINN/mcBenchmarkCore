@@ -3,7 +3,17 @@
 	"package": "com.dgm.mcbc.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"CameraAccessor",
+		"CinematicState",
+		"ServerWorldTickBlockMixin",
+		"ExplosionMixin",
+		"PauseMenuSuppressMixin",
+		"MouseHandlerMixin",
+		"SectionBuilderMixin",
+		"FallingBlockEntityMixin",
+		"CameraMixin",
+		"TitleScreenMixin",
+		"WorldSetBlockStateMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
