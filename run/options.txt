@@ -65,7 +65,7 @@ highContrastBlockOutline:false
 narratorHotkey:true
 resourcePacks:["vanilla"]
 incompatibleResourcePacks:[]
-lastServer:
+lastServer:origin.koonungmcserver.mywire.org
 lang:en_us
 chatVisibility:0
 chatOpacity:1.0
@@ -91,7 +91,7 @@ mouseWheelSensitivity:1.0
 rawMouseInput:true
 allowCursorChanges:true
 glDebugVerbosity:1
-skipMultiplayerWarning:false
+skipMultiplayerWarning:true
 hideMatchedNames:true
 joinedFirstServer:false
 syncChunkWrites:false

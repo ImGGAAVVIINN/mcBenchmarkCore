@@ -202,7 +202,7 @@ public final class CinematicRunner {
                     if (mc.level == null || mc.player == null) {
                         return;
                     }
-                    if (mc.player.tickCount > 20 && waitTicks > 20 && mc.screen != null) {
+                    if (mc.player.tickCount > 20 && waitTicks > 20 && mc.getSingleplayerServer() != null) {
                         beginPrepare(mc);
                     }
                     break;
