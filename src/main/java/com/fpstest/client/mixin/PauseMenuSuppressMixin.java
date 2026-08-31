@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.fpstest.client.bench.camera.CinematicState;
+import com.fpstest.client.FpsTestClient;
 
 @Environment(EnvType.CLIENT)
 @Mixin(Minecraft.class)
@@ -19,7 +19,7 @@ public abstract class PauseMenuSuppressMixin {
 		cancellable = true
 	)
 	private void fpstest$blockPause(boolean pauseOnly, CallbackInfo ci) {
-		if (CinematicState.active) {
+		if (FpsTestClient.RUNNER.busy()) {
 			ci.cancel();
 		}
 	}

@@ -107,12 +107,6 @@ public class EphemeralWorldCommand {
             return 0;
         }
         
-        // Log diagnostic info before teleport
-        ResourceKey<Level> currentDim = player.level().dimension();
-        ResourceKey<Level> targetDim = overworld.dimension();
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: enter - current player dimension: {}", currentDim);
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: enter - target dimension: {}", targetDim);
-        
         // Create TeleportTransition to move player to overworld at 0, 100, 0
         Vec3 targetPos = new Vec3(0, 100, 0);
         Vec3 deltaMovement = Vec3.ZERO;
@@ -133,9 +127,6 @@ public class EphemeralWorldCommand {
         } catch (Exception e) {
             FpsTestClient.LOG.error("[FPS Test] Teleport failed with exception", e);
         }
-        
-        // Log whether dimension-change call returned successfully
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: enter - teleport call returned successfully: {}", teleportResult);
         
         source.sendFeedback(Component.literal("[FPS Test] Attempted to teleport to overworld at 0, 100, 0. Teleport call success: " + teleportResult));
         return 1;
