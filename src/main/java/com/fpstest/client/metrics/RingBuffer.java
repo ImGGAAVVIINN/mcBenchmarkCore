@@ -1,45 +1,81 @@
 package com.fpstest.client.metrics;
 
-public class RingBuffer {
-    private final int capacity;
-    private final long[] buffer;
-    private int position = 0;
-    private int count = 0;
-    
-    public RingBuffer(int capacity) {
-        this.capacity = capacity;
-        this.buffer = new long[capacity];
-    }
-    
-    public void add(long value) {
-        buffer[position] = value;
-        position = (position + 1) % capacity;
-        if (count < capacity) {
-            count++;
-        }
-    }
-    
-    public double getAverage() {
-        if (count == 0) return 0.0;
-        long sum = 0;
-        int limit = Math.min(count, capacity);
-        for (int i = 0; i < limit; i++) {
-            sum += buffer[i];
-        }
-        return (double) sum / limit;
-    }
-    
-    public long getLatest() {
-        if (count == 0) return 0;
-        int idx = (position - 1 + capacity) % capacity;
-        return buffer[idx];
-    }
-    
-    public int size() {
-        return count;
-    }
-    
-    public boolean isFull() {
-        return count >= capacity;
-    }
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
+public final class RingBuffer {
+   private final double[] buf;
+   private int head;
+   private int size;
+
+   public RingBuffer(int capacity) {
+      if (capacity <= 0) {
+         throw new IllegalArgumentException("capacity <= 0");
+      } else {
+         this.buf = new double[capacity];
+      }
+   }
+
+   public void push(double value) {
+      this.buf[this.head] = value;
+      this.head = (this.head + 1) % this.buf.length;
+      if (this.size < this.buf.length) {
+         this.size++;
+      }
+   }
+
+   public int size() {
+      return this.size;
+   }
+
+   public int capacity() {
+      return this.buf.length;
+   }
+
+   public void clear() {
+      this.head = 0;
+      this.size = 0;
+   }
+
+   public double[] toArray() {
+      double[] out = new double[this.size];
+      int start = (this.head - this.size + this.buf.length) % this.buf.length;
+
+      for (int i = 0; i < this.size; i++) {
+         out[i] = this.buf[(start + i) % this.buf.length];
+      }
+
+      return out;
+   }
+
+   public double average() {
+      if (this.size == 0) {
+         return 0.0;
+      } else {
+         double sum = 0.0;
+
+         for (int i = 0; i < this.size; i++) {
+            sum += this.buf[i];
+         }
+
+         return sum / this.size;
+      }
+   }
+
+   public double min() {
+      if (this.size == 0) {
+         return 0.0;
+      } else {
+         double m = Double.POSITIVE_INFINITY;
+
+         for (int i = 0; i < this.size; i++) {
+            if (this.buf[i] < m) {
+               m = this.buf[i];
+            }
+         }
+
+         return m;
+      }
+   }
 }

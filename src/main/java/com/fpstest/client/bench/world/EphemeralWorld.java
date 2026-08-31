@@ -133,9 +133,7 @@ public final class EphemeralWorld {
 
         // Use WorldOpenFlows.createFreshLevel() to properly create the level
         // This replaces the manual ServerLevel construction and insertion into levels map
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: About to call createFreshLevel() for levelId={}", levelId);
         mc.createWorldOpenFlows().createFreshLevel(levelId, settings, opts, dims, null);
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: createFreshLevel() returned (callback=null)");
 
         FpsTestClient.LOG.info("[FPS Test] created ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
     }
@@ -152,19 +150,12 @@ public final class EphemeralWorld {
             return;
         }
 
-        // DIAGNOSTIC: Log that destroy() is called
-        FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: EphemeralWorld.destroy() called for dimensionKey={}", currentDimensionKey);
-
         // Remove from levels map
         ServerLevel level = ((MinecraftServerAccessor) server).fpstest$getLevels().remove(currentDimensionKey);
         if (level != null) {
-            // DIAGNOSTIC: Log that level was removed from levels map
-            FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: Level removed from MinecraftServer.levels map");
-            
             // Close the level resources
             try {
                 level.close();
-                FpsTestClient.LOG.info("[FPS Test] DIAGNOSTIC: Level.close() succeeded");
             } catch (IOException e) {
                 FpsTestClient.LOG.error("[FPS Test] Failed to close ephemeral world", e);
             }

@@ -29,6 +29,16 @@ public final class IdleBaselineBenchmark implements Benchmark {
     }
 
     @Override
+    public String category() {
+        return "Baseline";
+    }
+
+    @Override
+    public long seed() {
+        return 1923L;
+    }
+
+    @Override
     public WorldType worldType() {
         return WorldType.FLAT;
     }

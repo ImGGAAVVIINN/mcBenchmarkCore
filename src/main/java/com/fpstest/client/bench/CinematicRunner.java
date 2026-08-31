@@ -3,6 +3,7 @@ package com.fpstest.client.bench;
 import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.camera.CinematicState;
 import com.fpstest.client.bench.world.EphemeralWorld;
+import com.fpstest.client.gui.I18n;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CameraType;
@@ -10,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -72,6 +74,10 @@ public final class CinematicRunner {
 
     public int queuedRemaining() {
         return queue.size();
+    }
+
+    public int preloadedChunks() {
+        return preloadedChunks;
     }
 
     public String sessionLabel() {
@@ -235,6 +241,7 @@ public final class CinematicRunner {
                         FpsTestClient.FPS.startRecording(plan.sampleTicks * 50 + 1000);
                         FpsTestClient.TICKS.startRecording(plan.sampleTicks + 20);
                         FpsTestClient.MEMORY.snapshot();
+                        entityCountAtSampleStart = countLevelEntities(mc);
                         state = State.SAMPLING;
                         phaseTicks = 0;
                     }
@@ -244,6 +251,7 @@ public final class CinematicRunner {
                     CinematicState.pathTick++;
                     safeTick();
                     if (phaseTicks >= plan.sampleTicks) {
+                        entityCountAtSampleEnd = countLevelEntities(mc);
                         finishSampling();
                         state = State.COOLDOWN;
                         phaseTicks = 0;
@@ -304,6 +312,21 @@ public final class CinematicRunner {
             }
         }
         return loaded;
+    }
+
+    private int countLevelEntities(Minecraft mc) {
+        if (mc.level == null) {
+            return 0;
+        }
+        int n = 0;
+        try {
+            for (Entity ignored : mc.level.entitiesForRendering()) {
+                n++;
+            }
+            return n;
+        } catch (Throwable t) {
+            return 0;
+        }
     }
 
     private void safeTick() {
@@ -445,6 +468,10 @@ public final class CinematicRunner {
         sessionLabel = null;
         totalQueued = 0;
         completedInQueue = 0;
+    }
+
+    public static String stateLabel(State s) {
+        return I18n.tr("fpstest.state." + s.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     @Environment(EnvType.CLIENT)

@@ -103,12 +103,21 @@ public final class BenchContext {
         if (world == null) {
             return;
         }
-        if (start < uuids.size()) {
-            net.minecraft.world.entity.Entity entity = world.getEntity(uuids.get(start));
+        int batch = 50;
+        int end = Math.min(start + batch, uuids.size());
+
+        for (int i = start; i < end; i++) {
+            try {
+                net.minecraft.world.entity.Entity entity = world.getEntity(uuids.get(i));
                 if (entity != null) {
                     entity.discard();
                 }
-            drainBatch(server, uuids, start + 1);
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (end < uuids.size()) {
+            server.execute(() -> drainBatch(server, uuids, end));
         }
     }
 

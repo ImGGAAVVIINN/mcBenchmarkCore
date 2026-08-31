@@ -1,74 +1,53 @@
 package com.fpstest.client.metrics;
 
-public class TickTracker {
-    private int ticksSinceStart = 0;
-    private long lastTickTime = 0;
-    private long totalTicksNanos = 0;
-    private long tickStartNanos = 0;
-    
-    // Recording support (reference API compatibility)
-    private RingBuffer recordingBuffer;
-    private boolean isRecording = false;
-    private long lastTickDurationNanos = 0;
-    
-    public void onTickStart() {
-        tickStartNanos = System.nanoTime();
-        ticksSinceStart++;
-    }
-    
-    public void onTickEnd() {
-        lastTickDurationNanos = System.nanoTime() - tickStartNanos;
-        totalTicksNanos += lastTickDurationNanos;
-        
-        if (isRecording && recordingBuffer != null) {
-            recordingBuffer.add(lastTickDurationNanos);
-        }
-    }
-    
-    public long getTicksSinceStart() {
-        return ticksSinceStart;
-    }
-    
-    public long getTotalTicksNanos() {
-        return totalTicksNanos;
-    }
-    
-    public double getAverageTickTimeNanos() {
-        if (ticksSinceStart > 0) {
-            return (double) totalTicksNanos / ticksSinceStart;
-        }
-        return 0.0;
-    }
-    
-    public double getAverageTickTimeMillis() {
-        return getAverageTickTimeNanos() / 1_000_000.0;
-    }
-    
-    public boolean hasStarted() {
-        return ticksSinceStart > 0;
-    }
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 
-    // Reference API compatibility methods
-    public void startRecording(int capacity) {
-        recordingBuffer = new RingBuffer(capacity);
-        isRecording = true;
-    }
+@Environment(EnvType.CLIENT)
+public final class TickTracker {
+   private static final int RECENT = 40;
+   private final RingBuffer recent = new RingBuffer(RECENT);
+   private long tickStartNs = 0L;
+   private double lastTickMs = 0.0;
+   private boolean recording = false;
+   private RingBuffer recording_ = null;
 
-    public double[] stopAndGetSamples() {
-        isRecording = false;
-        if (recordingBuffer == null) return new double[0];
-        double[] samples = new double[recordingBuffer.size()];
-        return samples;
-    }
+   public void onTickStart() {
+      this.tickStartNs = System.nanoTime();
+   }
 
-    public double smoothedTickMs() {
-        if (recordingBuffer == null || recordingBuffer.size() == 0) return 0.0;
-        double avgTickTimeNanos = recordingBuffer.getAverage();
-        return avgTickTimeNanos / 1_000_000.0;
-    }
+   public void onTickEnd() {
+      if (this.tickStartNs != 0L) {
+         double ms = (System.nanoTime() - this.tickStartNs) / 1000000.0;
+         this.lastTickMs = ms;
+         this.recent.push(ms);
+         if (this.recording && this.recording_ != null) {
+            this.recording_.push(ms);
+         }
+      }
+   }
 
-    public double lastTickMs() {
-        if (lastTickDurationNanos <= 0) return 0.0;
-        return lastTickDurationNanos / 1_000_000.0;
-    }
+   public double lastTickMs() {
+      return this.lastTickMs;
+   }
+
+   public double smoothedTickMs() {
+      return this.recent.average();
+   }
+
+   public void startRecording(int capacity) {
+      this.recording_ = new RingBuffer(capacity);
+      this.recording = true;
+   }
+
+   public double[] stopAndGetSamples() {
+      this.recording = false;
+      if (this.recording_ == null) {
+         return new double[0];
+      } else {
+         double[] out = this.recording_.toArray();
+         this.recording_ = null;
+         return out;
+      }
+   }
 }

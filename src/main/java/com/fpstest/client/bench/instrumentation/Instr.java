@@ -13,7 +13,6 @@ public final class Instr {
    public static final AtomicLong sectionRebuilds = new AtomicLong();
    public static final AtomicLong explosions = new AtomicLong();
    public static final AtomicLong fallingBlockLandings = new AtomicLong();
-   public static final AtomicLong cameraUpdates = new AtomicLong();
 
    private Instr() {
    }
@@ -26,8 +25,7 @@ public final class Instr {
          neighbourUpdates.get(),
          sectionRebuilds.get(),
          explosions.get(),
-         fallingBlockLandings.get(),
-         cameraUpdates.get()
+         fallingBlockLandings.get()
       );
    }
 
@@ -49,8 +47,7 @@ public final class Instr {
       long neighbourUpdates,
       long sectionRebuilds,
       long explosions,
-      long fallingBlockLandings,
-      long cameraUpdates
+      long fallingBlockLandings
    ) {
       public Instr.Snapshot delta(Instr.Snapshot earlier) {
          return new Instr.Snapshot(
@@ -60,8 +57,7 @@ public final class Instr {
             this.neighbourUpdates - earlier.neighbourUpdates,
             this.sectionRebuilds - earlier.sectionRebuilds,
             this.explosions - earlier.explosions,
-            this.fallingBlockLandings - earlier.fallingBlockLandings,
-            this.cameraUpdates - earlier.cameraUpdates
+            this.fallingBlockLandings - earlier.fallingBlockLandings
          );
       }
    }

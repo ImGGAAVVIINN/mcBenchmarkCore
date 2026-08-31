@@ -1,7 +1,6 @@
 package com.fpstest.client.mixin;
 
 import com.fpstest.client.bench.camera.CinematicState;
-import com.fpstest.client.bench.instrumentation.Instr;
 import com.fpstest.client.bench.camera.Pose;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,8 +23,6 @@ public abstract class CameraMixin {
         float partialTick,
         CallbackInfo ci
     ) {
-        Instr.cameraUpdates.incrementAndGet();
-
         if (CinematicState.active) {
             Pose pose = CinematicState.currentPose(partialTick);
 
