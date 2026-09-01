@@ -11,11 +11,10 @@ import java.util.Set;
 import java.util.function.Function;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -56,8 +55,8 @@ public final class BenchmarkHub extends Screen {
             StringBuilder out = new StringBuilder();
 
             for (int i = 0; i < s.length(); i++) {
-                String candidate = out.toString() + s.charAt(i) + suffix;
-                if (font.width(candidate) > pixelWidth) {
+                String candidate = out.toString() + s.charAt(i);
+                if (font.width(candidate) + suffixW > pixelWidth) {
                     if (out.length() == 0) {
                         return suffix;
                     }
@@ -249,7 +248,7 @@ public final class BenchmarkHub extends Screen {
             })
             .dimensions(x, y, w, 26)
             .accent(t.accent)
-            .tooltip(Tooltip.create(I18n.t(tabTitle(t))))
+            .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.tab.tooltip", tabTitle(t)))))
             .build();
         this.addRenderableWidget(b);
         if (t == this.active) {
@@ -289,7 +288,7 @@ public final class BenchmarkHub extends Screen {
                 Component.literal(I18n.trf("fpstest.overview.full_button", presetLabel(this.preset), fmtDuration(fullEtaMs))), b -> this.runFullSuite())
             .dimensions(x, y, btnW, 26)
             .accent(-7686401)
-            .tooltip(Tooltip.create(I18n.t("fpstest.overview.full_tooltip")))
+            .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.overview.full_tooltip", presetLabel(this.preset).toLowerCase(), fmtDuration(fullEtaMs)))))
             .build()
         );
         y += 32;
@@ -307,7 +306,7 @@ public final class BenchmarkHub extends Screen {
                         Component.literal(I18n.trf("fpstest.overview.run_all", catLabel(cat), list.size(), fmtDuration(catEta))), b -> this.runCategory(cat))
                     .dimensions(x, y, btnW, 22)
                     .accent(this.accentForCategory(cat))
-                    .tooltip(Tooltip.create(I18n.t("fpstest.overview.run_all_tooltip")))
+                    .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.overview.run_all_tooltip", list.size(), String.join(", ", list.stream().map(Benchmark::displayName).toList()), fmtDuration(catEta)))))
                     .build()
                 );
                 y += 26;
@@ -400,6 +399,7 @@ public final class BenchmarkHub extends Screen {
             this.addRenderableWidget(
                 FlatButton.flatBuilder(I18n.t(this.customQueue.contains(b.id()) ? "fpstest.button.queued_check" : "fpstest.button.queue_plus"), btn -> this.toggleQueued(b))
                     .dimensions(right - 84, rowY + 3, 76, 20)
+                    .tooltip(Tooltip.create(I18n.t("fpstest.row.queue_tooltip")))
                     .build()
             );
         }
@@ -507,35 +507,21 @@ public final class BenchmarkHub extends Screen {
                 body = I18n.trf("fpstest.confirm.heavy_only", heavyList);
             }
 
-            this.minecraft.setScreen(new Screen(Component.literal(I18n.trf("fpstest.confirm.title_with", label))) {
-                @Override
-                protected void init() {
-                    this.addRenderableWidget(Button.builder(
-                            I18n.t("fpstest.confirm.run"),
-                            b -> {
-                                if (true) { // Simplified - in reality we'd check the confirm screen result
-                                    launcher.run();
-                                } else {
-                                    this.minecraft.setScreen(BenchmarkHub.this);
-                                }
-                            }
-                        )
-                        .bounds(this.width / 2 - 100, this.height / 2 - 30, 200, 20)
-                        .build()
-                    );
-                    this.addRenderableWidget(Button.builder(
-                            I18n.t("fpstest.confirm.cancel"),
-                            b -> this.minecraft.setScreen(BenchmarkHub.this)
-                        )
-                        .bounds(this.width / 2 - 100, this.height / 2 + 10, 200, 20)
-                        .build());
-                }
-
-                @Override
-                public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                    super.render(guiGraphics, mouseX, mouseY, partialTick);
-                }
-            });
+            this.minecraft.setScreen(
+                new ConfirmScreen(
+                    ok -> {
+                        if (ok) {
+                            launcher.run();
+                        } else {
+                            this.minecraft.setScreen(this);
+                        }
+                    },
+                    Component.literal(I18n.trf("fpstest.confirm.title_with", label)),
+                    Component.literal(body),
+                    I18n.t("fpstest.confirm.run"),
+                    I18n.t("fpstest.confirm.cancel")
+                )
+            );
         }
     }
 
@@ -556,13 +542,8 @@ public final class BenchmarkHub extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
-        boolean busyNow = FpsTestClient.RUNNER.busy();
-        if (busyNow != this.lastBusy) {
-            this.rebuildAll();
-        }
-
-        super.render(ctx, mouseX, mouseY, partialTicks);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         int cardL = 4;
         int cardR = this.width - 4;
         int contentTop = this.contentTop();
@@ -573,6 +554,15 @@ public final class BenchmarkHub extends Screen {
         ctx.fill(cardL, contentTop - 4, cardL + 1, contentBot, 1090519039);
         ctx.fill(cardR - 1, contentTop - 4, cardR, contentBot, 1090519039);
         this.drawActiveTabAccent(ctx);
+    }
+
+    @Override
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
+        boolean busyNow = FpsTestClient.RUNNER.busy();
+        if (busyNow != this.lastBusy) {
+            this.rebuildAll();
+        }
+
         super.render(ctx, mouseX, mouseY, partialTicks);
         String title = "\u00a7l" + I18n.t("fpstest.title") + "\u00a7r \u00a78\u2014 " + I18n.t("fpstest.subtitle");
         int avail = Math.max(40, this.headerRightEdge - 8 - 4);
@@ -628,13 +618,13 @@ public final class BenchmarkHub extends Screen {
             ctx.fill(left, rowY, right, rowY + 28 - 2, hovered == 1 ? 1713548031 : 1073741824);
             ctx.fill(left, rowY, left + 3, rowY + 28 - 2, this.active.accent);
             String label = (b.heavy() ? "\u00a7e\u26a0 \u00a7f" : "\u00a7f") + b.displayName();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, label, right - 176 - (left + 8))), left + 8, rowY + 4, -1);
+            ctx.drawString(this.font, Component.literal(truncate(this.font, label, rowR - 4 - (left + 8))), left + 8, rowY + 4, -1);
             String desc = "\u00a78seed " + b.seed() + " \u00b7 " + b.description();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, right - 176 - (left + 8))), left + 8, rowY + 14, -5592406);
+            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, rowR - 4 - (left + 8))), left + 8, rowY + 14, -5592406);
         }
 
         if (list.size() > visible) {
-            ctx.drawString(this.font, Component.literal("\u00a78" + I18n.trf("fpstest.row.scroll_hint", Math.min(this.scroll + visible, list.size()), list.size())), this.width - 130, this.height + 8, -7829368);
+            ctx.drawString(this.font, Component.literal("\u00a78" + I18n.trf("fpstest.row.scroll_hint", Math.min(this.scroll + visible, list.size()), list.size())), this.width - 130, this.contentBottom() + 8, -7829368);
         }
     }
 
@@ -656,7 +646,7 @@ public final class BenchmarkHub extends Screen {
             String label = (b.heavy() ? "\u00a7e\u26a0 \u00a7f" : "\u00a7f") + b.displayName();
             ctx.drawString(this.font, Component.literal(truncate(this.font, label, right - 96 - (left + 8))), left + 8, rowY + 4, -1);
             String desc = "\u00a77" + b.category() + " \u00b7\u00a78 seed " + b.seed();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, right - 96 - (left + 8))), left + 8, rowY + 14, -1);
+            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, right - 96 - (left + 8))), left + 8, rowY + 14, -5592406);
         }
     }
 
@@ -703,7 +693,7 @@ public final class BenchmarkHub extends Screen {
             case "Fluids" -> I18n.tr("fpstest.tab.fluids");
             case "Lighting" -> I18n.tr("fpstest.tab.lighting");
             case "Chunks" -> I18n.tr("fpstest.tab.chunks");
-            case "BLOCK_ENTITIES" -> I18n.tr("fpstest.tab.block_entities");
+            case "Block-Entities" -> I18n.tr("fpstest.tab.block_entities");
             case "Stress" -> I18n.tr("fpstest.tab.stress");
             default -> cat;
         };

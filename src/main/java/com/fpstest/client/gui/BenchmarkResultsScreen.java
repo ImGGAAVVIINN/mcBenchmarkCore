@@ -16,6 +16,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Tooltip;
 import org.lwjgl.opengl.GL11;
@@ -114,7 +115,7 @@ public final class BenchmarkResultsScreen extends Screen {
         this.renderBackdrop(ctx);
         this.renderHeader(ctx);
         if (this.session.isEmpty()) {
-            ctx.drawString(this.font, I18n.tr("fpstest.results.empty"), this.width / 2, this.height / 2, -5592406);
+            ctx.drawCenteredString(this.font, Component.literal(I18n.tr("fpstest.results.empty")), this.width / 2, this.height / 2, -5592406);
             super.render(ctx, mouseX, mouseY, partialTicks);
         } else {
             int contentTop = 20;
@@ -688,14 +689,7 @@ public final class BenchmarkResultsScreen extends Screen {
         if (this.onClose != null) {
             this.onClose.run();
         } else {
-            this.minecraft.setScreen(new Screen(Component.literal("")) {
-                @Override
-                protected void init() {}
-                @Override
-                public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                    super.render(guiGraphics, mouseX, mouseY, partialTick);
-                }
-            });
+            this.minecraft.setScreen(new TitleScreen());
         }
     }
 

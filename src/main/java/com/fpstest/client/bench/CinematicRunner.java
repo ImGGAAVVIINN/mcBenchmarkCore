@@ -3,25 +3,28 @@ package com.fpstest.client.bench;
 import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.camera.CinematicState;
 import com.fpstest.client.bench.world.EphemeralWorld;
+import com.fpstest.client.config.FpsTestConfig;
+import com.fpstest.client.gui.BenchmarkResultsScreen;
 import com.fpstest.client.gui.I18n;
+import com.fpstest.client.report.ReportWriter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 @Environment(EnvType.CLIENT)
 public final class CinematicRunner {
@@ -44,6 +47,7 @@ public final class CinematicRunner {
     private int completedInQueue;
     private String sessionId;
     private String sessionLabel;
+    private Path lastReportDir;
     private long entityCountAtSampleStart;
     private long entityCountAtSampleEnd;
     private final java.util.List<BenchmarkResult> session = new java.util.ArrayList<>();
@@ -82,6 +86,14 @@ public final class CinematicRunner {
 
     public String sessionLabel() {
         return sessionLabel;
+    }
+
+    public List<BenchmarkResult> sessionResults() {
+        return List.copyOf(session);
+    }
+
+    public Path lastReportDir() {
+        return lastReportDir;
     }
 
     public boolean busy() {
@@ -157,24 +169,28 @@ public final class CinematicRunner {
 
     private void abortCurrent(String reason) {
         LOG.warn("[FPS Test] abort current: {}", reason);
+        if (current != null) {
+            try {
+                BenchmarkResult.Builder b = builder != null
+                    ? builder
+                    : new BenchmarkResult.Builder(current.id(), current.displayName(), current.category());
+                b.extra("status", "failed");
+                b.extra("fail_reason", reason != null ? reason : "unknown");
+                b.extra("aborted_state", state != null ? state.name() : "UNKNOWN");
+                session.add(b.build());
+            } catch (Throwable var6) {
+                LOG.warn("[FPS Test] could not record failed-bench placeholder", var6);
+            }
+        }
         CinematicState.reset();
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
             try {
-                mc.level.disconnect(Component.literal("FPS Test — aborted: " + reason));
+                mc.level.disconnect(Component.literal("FPS Test — aborted"));
             } catch (Throwable ignored) {
             }
             try {
-                mc.setScreen(new net.minecraft.client.gui.screens.Screen(Component.literal("FPS Test — aborted")) {
-                    @Override
-                    protected void init() {
-                        this.addRenderableWidget(Button.builder(Component.literal("Back to Title"), b -> {
-                            if (this.minecraft != null) {
-                                this.minecraft.setScreen(null);
-                            }
-                        }).bounds(this.width / 2 - 100, this.height / 2, 200, 20).build());
-                    }
-                });
+                mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test — aborted")));
             } catch (Throwable ignored) {
             }
         }
@@ -287,6 +303,9 @@ public final class CinematicRunner {
                             dequeueNext();
                         }
                     }
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -320,7 +339,9 @@ public final class CinematicRunner {
         }
         int n = 0;
         try {
-            for (Entity ignored : mc.level.entitiesForRendering()) {
+            var it = mc.level.entitiesForRendering().iterator();
+            while (it.hasNext()) {
+                it.next();
                 n++;
             }
             return n;
@@ -390,16 +411,7 @@ public final class CinematicRunner {
     }
 
     private void disconnectWorld(Minecraft mc) {
-        mc.setScreen(new net.minecraft.client.gui.screens.Screen(Component.literal("FPS Test — finishing " + current.displayName() + "…")) {
-            @Override
-            protected void init() {
-                this.addRenderableWidget(Button.builder(Component.literal("Back to Title"), b -> {
-                    if (this.minecraft != null) {
-                        this.minecraft.setScreen(null);
-                    }
-                }).bounds(this.width / 2 - 100, this.height / 2, 200, 20).build());
-            }
-        });
+        mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test — finishing " + current.displayName() + "…")));
         CinematicState.holdPose = false;
         CinematicState.active = false;
         CinematicState.path = null;
@@ -407,16 +419,7 @@ public final class CinematicRunner {
             if (mc.level != null) {
                 mc.level.disconnect(Component.literal("FPS Test — finished"));
             }
-            mc.setScreen(new net.minecraft.client.gui.screens.Screen(Component.literal("FPS Test")) {
-                @Override
-                protected void init() {
-                    this.addRenderableWidget(Button.builder(Component.literal("Back to Title"), b -> {
-                        if (this.minecraft != null) {
-                            this.minecraft.setScreen(null);
-                        }
-                    }).bounds(this.width / 2 - 100, this.height / 2, 200, 20).build());
-                }
-            });
+            mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test")));
         } catch (Throwable var3) {
             LOG.warn("[FPS Test] disconnect failed", var3);
         }
@@ -426,18 +429,43 @@ public final class CinematicRunner {
 
     private void finishSession() {
         Minecraft mc = Minecraft.getInstance();
+        List<BenchmarkResult> sessionCopy = List.copyOf(session);
+        String sid = sessionId;
+        String label = sessionLabel;
+        String presetName = plan != null ? plan.presetName : "";
+        mc.execute(() -> {
+            try {
+                Path dir = ReportWriter.write(sessionCopy, sid);
+                lastReportDir = dir;
+                LOG.info("[FPS Test] session report written to {}", dir);
+            } catch (Throwable var4x) {
+                LOG.error("[FPS Test] report export failed", var4x);
+            }
+        });
+        if (FpsTestConfig.get().completionSound) {
+            try {
+                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 0.7F));
+            } catch (Throwable var8) {
+            }
+        }
         state = State.IDLE;
         current = null;
         plan = null;
+        ctx = null;
+        builder = null;
         phaseTicks = 0;
         waitTicks = 0;
         Runnable cb = onFinished;
         onFinished = null;
         mc.execute(() -> {
-            if (cb != null) {
-                cb.run();
+            if (sessionCopy.isEmpty()) {
+                if (cb != null) {
+                    cb.run();
+                } else {
+                    mc.setScreen(new TitleScreen());
+                }
             } else {
-                mc.setScreen(null);
+                mc.setScreen(new BenchmarkResultsScreen(sessionCopy, lastReportDir, label, presetName, cb));
             }
         });
     }
@@ -464,8 +492,10 @@ public final class CinematicRunner {
     }
 
     private void resetSession() {
+        session.clear();
         sessionId = null;
         sessionLabel = null;
+        lastReportDir = null;
         totalQueued = 0;
         completedInQueue = 0;
     }

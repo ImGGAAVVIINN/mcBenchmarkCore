@@ -14,7 +14,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Tooltip;
@@ -67,7 +67,7 @@ public final class ReportsScreen extends Screen {
             FlatButton.flatBuilder(I18n.t("fpstest.settings.back"), b -> this.onClose()).dimensions(this.width - 110, 4, 100, 20).build()
         );
         if (this.sessions.isEmpty()) {
-            // Empty state - render in render() method
+            this.addRenderableOnly((ctx, mx, my, dt) -> ctx.drawCenteredString(this.font, Component.literal(I18n.tr("fpstest.reports.empty")), this.width / 2, this.height / 2, -5592406));
         } else {
             for (int i = 0; i < Math.min(rowsAvail, this.sessions.size() - this.scroll); i++) {
                 Path p = this.sessions.get(this.scroll + i);
@@ -116,14 +116,7 @@ public final class ReportsScreen extends Screen {
             if (picks.size() == 2) {
                 try {
                     Path out = ReportComparator.compare(picks.get(0), picks.get(1));
-                    this.minecraft.setScreen(new Screen(Component.literal(String.format(I18n.tr("fpstest.reports.compare_done"), out.toString()))) {
-                        @Override
-                        protected void init() {}
-                        @Override
-                        public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-                            super.render(guiGraphics, mouseX, mouseY, partialTick);
-                        }
-                    });
+                    this.minecraft.setScreen(new GenericMessageScreen(Component.literal(String.format(I18n.tr("fpstest.reports.compare_done"), out.toString()))));
                     new Thread(() -> {
                         try {
                             Thread.sleep(1200L);
@@ -171,7 +164,7 @@ public final class ReportsScreen extends Screen {
             return List.of();
         } else {
             try {
-                List var2;
+                List<Path> var2;
                 try (Stream<Path> stream = Files.list(root)) {
                     var2 = stream.filter(x$0 -> Files.isDirectory(x$0)).sorted(Comparator.<Path, Instant>comparing(p -> {
                         try {
@@ -210,8 +203,5 @@ public final class ReportsScreen extends Screen {
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-        if (this.sessions.isEmpty()) {
-            guiGraphics.drawString(this.font, Component.literal(I18n.tr("fpstest.reports.empty")), this.width / 2, this.height / 2, -5592406);
-        }
     }
 }
