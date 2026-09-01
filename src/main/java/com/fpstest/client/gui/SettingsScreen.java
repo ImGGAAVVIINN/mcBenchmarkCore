@@ -5,7 +5,6 @@ import java.util.Objects;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.components.Tooltip;
@@ -69,13 +68,7 @@ public final class SettingsScreen extends Screen {
             .tooltip(Tooltip.create(Component.literal(label)))
             .build();
         this.addRenderableWidget(btn);
-        // Render label using a disabled FlatButton
-        FlatButton labelBtn = FlatButton.flatBuilder(Component.literal(label), b -> {})
-            .dimensions(x, y, labelW, 22)
-            .accent(-3355444)
-            .build();
-        labelBtn.active = false;
-        this.addRenderableWidget(labelBtn);
+        this.addRenderableOnly((ctx, mx, my, dt) -> ctx.drawString(this.font, Component.literal(label), x, y + 7, -3355444));
     }
 
     private static String nextLocale(String cur) {
