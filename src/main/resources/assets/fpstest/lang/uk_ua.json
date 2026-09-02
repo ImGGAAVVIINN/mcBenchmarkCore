@@ -82,6 +82,7 @@
   "fpstest.state.chunk_preload": "Завантаження чанків",
   "fpstest.state.warmup": "Прогрів",
   "fpstest.state.sampling": "Запис метрик",
+  "fpstest.state.phase_transition": "Зміна шейдера",
   "fpstest.state.cooldown": "Охолодження",
   "fpstest.state.disconnecting": "Відключення",
   "fpstest.state.post_run": "Завершення",

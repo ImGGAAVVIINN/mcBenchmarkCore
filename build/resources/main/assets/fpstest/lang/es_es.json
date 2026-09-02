@@ -82,6 +82,7 @@
   "fpstest.state.chunk_preload": "Cargando chunks",
   "fpstest.state.warmup": "Calentando",
   "fpstest.state.sampling": "Grabando muestras",
+  "fpstest.state.phase_transition": "Cambiando shader",
   "fpstest.state.cooldown": "Enfriando",
   "fpstest.state.disconnecting": "Desconectando",
   "fpstest.state.post_run": "Finalizando",

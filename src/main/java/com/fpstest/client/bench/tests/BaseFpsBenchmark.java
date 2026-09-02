@@ -181,6 +181,18 @@ public final class BaseFpsBenchmark implements Benchmark {
       Arena.teleport(ctx, new Vec3(C_SPAWN.getX() + 0.5, 74.0, C_SPAWN.getZ() + 0.5), 90.0F, 10.0F);
    }
 
+   /**
+    * Resets the per-run animation state so a subsequent measurement phase replays
+    * the exact same scene (combat arrows, redstone animation, particles, segment
+    * logging) from the start. The cinematic camera path itself is replayed by
+    * resetting {@link CinematicState#pathTick}; this method resets the world-side
+    * animation clock that {@link #tick(BenchContext)} drives.
+    */
+   public void resetAnimation() {
+      this.animTick = 0;
+      this.lastLoggedSegment = -1;
+   }
+
    @Override
    public void recordExtra(BenchContext ctx, BenchmarkResult.Builder r) {
       r.extra("blocks_placed", this.blocksPlaced);

@@ -52,6 +52,35 @@ public interface Benchmark {
       return true;
    }
 
+   /**
+    * Number of sequential measurement phases this benchmark performs.
+    * Defaults to 1 (a single measurement). A benchmark that measures multiple
+    * configurations (e.g. different shader packs) returns a higher count; the
+    * runner then performs one warm-up + sampling cycle per phase and records a
+    * separate {@link BenchmarkResult} for each.
+    */
+   default int phaseCount() {
+      return 1;
+   }
+
+   /**
+    * Display name used for a specific phase's result. Defaults to the
+    * benchmark's display name. Phases should return distinct names so each
+    * phase's result is clearly identifiable in the results screen and report.
+    */
+   default String phaseDisplayName(int phaseIndex) {
+      return displayName();
+   }
+
+   /**
+    * Called after each phase's sampling completes, EXCEPT the last phase.
+    * The benchmark should set up the next phase here (e.g. swap the shader
+    * pack). The runner then waits for {@link #isReady(BenchContext)} before
+    * starting the next phase's warm-up + sampling.
+    */
+   default void onPhaseComplete(BenchContext ctx) {
+   }
+
    default void tick(BenchContext ctx) {
    }
 

@@ -49,6 +49,14 @@ public final class IrisShaderControl {
     }
 
     /**
+     * The name of the shader pack currently being used for rendering, or
+     * {@code "(internal)"} when Iris's fallback pack is in use.
+     */
+    public static String getCurrentPackName() {
+        return Iris.getCurrentPackName();
+    }
+
+    /**
      * Selects the given shader pack and enables shaders, applying immediately.
      * This mirrors what Iris's own shader-pack screen does on "Apply".
      */

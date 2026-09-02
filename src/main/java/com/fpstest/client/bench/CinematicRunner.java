@@ -38,6 +38,7 @@ public final class CinematicRunner {
     private Benchmark current;
     private BenchContext ctx;
     private BenchmarkResult.Builder builder;
+    private int phaseIndex;
     private int phaseTicks;
     private int waitTicks;
     private int preloadedChunks;
@@ -281,9 +282,33 @@ public final class CinematicRunner {
                     if (phaseTicks >= plan.sampleTicks) {
                         entityCountAtSampleEnd = countLevelEntities(mc);
                         finishSampling();
-                        state = State.COOLDOWN;
+                        if (phaseIndex < current.phaseCount() - 1) {
+                            // More measurement phases remain: set up the next phase and
+                            // wait for it to be ready before warming up + sampling again.
+                            phaseIndex++;
+                            try {
+                                current.onPhaseComplete(ctx);
+                            } catch (Throwable t) {
+                                LOG.warn("[FPS Test] onPhaseComplete failed for {}", current.id(), t);
+                            }
+                            builder = newBuilder(phaseIndex);
+                            state = State.PHASE_TRANSITION;
+                            phaseTicks = 0;
+                            CinematicState.holdPose = false;
+                        } else {
+                            state = State.COOLDOWN;
+                            phaseTicks = 0;
+                            CinematicState.holdPose = true;
+                        }
+                    }
+                    break;
+                case PHASE_TRANSITION:
+                    phaseTicks++;
+                    if (current.isReady(ctx)) {
+                        state = State.WARMUP;
                         phaseTicks = 0;
-                        CinematicState.holdPose = true;
+                        FpsTestClient.FPS.startRecording(plan.warmupTicks * 50 + 1000);
+                        FpsTestClient.TICKS.startRecording(plan.warmupTicks + 20);
                     }
                     break;
                 case COOLDOWN:
@@ -482,10 +507,15 @@ public final class CinematicRunner {
         });
     }
 
+    private BenchmarkResult.Builder newBuilder(int phaseIndex) {
+        return new BenchmarkResult.Builder(current.id(), current.phaseDisplayName(phaseIndex), current.category());
+    }
+
     private void beginPrepare(Minecraft mc) {
         ctx = new BenchContext(mc);
         ctx.setPlan(plan);
-        builder = new BenchmarkResult.Builder(current.id(), current.displayName(), current.category());
+        phaseIndex = 0;
+        builder = newBuilder(0);
         CinematicState.reset();
         CinematicState.active = true;
         CinematicState.holdPose = false;
@@ -525,6 +555,7 @@ public final class CinematicRunner {
         CHUNK_PRELOAD,
         WARMUP,
         SAMPLING,
+        PHASE_TRANSITION,
         COOLDOWN,
         DISCONNECTING,
         POST_RUN
