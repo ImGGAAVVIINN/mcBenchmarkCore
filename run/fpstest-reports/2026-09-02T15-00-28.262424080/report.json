@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-09-02T15:00:35.907540136+10:00",
+  "system": {"minecraft":"Fabric","os":"Linux 6.8.0-60-generic (amd64)","cpu_cores":16,"java_version":"21.0.12","java_vm":"OpenJDK 64-Bit Server VM","max_heap_mb":7808,"total_memory_mb":2552,"free_memory_mb":484,"gpu_vendor":"NVIDIA Corporation","gpu_renderer":"NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2","gpu_version":"3.3.0 NVIDIA 580.173.02"},
+  "results": [
+    {
+      "id": "pack_shader_showcase",
+      "display_name": "PBR + Shader Showcase",
+      "category": "Showcase",
+      "duration_ms": 5008,
+      "sample_ticks": 0,
+      "fps": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "frame_time_ms": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "tick_time_ms": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "heap_used_start": 0,
+      "heap_used_end": 0,
+      "heap_peak": 0,
+      "gc_events": 0,
+      "gc_time_ms": 0,
+      "extras": {},
+      "string_extras": {"aborted_state":"WARMUP","fail_reason":"user pressed ESC","status":"failed"},
+      "frame_time_histogram": {},
+      "frame_times_ms": [],
+      "tick_times_ms": []
+    }
+  ]
+}

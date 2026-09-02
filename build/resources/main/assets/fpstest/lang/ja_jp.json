@@ -82,6 +82,7 @@
   "fpstest.state.chunk_preload": "チャンク読み込み中",
   "fpstest.state.warmup": "ウォームアップ",
   "fpstest.state.sampling": "計測中",
+  "fpstest.state.phase_transition": "シェーダー切替中",
   "fpstest.state.cooldown": "クールダウン",
   "fpstest.state.disconnecting": "切断中",
   "fpstest.state.post_run": "終了処理中",

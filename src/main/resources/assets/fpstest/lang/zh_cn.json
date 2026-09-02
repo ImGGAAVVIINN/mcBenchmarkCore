@@ -82,6 +82,7 @@
   "fpstest.state.chunk_preload": "加载区块",
   "fpstest.state.warmup": "预热",
   "fpstest.state.sampling": "正在采样",
+  "fpstest.state.phase_transition": "切换着色器",
   "fpstest.state.cooldown": "冷却",
   "fpstest.state.disconnecting": "断开中",
   "fpstest.state.post_run": "正在结束",

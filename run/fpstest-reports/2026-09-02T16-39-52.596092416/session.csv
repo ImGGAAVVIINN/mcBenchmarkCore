@@ -1,0 +1,5 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+pack_shader_showcase,Pack + Shader — lowEnd.zip (no pack),Showcase,106.783,18.591,48.063,0.835,29,773
+pack_shader_showcase,Pack + Shader — lowEnd.zip + pbr.zip,Showcase,76.370,21.303,45.842,0.722,24,182
+pack_shader_showcase,Pack + Shader — highEnd.zip (no pack),Showcase,46.069,17.564,53.922,0.694,19,348
+pack_shader_showcase,Pack + Shader — highEnd.zip + pbr.zip,Showcase,69.838,17.407,55.402,0.727,20,403

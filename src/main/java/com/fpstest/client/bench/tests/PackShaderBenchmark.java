@@ -4,6 +4,7 @@ import com.fpstest.client.bench.BenchContext;
 import com.fpstest.client.bench.Benchmark;
 import com.fpstest.client.bench.BenchmarkResult;
 import com.fpstest.client.bench.WorldType;
+import com.fpstest.client.bench.camera.CinematicState;
 import com.fpstest.client.bench.iris.IrisShaderControl;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,19 +17,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Optional benchmark mode that:
+ * Optional benchmark mode that, as a SINGLE benchmark, automatically benchmarks
+ * a matrix of Iris shader packs × resource-pack on/off against the same scene:
  * <ol>
- *   <li>temporarily enables a specific resource pack ({@value #RESOURCE_PACK_NAME}),</li>
- *   <li>temporarily selects and enables a specific Iris shader pack ({@value #SHADER_PACK_NAME}),</li>
- *   <li>runs the existing Base FPS Benchmark (showcase),</li>
- *   <li>shows the normal {@code BenchmarkResultsScreen} afterwards, and</li>
+ *   <li>phase 0: {@value #SHADER_PACKS[0]} with NO resource pack,</li>
+ *   <li>phase 1: {@value #SHADER_PACKS[0]} with {@value #RESOURCE_PACK_NAME},</li>
+ *   <li>phase 2: {@value #SHADER_PACKS[1]} with NO resource pack,</li>
+ *   <li>phase 3: {@value #SHADER_PACKS[1]} with {@value #RESOURCE_PACK_NAME},</li>
+ *   <li>shows the normal {@code BenchmarkResultsScreen} with ALL results, and</li>
  *   <li>restores the user's exact previous resource-pack and Iris shader configuration.</li>
  * </ol>
  *
- * <p>Iris is optional: if it is not installed, the benchmark still runs with the
- * resource pack enabled and simply records {@code iris_present=0}. Iris classes
- * are only touched through {@link IrisShaderControl} after an {@code isModLoaded}
- * guard, so this mod never hard-depends on Iris.</p>
+ * <p>No user input is required between phases. Each phase produces its own
+ * independent {@link BenchmarkResult} (never averaged or overwritten).</p>
+ *
+ * <p>Iris is optional: if it is not installed, the benchmark still runs and simply
+ * records {@code iris_present=0}. Iris classes are only touched through
+ * {@link IrisShaderControl} after an {@code isModLoaded} guard, so this mod never
+ * hard-depends on Iris.</p>
  */
 @Environment(EnvType.CLIENT)
 public final class PackShaderBenchmark implements Benchmark {
@@ -42,21 +48,39 @@ public final class PackShaderBenchmark implements Benchmark {
     public static final String RESOURCE_PACK_ID = "file/pbr.zip";
     /** Human-readable resource pack file name (for display / reports). */
     public static final String RESOURCE_PACK_NAME = "pbr.zip";
-    /** Shader pack (folder/zip name inside the shaderpacks directory) to select + enable. */
-    public static final String SHADER_PACK_NAME = "highEnd.zip";
+    /** Shader packs (folder/zip names inside the shaderpacks directory), in run order. */
+    public static final String[] SHADER_PACKS = {"lowEnd.zip", "highEnd.zip"};
 
-    /** Max ticks to wait for the shader to actually start rendering before proceeding anyway. */
+    /** One measurement phase: a shader pack plus an optional resource pack (null = none). */
+    private record Phase(String shaderPack, String resourcePackId) {
+        String label() {
+            return resourcePackId == null
+                ? shaderPack + " (no pack)"
+                : shaderPack + " + " + RESOURCE_PACK_NAME;
+        }
+    }
+
+    /** The 4 phases, in run order: shader × resource-pack on/off. */
+    private static final Phase[] PHASES = {
+        new Phase("lowEnd.zip", null),
+        new Phase("lowEnd.zip", RESOURCE_PACK_ID),
+        new Phase("highEnd.zip", null),
+        new Phase("highEnd.zip", RESOURCE_PACK_ID),
+    };
+
+    /** Max ticks to wait for a shader to actually start rendering before proceeding anyway. */
     private static final int SHADER_READY_TIMEOUT_TICKS = 600; // 30 s
 
     private final BaseFpsBenchmark delegate = new BaseFpsBenchmark();
 
     private boolean setupStarted;
-    private boolean setupComplete;
+    private boolean phaseReady;
     private boolean cleanedUp;
     private boolean irisPresent;
     private boolean shaderEnabled;
     private boolean shaderFailed;
     private boolean shaderInUseDuringSample;
+    private int phaseIndex;
     private List<String> originalPackIds = List.of();
     private String originalShaderPackName;
     private boolean originalShadersEnabled;
@@ -72,7 +96,7 @@ public final class PackShaderBenchmark implements Benchmark {
 
     @Override
     public String displayName() {
-        return "PBR + Shader Showcase";
+        return "Pack + Shader Benchmark";
     }
 
     @Override
@@ -82,9 +106,20 @@ public final class PackShaderBenchmark implements Benchmark {
 
     @Override
     public String description() {
-        return "Runs the Base FPS Benchmark (showcase) with the '" + RESOURCE_PACK_NAME
-            + "' resource pack and the '" + SHADER_PACK_NAME + "' Iris shader pack temporarily enabled. "
-            + "Your previous resource-pack and shader configuration is restored afterwards.";
+        return "Automatically benchmarks '" + SHADER_PACKS[0] + "' and '" + SHADER_PACKS[1]
+            + "', each with and without the '" + RESOURCE_PACK_NAME + "' resource pack "
+            + "(same scene, four independent results). Your previous resource-pack and "
+            + "shader configuration is restored afterwards.";
+    }
+
+    @Override
+    public int phaseCount() {
+        return PHASES.length;
+    }
+
+    @Override
+    public String phaseDisplayName(int phaseIndex) {
+        return "Pack + Shader — " + PHASES[phaseIndex].label();
     }
 
     @Override
@@ -131,12 +166,18 @@ public final class PackShaderBenchmark implements Benchmark {
     public void prepare(BenchContext ctx) {
         Minecraft mc = ctx.client;
         setupStarted = true;
-        setupComplete = false;
+        phaseReady = false;
         cleanedUp = false;
+        phaseIndex = 0;
         shaderEnabled = false;
         shaderFailed = false;
         shaderInUseDuringSample = false;
         shaderWaitTicks = 0;
+        LOG.info(
+            "[FPS Test] Pack + Shader Benchmark starting ({} phases: {})",
+            phaseCount(),
+            String.join(", ", java.util.Arrays.stream(PHASES).map(Phase::label).toList())
+        );
 
         // 1. Save the user's exact current resource-pack selection.
         PackRepository repo = mc.getResourcePackRepository();
@@ -159,21 +200,8 @@ public final class PackShaderBenchmark implements Benchmark {
             }
         }
 
-        // 3. Temporarily enable the fixed resource pack (async reload).
-        List<String> newSelection = new ArrayList<>(originalPackIds);
-        if (!newSelection.contains(RESOURCE_PACK_ID)) {
-            newSelection.add(RESOURCE_PACK_ID);
-        }
-        try {
-            if (!repo.getAvailableIds().contains(RESOURCE_PACK_ID)) {
-                LOG.warn("[FPS Test] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, RESOURCE_PACK_ID);
-            }
-            repo.setSelected(newSelection);
-            packReloadFuture = mc.reloadResourcePacks();
-        } catch (Throwable t) {
-            LOG.warn("[FPS Test] resource pack enable failed", t);
-            packReloadFuture = CompletableFuture.completedFuture(null);
-        }
+        // 3. Apply phase 0's resource pack (none) and reload asynchronously.
+        packReloadFuture = applyResourcePack(PHASES[0].resourcePackId());
 
         // 4. Build the showcase scene (delegated to the existing benchmark).
         delegate.prepare(ctx);
@@ -184,46 +212,72 @@ public final class PackShaderBenchmark implements Benchmark {
         if (!setupStarted) {
             return false;
         }
-        if (setupComplete) {
+        if (phaseReady) {
             return true;
         }
-        // Wait for the resource-pack reload to finish applying before enabling the shader,
-        // so the shader compiles against the intended resource pack.
+        Phase phase = PHASES[phaseIndex];
+        // Wait for the current phase's resource-pack reload to finish applying before
+        // enabling the shader, so the shader compiles against the intended resource pack.
         if (packReloadFuture != null && !packReloadFuture.isDone()) {
             return false;
         }
-        // Enable the shader only after the resource pack is applied.
+        // Enable the current phase's shader (once).
         if (irisPresent && !shaderEnabled && !shaderFailed) {
             try {
-                IrisShaderControl.enableShaderPack(SHADER_PACK_NAME);
+                IrisShaderControl.enableShaderPack(phase.shaderPack());
                 shaderEnabled = true;
-                LOG.info("[FPS Test] enabled shader pack '{}'", SHADER_PACK_NAME);
+                LOG.info("[FPS Test] Phase {}/{}: {} — shader enabled", phaseIndex + 1, phaseCount(), phase.label());
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] shader enable failed; continuing without shader", t);
+                LOG.warn("[FPS Test] shader enable failed for '{}'; continuing without shader", phase.shaderPack(), t);
                 shaderFailed = true;
             }
         }
-        // Wait for the shader to actually be in use (compiled + rendering).
-        if (irisPresent && shaderEnabled && !shaderFailed) {
-            if (IrisShaderControl.isShaderPackInUse()) {
+        if (shaderFailed) {
+            phaseReady = true;
+            return true;
+        }
+        // Verify the SPECIFIC shader is actually active before measuring.
+        if (irisPresent && shaderEnabled) {
+            if (isShaderActive(phase.shaderPack())) {
                 shaderInUseDuringSample = true;
-                setupComplete = true;
+                phaseReady = true;
+                LOG.info("[FPS Test] Shader active: {}", phase.shaderPack());
                 return true;
             }
             shaderWaitTicks++;
             if (shaderWaitTicks >= SHADER_READY_TIMEOUT_TICKS) {
                 LOG.warn(
                     "[FPS Test] shader pack '{}' did not become active within {} ticks; continuing without it",
-                    SHADER_PACK_NAME,
+                    phase.shaderPack(),
                     SHADER_READY_TIMEOUT_TICKS
                 );
-                setupComplete = true;
+                phaseReady = true;
                 return true;
             }
             return false;
         }
-        setupComplete = true;
+        phaseReady = true;
         return true;
+    }
+
+    @Override
+    public void onPhaseComplete(BenchContext ctx) {
+        // Called after the previous phase's sampling completes. Advance to the next
+        // phase (shader × resource pack), apply its resource pack, and replay the same
+        // cinematic scene so every phase measures the same path.
+        phaseIndex++;
+        phaseReady = false;
+        shaderEnabled = false;
+        shaderFailed = false;
+        shaderInUseDuringSample = false;
+        shaderWaitTicks = 0;
+        Phase phase = PHASES[phaseIndex];
+        packReloadFuture = applyResourcePack(phase.resourcePackId());
+        // Replay the camera path AND the world-side animation clock (combat arrows,
+        // redstone animation, particles) so every phase measures an identical scene.
+        CinematicState.pathTick = 0;
+        delegate.resetAnimation();
+        LOG.info("[FPS Test] Phase {}/{}: {} — switching", phaseIndex + 1, phaseCount(), phase.label());
     }
 
     @Override
@@ -234,8 +288,11 @@ public final class PackShaderBenchmark implements Benchmark {
     @Override
     public void recordExtra(BenchContext ctx, BenchmarkResult.Builder r) {
         delegate.recordExtra(ctx, r);
-        r.extra("resource_pack", RESOURCE_PACK_NAME);
-        r.extra("shader_pack", SHADER_PACK_NAME);
+        Phase phase = PHASES[phaseIndex];
+        r.extra("resource_pack", phase.resourcePackId() == null ? "none" : RESOURCE_PACK_NAME);
+        r.extra("shader_pack", phase.shaderPack());
+        r.extra("phase", phaseIndex);
+        r.extra("phase_count", phaseCount());
         r.extra("iris_present", irisPresent ? 1.0 : 0.0);
         r.extra("shader_in_use", shaderInUseDuringSample ? 1.0 : 0.0);
     }
@@ -288,5 +345,53 @@ public final class PackShaderBenchmark implements Benchmark {
         } catch (Throwable t) {
             LOG.warn("[FPS Test] delegate cleanup failed", t);
         }
+    }
+
+    /** True when the given shader pack is actually the one being used for rendering. */
+    private boolean isShaderActive(String packName) {
+        if (!irisPresent) {
+            return false;
+        }
+        try {
+            if (!IrisShaderControl.isShaderPackInUse()) {
+                return false;
+            }
+            String current = IrisShaderControl.getCurrentPackName();
+            if (current == null) {
+                return false;
+            }
+            // Iris may report the pack name with or without the ".zip" extension.
+            return current.equals(packName) || current.equals(stripZip(packName));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Applies the given resource pack to the selection (starting from the user's
+     * original selection) and reloads asynchronously. A {@code null} id means "no
+     * resource pack" (i.e. just the user's original selection).
+     */
+    private CompletableFuture<Void> applyResourcePack(String resourcePackId) {
+        Minecraft mc = Minecraft.getInstance();
+        PackRepository repo = mc.getResourcePackRepository();
+        List<String> selection = new ArrayList<>(originalPackIds);
+        if (resourcePackId != null && !selection.contains(resourcePackId)) {
+            selection.add(resourcePackId);
+        }
+        try {
+            if (resourcePackId != null && !repo.getAvailableIds().contains(resourcePackId)) {
+                LOG.warn("[FPS Test] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, resourcePackId);
+            }
+            repo.setSelected(selection);
+            return mc.reloadResourcePacks();
+        } catch (Throwable t) {
+            LOG.warn("[FPS Test] resource pack apply failed for '{}'", resourcePackId, t);
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private static String stripZip(String name) {
+        return name.endsWith(".zip") ? name.substring(0, name.length() - 4) : name;
     }
 }
