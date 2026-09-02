@@ -53,10 +53,16 @@ public final class PackShaderBenchmark implements Benchmark {
 
     /** One measurement phase: a shader pack plus an optional resource pack (null = none). */
     private record Phase(String shaderPack, String resourcePackId) {
+        /** Log-friendly label. */
         String label() {
-            return resourcePackId == null
-                ? shaderPack + " (no pack)"
-                : shaderPack + " + " + RESOURCE_PACK_NAME;
+            return shaderPack + (resourcePackId == null ? " (no pack)" : " + " + RESOURCE_PACK_NAME);
+        }
+
+        /** Clean display name for the results screen. */
+        String displayName() {
+            String shader = shaderPack.replace(".zip", "");
+            String shaderFriendly = shader.startsWith("low") ? "LowEnd Shader" : "HighEnd Shader";
+            return resourcePackId == null ? shaderFriendly : shaderFriendly + " + PBR Textures";
         }
     }
 
@@ -119,7 +125,7 @@ public final class PackShaderBenchmark implements Benchmark {
 
     @Override
     public String phaseDisplayName(int phaseIndex) {
-        return "Pack + Shader — " + PHASES[phaseIndex].label();
+        return PHASES[phaseIndex].displayName();
     }
 
     @Override
