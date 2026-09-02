@@ -170,6 +170,15 @@ public final class CinematicRunner {
     private void abortCurrent(String reason) {
         LOG.warn("[FPS Test] abort current: {}", reason);
         if (current != null) {
+            // Restore any temporary environment changes (resource packs, shaders, etc.)
+            // even when a benchmark is aborted mid-run.
+            try {
+                if (ctx != null) {
+                    current.cleanup(ctx);
+                }
+            } catch (Throwable var7) {
+                LOG.warn("[FPS Test] cleanup during abort failed for {}", current.id(), var7);
+            }
             try {
                 BenchmarkResult.Builder b = builder != null
                     ? builder
@@ -229,9 +238,12 @@ public final class CinematicRunner {
                     }
                     break;
                 case PREPARING:
-                    state = State.CHUNK_PRELOAD;
-                    phaseTicks = 0;
-                    preloadStartNanos = System.nanoTime();
+                    phaseTicks++;
+                    if (current.isReady(ctx)) {
+                        state = State.CHUNK_PRELOAD;
+                        phaseTicks = 0;
+                        preloadStartNanos = System.nanoTime();
+                    }
                     break;
                 case CHUNK_PRELOAD:
                     phaseTicks++;

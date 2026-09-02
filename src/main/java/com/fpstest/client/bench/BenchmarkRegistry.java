@@ -10,6 +10,7 @@ import com.fpstest.client.bench.tests.HopperGridBenchmark;
 import com.fpstest.client.bench.tests.IdleBaselineBenchmark;
 import com.fpstest.client.bench.tests.ItemsMergeStormBenchmark;
 import com.fpstest.client.bench.tests.LightingUpdateBenchmark;
+import com.fpstest.client.bench.tests.PackShaderBenchmark;
 import com.fpstest.client.bench.tests.ParticleCycleBenchmark;
 import com.fpstest.client.bench.tests.ParticleQuarryBenchmark;
 import com.fpstest.client.bench.tests.PistonSlimeArrayBenchmark;
@@ -40,6 +41,7 @@ public final class BenchmarkRegistry {
     public static void bootstrap() {
         if (REGISTRY.isEmpty()) {
             register(new BaseFpsBenchmark());
+            register(new PackShaderBenchmark());
             register(new IdleBaselineBenchmark());
             register(new ParticleCycleBenchmark());
             register(new ParticleQuarryBenchmark());
