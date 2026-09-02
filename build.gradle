@@ -9,6 +9,12 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+
+	// Modrinth maven — hosts the published Iris artifact used only for
+	// compile-time access to Iris's internal shader-pack selection API.
+	// The dependency is `modCompileOnly` (see below): it is NOT bundled into
+	// the mod jar and is NOT required at runtime.
+	maven { url = "https://api.modrinth.com/maven" }
 }
 
 loom {
@@ -35,6 +41,15 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Iris (compile-only, optional at runtime).
+	// Published Modrinth maven artifact matching the installed
+	// `run/mods/iris-fabric-1.10.7+mc1.21.11.jar` (mod id "iris", 1.10.7+mc1.21.11).
+	// Used ONLY by the optional "PBR + Shader" benchmark mode to select and
+	// enable a specific shader pack via Iris's internal API.
+	// `modCompileOnly` = compile against Iris classes, but do NOT bundle Iris
+	// into the mod jar and do NOT make it a runtime requirement.
+	modCompileOnly "maven.modrinth:YL57xq9U:1.10.7+1.21.11-fabric"
 }
 
 processResources {
