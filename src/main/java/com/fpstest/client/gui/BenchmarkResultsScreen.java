@@ -192,7 +192,11 @@ public final class BenchmarkResultsScreen extends Screen {
             ctx.drawString(this.font, Component.literal("\u00a77" + idxStr), leftCol + 2, ry + 1, -7696491);
             int nameX = leftCol + 4 + this.font.width("99.");
             int nameMaxW = colMaxX - nameX - 6;
-            ctx.drawString(this.font, Component.literal(truncate(this.font, r.displayName(), nameMaxW)), nameX, ry + 1, focused ? -1 : -2039584);
+            String partTag = "";
+            if (r.extras().containsKey("part")) {
+                partTag = "\u00a78P" + r.extras().get("part").intValue() + " \u00a7r";
+            }
+            ctx.drawString(this.font, Component.literal(truncate(this.font, partTag + r.displayName(), nameMaxW)), nameX, ry + 1, focused ? -1 : -2039584);
             String maxFrame = Double.isNaN(r.frameTimeMs().max()) ? I18n.tr("fpstest.results.na") : String.format(Locale.ROOT, "%.1fms", r.frameTimeMs().max());
             String onePct = String.format(Locale.ROOT, "%.0f", r.extras().getOrDefault("fps_1pct_low", 0.0));
             String avgFps = fmtFps(r.fps().avg());
@@ -232,7 +236,13 @@ public final class BenchmarkResultsScreen extends Screen {
 
     private void renderHero(GuiGraphics ctx, BenchmarkResult r, int x0, int y0, int x1, int y1) {
         ctx.drawString(this.font, Component.literal("\u00a7l" + truncate(this.font, r.displayName(), x1 - x0 - 12)), x0 + 4, y0 + 3, -1);
-        ctx.drawString(this.font, Component.literal("\u00a78" + r.category() + " \u00b7 " + r.sampleTicks() + " " + I18n.tr("fpstest.results.ticks_short")), x0 + 4, y0 + 13, -7696491);
+        String meta;
+        if (r.extras().containsKey("part_label")) {
+            meta = I18n.tr("fpstest.hud.part") + " " + r.extras().get("part").intValue() + " - " + r.extras().get("part_label");
+        } else {
+            meta = r.category() + " \u00b7 " + r.sampleTicks() + " " + I18n.tr("fpstest.results.ticks_short");
+        }
+        ctx.drawString(this.font, Component.literal("\u00a78" + truncate(this.font, meta, x1 - x0 - 12)), x0 + 4, y0 + 13, -7696491);
         double avg = r.fps().avg();
         String avgStr = fmtFps(avg);
         int avgColor = fpsColor(avg);

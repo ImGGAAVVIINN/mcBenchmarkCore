@@ -96,7 +96,7 @@ public final class RedstoneDustGridBenchmark implements Benchmark {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, halfX, halfZ);
             BlockState dust = Blocks.REDSTONE_WIRE.defaultBlockState();
             BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
-            BlockState repeaterE = (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+            BlockState repeaterE = (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST);
             BlockState stone = Blocks.STONE.defaultBlockState();
             int by = (int)CENTER.y;
 

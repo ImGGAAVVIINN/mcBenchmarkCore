@@ -38,7 +38,8 @@ public final class RunPlan {
    }
 
    public double estimatedSeconds() {
-      return (this.warmupTicks + this.sampleTicks + this.cooldownTicks + this.preloadTicks / 2.0) / 20.0 + 7.0;
+      double perPhase = (this.warmupTicks + this.sampleTicks + this.cooldownTicks + this.preloadTicks / 2.0) / 20.0 + 7.0;
+      return perPhase * this.bench.phaseCount();
    }
 
    public String describe() {

@@ -55,6 +55,8 @@
     "fpstest.tooltip.eta": "Estimated wall-clock: %s",
     "fpstest.label.full": "Full benchmark (%s)",
     "fpstest.label.custom": "Custom (%s)",
+    "fpstest.part.main": "Main Benchmark (no shaders)",
+    "fpstest.hud.part": "Part",
     "fpstest.confirm.title": "Confirm",
     "fpstest.confirm.title_with": "Confirm: %s",
     "fpstest.confirm.run": "Run",

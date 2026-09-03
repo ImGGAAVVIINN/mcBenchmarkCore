@@ -7,7 +7,7 @@ import net.minecraft.world.level.ServerExplosion;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ServerExplosion.class)
@@ -16,7 +16,7 @@ public abstract class ExplosionMixin {
       method = "explode",
       at = @At("HEAD")
    )
-   private void fpstest$onExplode(CallbackInfo ci) {
+   private void fpstest$onExplode(CallbackInfoReturnable<Integer> cir) {
       Instr.explosions.incrementAndGet();
    }
 }

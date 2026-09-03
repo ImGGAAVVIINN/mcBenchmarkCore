@@ -54,10 +54,10 @@ public final class BenchContext {
         return server.getPlayerList().getPlayer(client.player.getUUID());
     }
 
-    public net.minecraft.world.level.Level serverLevel() {
+    public net.minecraft.server.level.ServerLevel serverLevel() {
         net.minecraft.server.level.ServerPlayer serverPlayer = serverPlayer();
         if (serverPlayer != null) {
-            return serverPlayer.level();
+            return (net.minecraft.server.level.ServerLevel) serverPlayer.level();
         }
         MinecraftServer server = server();
         if (server != null) {

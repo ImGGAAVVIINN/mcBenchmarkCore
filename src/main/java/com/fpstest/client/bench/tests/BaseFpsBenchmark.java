@@ -260,9 +260,17 @@ public final class BaseFpsBenchmark implements Benchmark {
    private void buildTerrain(ServerLevel lvl) {
       BlockState dirt = Blocks.DIRT.defaultBlockState();
       BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
+      BlockState stone = Blocks.STONE.defaultBlockState();
 
       for (int x = -16; x <= 320; x++) {
          for (int z = -64; z <= 64; z++) {
+            // Fill the air gap between the flat-world grass (Y=3) and the
+            // benchmark floor (Y=68) with solid stone so the underlying
+            // super-flat terrain is never visible through the gap.
+            for (int y = 4; y <= 67; y++) {
+               this.setFast(lvl, x, y, z, stone);
+            }
+
             int top = this.surfaceY(x, z);
             this.setFast(lvl, x, 68, z, dirt);
             this.setFast(lvl, x, 69, z, dirt);
@@ -1016,7 +1024,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.set(lvl, cx - 2, 72, cz + 2, Blocks.IRON_BLOCK.defaultBlockState());
       this.set(lvl, cx - 2, 73, cz + 2, Blocks.AIR.defaultBlockState());
       this.set(lvl, cx - 3, 71, cz + 2, Blocks.RED_CONCRETE.defaultBlockState());
-      this.set(lvl, cx + 1, 71, cz + 2, (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST));
+      this.set(lvl, cx + 1, 71, cz + 2, (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
 
       for (int dz = 3; dz <= 4; dz++) {
          this.set(lvl, cx + 1, 71, cz + dz, Blocks.REDSTONE_WIRE.defaultBlockState());

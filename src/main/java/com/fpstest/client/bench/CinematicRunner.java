@@ -2,6 +2,8 @@ package com.fpstest.client.bench;
 
 import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.camera.CinematicState;
+import com.fpstest.client.bench.tests.ChunkFlybyBenchmark;
+import com.fpstest.client.bench.tests.PackShaderBenchmark;
 import com.fpstest.client.bench.world.EphemeralWorld;
 import com.fpstest.client.config.FpsTestConfig;
 import com.fpstest.client.gui.BenchmarkResultsScreen;
@@ -9,9 +11,9 @@ import com.fpstest.client.gui.I18n;
 import com.fpstest.client.report.ReportWriter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.tutorial.TutorialSteps;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -52,6 +54,14 @@ public final class CinematicRunner {
     private long entityCountAtSampleStart;
     private long entityCountAtSampleEnd;
     private final java.util.List<BenchmarkResult> session = new java.util.ArrayList<>();
+    private Runnable sessionSetup;
+    private Runnable sessionCleanup;
+    private String mainPartLabel = "";
+    private int partNumber = 1;
+    private String partLabel = "";
+    private boolean inMultiPhasePart;
+    private int originalRenderDistance = -1;
+    private boolean renderDistanceSaved = false;
 
     public State state() {
         return state;
@@ -115,6 +125,17 @@ public final class CinematicRunner {
             this.onFinished = onFinished;
             sessionLabel = label;
             sessionId = java.time.LocalDateTime.now().toString().replace(':', '-');
+            partNumber = 1;
+            partLabel = mainPartLabel;
+            inMultiPhasePart = false;
+            saveRenderDistance();
+            if (sessionSetup != null) {
+                try {
+                    sessionSetup.run();
+                } catch (Throwable t) {
+                    LOG.warn("[FPS Test] session setup failed", t);
+                }
+            }
             return dequeueNext();
         } else {
             return false;
@@ -123,6 +144,42 @@ public final class CinematicRunner {
 
     public void setProgressListener(Consumer<String> listener) {
         this.onProgress = listener;
+    }
+
+    /**
+     * Registers session-level hooks for a multi-part run (e.g. the FULL BENCHMARK).
+     * {@code setup} runs once before the first benchmark (to save the user's config
+     * and establish a clean baseline); {@code cleanup} runs once after the last
+     * benchmark finishes — including on cancellation/failure — to restore the user's
+     * original configuration. Hooks are cleared automatically when the session ends.
+     */
+    public void setSessionHooks(Runnable setup, Runnable cleanup) {
+        this.sessionSetup = setup;
+        this.sessionCleanup = cleanup;
+    }
+
+    /**
+     * Sets the label used for the "main" part (Part 1) of a multi-part session.
+     * When set, the HUD shows "Part N - &lt;label&gt;" and each result records its
+     * part number/label. Cleared automatically when the session ends.
+     */
+    public void setMainPartLabel(String label) {
+        this.mainPartLabel = label == null ? "" : label;
+    }
+
+    /** True when the current session is a labelled multi-part run (e.g. FULL BENCHMARK). */
+    public boolean hasParts() {
+        return !mainPartLabel.isEmpty();
+    }
+
+    /** 1-based number of the part currently running (1 = main part). */
+    public int currentPartNumber() {
+        return partNumber;
+    }
+
+    /** Human-readable label of the part currently running. */
+    public String currentPartLabel() {
+        return partLabel;
     }
 
     private boolean dequeueNext() {
@@ -136,6 +193,19 @@ public final class CinematicRunner {
             phaseTicks = 0;
             waitTicks = 0;
             preloadedChunks = 0;
+            // Part tracking: a multi-phase benchmark begins a new part (Parts 2-5 of the
+            // FULL BENCHMARK); single-phase benchmarks stay in the current part (Part 1).
+            if (current.phaseCount() > 1) {
+                inMultiPhasePart = true;
+                if (completedInQueue > 0) {
+                    partNumber++;
+                }
+                partLabel = current.phaseDisplayName(0);
+            } else {
+                inMultiPhasePart = false;
+                partLabel = mainPartLabel;
+            }
+            applyRenderDistanceFor(current);
             LOG.info("[FPS Test] starting benchmark: {} (preset={})", current.id(), plan.presetName);
             if (onProgress != null) {
                 onProgress.accept("Loading " + current.displayName());
@@ -187,6 +257,10 @@ public final class CinematicRunner {
                 b.extra("status", "failed");
                 b.extra("fail_reason", reason != null ? reason : "unknown");
                 b.extra("aborted_state", state != null ? state.name() : "UNKNOWN");
+                if (hasParts()) {
+                    b.extra("part", currentPartNumber());
+                    b.extra("part_label", currentPartLabel());
+                }
                 session.add(b.build());
             } catch (Throwable var6) {
                 LOG.warn("[FPS Test] could not record failed-bench placeholder", var6);
@@ -295,6 +369,11 @@ public final class CinematicRunner {
                             state = State.PHASE_TRANSITION;
                             phaseTicks = 0;
                             CinematicState.holdPose = false;
+                            // Part tracking: each new phase of a multi-phase benchmark is a new part.
+                            if (inMultiPhasePart) {
+                                partNumber++;
+                                partLabel = current.phaseDisplayName(phaseIndex);
+                            }
                         } else {
                             state = State.COOLDOWN;
                             phaseTicks = 0;
@@ -433,6 +512,11 @@ public final class CinematicRunner {
             .extra("preset_full", "full".equals(plan.presetName) ? 1.0 : 0.0)
             .extra("preset_long", "long".equals(plan.presetName) ? 1.0 : 0.0);
 
+        if (hasParts()) {
+            builder.extra("part", currentPartNumber());
+            builder.extra("part_label", currentPartLabel());
+        }
+
         try {
             current.recordExtra(ctx, builder);
         } catch (Throwable var13) {
@@ -485,6 +569,18 @@ public final class CinematicRunner {
             } catch (Throwable var8) {
             }
         }
+        // Session-level cleanup (restore the user's original config) before showing results.
+        if (sessionCleanup != null) {
+            try {
+                sessionCleanup.run();
+            } catch (Throwable t) {
+                LOG.warn("[FPS Test] session cleanup failed", t);
+            }
+        }
+        restoreRenderDistance();
+        sessionSetup = null;
+        sessionCleanup = null;
+        mainPartLabel = "";
         state = State.IDLE;
         current = null;
         plan = null;
@@ -520,7 +616,7 @@ public final class CinematicRunner {
         CinematicState.active = true;
         CinematicState.holdPose = false;
         try {
-            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            mc.getTutorial().setStep(TutorialSteps.NONE);
         } catch (Throwable ignored) {
         }
         try {
@@ -540,6 +636,69 @@ public final class CinematicRunner {
         lastReportDir = null;
         totalQueued = 0;
         completedInQueue = 0;
+    }
+
+    /**
+     * Saves the user's current render distance so it can be restored when the
+     * session ends. The benchmark temporarily changes render distance per test
+     * (see {@link #applyRenderDistanceFor(Benchmark)}).
+     */
+    private void saveRenderDistance() {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            originalRenderDistance = mc.options.renderDistance().get();
+            renderDistanceSaved = true;
+            LOG.info("[FPS Test] saved original render distance: {} chunks", originalRenderDistance);
+        } catch (Throwable t) {
+            LOG.warn("[FPS Test] could not save render distance", t);
+            originalRenderDistance = -1;
+            renderDistanceSaved = false;
+        }
+    }
+
+    /**
+     * Sets the render distance appropriate for the given benchmark as part of the
+     * existing part/test sequencing:
+     * <ul>
+     *   <li>front half of Part 1 (non-flyby tests): 6 chunks so the superflat
+     *       arena terrain does not visually dominate the test,</li>
+     *   <li>terrain-heavy flyby tests (back half of Part 1): 32 chunks so the
+     *       single-biome world is actually visible,</li>
+     *   <li>shader benchmark section (Parts 2-5): 16 chunks.</li>
+     * </ul>
+     */
+    private void applyRenderDistanceFor(Benchmark bench) {
+        int rd;
+        if (bench instanceof ChunkFlybyBenchmark) {
+            rd = 32;
+        } else if (bench instanceof PackShaderBenchmark) {
+            rd = 16;
+        } else {
+            rd = 6;
+        }
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            mc.options.renderDistance().set(rd);
+            LOG.info("[FPS Test] render distance set to {} chunks for benchmark {}", rd, bench.id());
+        } catch (Throwable t) {
+            LOG.warn("[FPS Test] could not set render distance to {} for {}", rd, bench.id(), t);
+        }
+    }
+
+    /** Restores the user's original render distance saved at session start. */
+    private void restoreRenderDistance() {
+        if (!renderDistanceSaved || originalRenderDistance < 0) {
+            return;
+        }
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            mc.options.renderDistance().set(originalRenderDistance);
+            LOG.info("[FPS Test] restored render distance to {} chunks", originalRenderDistance);
+        } catch (Throwable t) {
+            LOG.warn("[FPS Test] could not restore render distance", t);
+        }
+        originalRenderDistance = -1;
+        renderDistanceSaved = false;
     }
 
     public static String stateLabel(State s) {

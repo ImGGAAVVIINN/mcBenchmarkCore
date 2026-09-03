@@ -4,6 +4,7 @@ import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.Benchmark;
 import com.fpstest.client.bench.BenchmarkRegistry;
 import com.fpstest.client.bench.CinematicRunner;
+import com.fpstest.client.bench.FullBenchmarkConfig;
 import com.fpstest.client.bench.RunPlan;
 import java.util.ArrayList;
 import java.util.List;
@@ -282,7 +283,7 @@ public final class BenchmarkHub extends Screen {
             y += 36;
         }
 
-        long fullEtaMs = totalEtaMs(this.allPlans());
+        long fullEtaMs = totalEtaMs(this.fullSuitePlans());
         this.addRenderableWidget(
             FlatButton.flatBuilder(
                 Component.literal(I18n.trf("fpstest.overview.full_button", presetLabel(this.preset), fmtDuration(fullEtaMs))), b -> this.runFullSuite())
@@ -326,6 +327,20 @@ public final class BenchmarkHub extends Screen {
         }
 
         return out;
+    }
+
+    /**
+     * The FULL BENCHMARK queue: the original main workload (all non-Showcase
+     * benchmarks, Part 1) followed by the shader/resource-pack showcase
+     * (Parts 2-5). Used for both the Overview button ETA and the actual run.
+     */
+    private List<RunPlan> fullSuitePlans() {
+        List<RunPlan> plans = new ArrayList<>(this.allPlans());
+        Benchmark showcase = BenchmarkRegistry.get("pack_shader_showcase").orElse(null);
+        if (showcase != null) {
+            plans.add(this.planFor(showcase));
+        }
+        return plans;
     }
 
     private RunPlan planFor(Benchmark b) {
@@ -477,9 +492,14 @@ public final class BenchmarkHub extends Screen {
     }
 
     private void runFullSuite() {
-        List<RunPlan> plans = this.allPlans();
+        List<RunPlan> plans = this.fullSuitePlans();
         String label = I18n.trf("fpstest.label.full", presetLabel(this.preset));
-        this.startWithConfirm(plans, label, () -> FpsTestClient.RUNNER.startQueue(plans, label, this.backToHub()));
+        this.startWithConfirm(plans, label, () -> {
+            FullBenchmarkConfig config = new FullBenchmarkConfig();
+            FpsTestClient.RUNNER.setMainPartLabel(I18n.tr("fpstest.part.main"));
+            FpsTestClient.RUNNER.setSessionHooks(config::saveAndDisable, config::restore);
+            FpsTestClient.RUNNER.startQueue(plans, label, this.backToHub());
+        });
     }
 
     private void runCustomQueue() {
