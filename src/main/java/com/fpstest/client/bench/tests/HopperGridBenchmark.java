@@ -87,7 +87,7 @@ public final class HopperGridBenchmark implements Benchmark {
             int halfX = 24;
             int halfZ = 44;
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, halfX, halfZ);
-            BlockState hopperEast = Blocks.HOPPER.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.EAST);
+            BlockState hopperEast = Blocks.HOPPER.defaultBlockState().setValue(BlockStateProperties.FACING_HOPPER, Direction.EAST);
             int by = (int)CENTER.y;
 
             for (int gz = 0; gz < 20; gz++) {

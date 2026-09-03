@@ -42,7 +42,14 @@ public final class PerfHud {
                lines.add("§r§l[" + I18n.tr("fpstest.hud.title") + "]");
             }
 
-            lines.add("§b▶ " + (cur == null ? "—" : cur.displayName()));
+            if (runner.hasParts()) {
+                lines.add("§b▶ " + I18n.tr("fpstest.hud.part") + " " + runner.currentPartNumber() + " - " + runner.currentPartLabel());
+                if (!compact) {
+                    lines.add("§7  " + (cur == null ? "—" : cur.displayName()));
+                }
+            } else {
+                lines.add("§b▶ " + (cur == null ? "—" : cur.displayName()));
+            }
             if (runner.totalQueued() > 1 && !compact) {
                lines.add(
                   "§7" + I18n.tr("fpstest.hud.queue") + ": " + (runner.completedInQueue() + 1) + " / " + runner.totalQueued() + "   " + runner.sessionLabel()

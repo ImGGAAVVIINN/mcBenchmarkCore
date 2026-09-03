@@ -122,7 +122,7 @@ public final class EphemeralWorld {
         rules.set(GameRules.SPAWN_WARDENS, false, null);
 
         // Create level settings
-        LevelSettings settings = new LevelSettings("FPS Test Arena", GameType.CREATIVE, false, Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT);
+        LevelSettings settings = new LevelSettings("FPS Test Arena", GameType.CREATIVE, false, Difficulty.NORMAL, true, rules, WorldDataConfiguration.DEFAULT);
         WorldOptions opts = new WorldOptions(seed, false, false);
 
         // Build the WorldDimensions using a function that takes HolderLookup.Provider

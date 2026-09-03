@@ -30,7 +30,7 @@ public final class Arena {
     }
 
     public static void stoneSlab(ServerLevel level, int cx, int cy, int cz, int halfX, int halfZ) {
-        fillSlab(level, cx, cy, cz, halfX, halfZ, Blocks.STONE_SLAB.defaultBlockState());
+        fillSlab(level, cx, cy, cz, halfX, halfZ, Blocks.STONE.defaultBlockState());
     }
 
     public static void bedrockSlab(ServerLevel level, int cx, int cy, int cz, int halfX, int halfZ) {
