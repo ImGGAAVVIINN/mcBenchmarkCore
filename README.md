@@ -8,3 +8,7 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 - [ ]add realtime fps tps + cpu gpu ram load to testing hud   
 - [ ]redesign title screen
 
+### Solar System Exploration, 1950s – 1960s
+
+- [ ] Mercury
+- [x] Venus
