@@ -175,5 +175,20 @@
     "fpstest.results.clouds.fast": "Fast",
     "fpstest.results.clouds.fancy": "Fancy",
     "fpstest.results.biome_blend": "Biome blend",
-    "fpstest.results.mipmap": "Mipmap level"
+    "fpstest.results.mipmap": "Mipmap level",
+    "fpstest.results.details_title": "Detailed test list",
+    "fpstest.results.summary_title": "Summary",
+    "fpstest.results.avg_note": "No aggregate available",
+    "fpstest.results.agg_unavailable": "N/A",
+    "fpstest.results.main_title": "Main Benchmark",
+    "fpstest.results.main_note": "View underlying tests in the list above",
+    "fpstest.results.view_detail_cta": "View detailed list",
+    "fpstest.results.low_title": "Low-end Shader",
+    "fpstest.results.low_pbr_title": "Low-end + PBR",
+    "fpstest.results.high_title": "High-end Shader",
+    "fpstest.results.high_pbr_title": "High-end + PBR",
+    "fpstest.results.stat_source": "Source data",
+    "fpstest.results.not_run": "Not run",
+    "fpstest.results.selected_header": "Benchmark conditions",
+    "fpstest.results.master_report": "Master report"
 }

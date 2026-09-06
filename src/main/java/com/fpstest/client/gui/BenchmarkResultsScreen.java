@@ -42,6 +42,10 @@ public final class BenchmarkResultsScreen extends Screen {
     private static final int FOOTER_H = 28;
     private static final int LIST_ROW_H = 11;
     private static final int LIST_HEADER_H = 12;
+    private static final int HERO_H = 64;
+    private static final int SEC_GAP = 4;
+    private static final int COL_GAP = 6;
+    private static final int EDGE = 6;
     private int listScroll = 0;
     private final List<BenchmarkResult> session;
     private final Path reportDir;
@@ -49,7 +53,14 @@ public final class BenchmarkResultsScreen extends Screen {
     private final String sessionPreset;
     private final Runnable onClose;
     private int focusIndex;
+    private int masterSelected = 0;
     private final SysSpec sys;
+    private float contentScrollY = 0;
+    private float maxScroll = 0;
+    private int idxLowPlain = -1;
+    private int idxLowPbr = -1;
+    private int idxHiPlain = -1;
+    private int idxHiPbr = -1;
 
     public BenchmarkResultsScreen(List<BenchmarkResult> session, Path reportDir, String sessionLabel, String sessionPreset, Runnable onClose) {
         super(Component.literal("FPS Test — Results"));
@@ -58,8 +69,9 @@ public final class BenchmarkResultsScreen extends Screen {
         this.sessionLabel = sessionLabel == null ? "" : sessionLabel;
         this.sessionPreset = sessionPreset == null ? "" : sessionPreset;
         this.onClose = onClose;
-        this.focusIndex = 0;
+        this.focusIndex = this.session.size() == 1 ? 0 : -1;
         this.sys = SysSpec.snapshot();
+        this.resolveShaderIndices();
     }
 
     @Override
@@ -118,22 +130,38 @@ public final class BenchmarkResultsScreen extends Screen {
             ctx.drawCenteredString(this.font, Component.literal(I18n.tr("fpstest.results.empty")), this.width / 2, this.height / 2, -5592406);
             super.render(ctx, mouseX, mouseY, partialTicks);
         } else {
-            int contentTop = 20;
-            int contentBot = this.height - 28 - 2;
+            int top = HEADER_H + 2;
+            int bot = this.height - FOOTER_H - 2;
+            int contentH = this.contentHeight();
+            this.maxScroll = Math.max(0, contentH - (bot - top));
+            this.clampScroll();
+
+            this.beginClip(ctx, top, bot);
+            int y = 0;
+
             if (this.session.size() > 1) {
-                int listH = this.listHeight();
-                this.renderSessionList(ctx, mouseX, mouseY, contentTop, listH);
-                contentTop += listH + 4;
+                int listH = this.detailsListHeight();
+                this.renderDetailsList(ctx, mouseX, mouseY, this.cy(y), listH);
+                y += listH + SEC_GAP;
             }
 
-            this.renderFocused(ctx, contentTop, contentBot);
+            if (this.focusIndex == -1) {
+                int gridH = this.gridHeight();
+                this.renderSummaryGrid(ctx, mouseX, mouseY, this.cy(y), gridH);
+                y += gridH + SEC_GAP;
+                this.renderMetaBand(ctx, this.cy(y), this.masterSelected);
+            } else {
+                this.renderMetaBand(ctx, this.cy(y), this.focusIndex);
+            }
+
+            this.endClip(ctx);
             super.render(ctx, mouseX, mouseY, partialTicks);
         }
     }
 
-    private int listHeight() {
+    private int detailsListHeight() {
         int maxVisible = Math.min(this.session.size(), 6);
-        return 12 + maxVisible * 11 + 2;
+        return LIST_HEADER_H + (maxVisible + 1) * LIST_ROW_H + 2;
     }
 
     private void renderBackdrop(GuiGraphics ctx) {
@@ -143,26 +171,13 @@ public final class BenchmarkResultsScreen extends Screen {
 
     private void renderHeader(GuiGraphics ctx) {
         ctx.drawString(this.font, Component.literal("\u00a7l[FPS Test] " + I18n.tr("fpstest.results.title")), 8, 5, -1);
-        StringBuilder right = new StringBuilder();
-        if (!this.sessionLabel.isEmpty()) {
-            String label = this.sessionLabel;
-            if (label.length() > 30) {
-                label = label.substring(0, 29) + "\u2026";
-            }
-
-            right.append("\u00a77").append(label).append("  \u00a78|  ");
-        }
-
-        right.append("\u00a77").append(I18n.tr("fpstest.results.preset")).append(": \u00a7f").append(presetLabel(this.sessionPreset));
-        int rw = this.font.width(right.toString());
-        ctx.drawString(this.font, Component.literal(right.toString()), this.width - rw - 8, 5, -5196099);
     }
 
-    private void renderSessionList(GuiGraphics ctx, int mouseX, int mouseY, int top, int listH) {
+    private void renderDetailsList(GuiGraphics ctx, int mouseX, int mouseY, int top, int listH) {
         int leftCol = 6;
         int rightCol = this.width - 6;
         this.drawCard(ctx, leftCol - 2, top, rightCol + 2, top + listH);
-        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.session_overview") + " \u00a78(" + this.session.size() + ")"), leftCol + 2, top + 2, -1118482);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.details_title") + " \u00a78(" + this.session.size() + ")"), leftCol + 2, top + 2, -1118482);
         int rowsAvail = Math.min(6, this.session.size());
         int colMaxW = 64;
         int col1pcW = 50;
@@ -171,6 +186,17 @@ public final class BenchmarkResultsScreen extends Screen {
         int col1pcX = rightCol - colSumW - col1pcW;
         int colSumX = rightCol - colSumW;
 
+        int masterY = top + 12;
+        boolean masterFocused = this.focusIndex == -1;
+        boolean masterHovered = mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= masterY && mouseY < masterY + 11 && mouseY >= HEADER_H + 2 && mouseY <= this.height - FOOTER_H - 2;
+        if (masterFocused) {
+            ctx.fill(leftCol - 2, masterY, rightCol + 2, masterY + 11 - 1, -14667718);
+            ctx.fill(leftCol - 2, masterY, leftCol, masterY + 11 - 1, -10034945);
+        } else if (masterHovered) {
+            ctx.fill(leftCol - 2, masterY, rightCol + 2, masterY + 11 - 1, -14011844);
+        }
+        ctx.drawString(this.font, Component.literal("\u00a7l\u00a7f" + I18n.tr("fpstest.results.master_report")), leftCol + 2, masterY + 1, masterFocused ? -1 : -2039584);
+
         for (int i = 0; i < rowsAvail; i++) {
             int srcIdx = this.listScroll + i;
             if (srcIdx >= this.session.size()) {
@@ -178,9 +204,9 @@ public final class BenchmarkResultsScreen extends Screen {
             }
 
             BenchmarkResult r = this.session.get(srcIdx);
-            int ry = top + 12 + i * 11;
+            int ry = top + 12 + (i + 1) * 11;
             boolean focused = srcIdx == this.focusIndex;
-            boolean hovered = mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= ry && mouseY < ry + 11;
+            boolean hovered = mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= ry && mouseY < ry + 11 && mouseY >= HEADER_H + 2 && mouseY <= this.height - FOOTER_H - 2;
             if (focused) {
                 ctx.fill(leftCol - 2, ry, rightCol + 2, ry + 11 - 1, -14667718);
                 ctx.fill(leftCol - 2, ry, leftCol, ry + 11 - 1, -10034945);
@@ -208,29 +234,118 @@ public final class BenchmarkResultsScreen extends Screen {
         }
     }
 
-    private void renderFocused(GuiGraphics ctx, int top, int bot) {
-        if (this.focusIndex >= 0 && this.focusIndex < this.session.size()) {
-            BenchmarkResult r = this.session.get(this.focusIndex);
-            int leftL = 6;
-            int rightR = this.width - 6;
+    private void renderMetaBand(GuiGraphics ctx, int top, int index) {
+        if (index >= 0 && index < this.session.size()) {
+            BenchmarkResult r = this.session.get(index);
+            int leftL = EDGE;
+            int rightR = this.width - EDGE;
             int leftR = this.width / 2 - 2;
             int rightL = this.width / 2 + 2;
-            int avail = bot - top;
-            int heroH = Math.max(50, Math.min(75, (int)(avail * 0.38)));
-            int heroBot = top + heroH;
-            this.drawCard(ctx, leftL, top, rightR, heroBot);
-            ctx.fill(leftL, top, rightR, top + 2, -10034945);
-            this.renderHero(ctx, r, leftL, top, rightR, heroBot);
-            int cardTop = heroBot + 4;
-            int colMid = (cardTop + bot) / 2 - 1;
-            this.drawCard(ctx, leftL, cardTop, leftR, colMid);
-            this.renderFrameStats(ctx, r, leftL + 4, cardTop + 2, leftR - 4, colMid - 2);
-            this.drawCard(ctx, leftL, colMid + 2, leftR, bot);
-            this.renderExtras(ctx, r, leftL + 4, colMid + 4, leftR - 4, bot - 2);
-            this.drawCard(ctx, rightL, cardTop, rightR, colMid);
-            this.renderSysSpec(ctx, rightL + 4, cardTop + 2, rightR - 4, colMid - 2);
-            this.drawCard(ctx, rightL, colMid + 2, rightR, bot);
-            this.renderSettings(ctx, r, rightL + 4, colMid + 4, rightR - 4, bot - 2);
+
+            ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.selected_header")), leftL, top, -1118482);
+            int heroTop = top + 12;
+            this.drawCard(ctx, leftL, heroTop, rightR, heroTop + HERO_H);
+            ctx.fill(leftL, heroTop, rightR, heroTop + 2, ACCENT);
+            this.renderHero(ctx, r, leftL, heroTop, rightR, heroTop + HERO_H);
+            int panelH = this.sharedPanelHeight(r);
+            int cardTop = heroTop + HERO_H + SEC_GAP;
+            int row2Top = cardTop + panelH + 4;
+            this.drawCard(ctx, leftL, cardTop, leftR, cardTop + panelH);
+            this.beginPanelClip(ctx, leftL + 4, cardTop + 2, leftR - 4, cardTop + panelH - 2);
+            this.renderFrameStats(ctx, r, leftL + 4, cardTop + 2, leftR - 4, cardTop + panelH - 2);
+            this.endPanelClip(ctx);
+            this.drawCard(ctx, leftL, row2Top, leftR, row2Top + panelH);
+            this.beginPanelClip(ctx, leftL + 4, row2Top + 2, leftR - 4, row2Top + panelH - 2);
+            this.renderExtras(ctx, r, leftL + 4, row2Top + 2, leftR - 4, row2Top + panelH - 2);
+            this.endPanelClip(ctx);
+            this.drawCard(ctx, rightL, cardTop, rightR, cardTop + panelH);
+            this.beginPanelClip(ctx, rightL + 4, cardTop + 2, rightR - 4, cardTop + panelH - 2);
+            this.renderSysSpec(ctx, rightL + 4, cardTop + 2, rightR - 4, cardTop + panelH - 2);
+            this.endPanelClip(ctx);
+            this.drawCard(ctx, rightL, row2Top, rightR, row2Top + panelH);
+            this.beginPanelClip(ctx, rightL + 4, row2Top + 2, rightR - 4, row2Top + panelH - 2);
+            this.renderSettings(ctx, r, rightL + 4, row2Top + 2, rightR - 4, row2Top + panelH - 2);
+            this.endPanelClip(ctx);
+        }
+    }
+
+    private int gridHeight() {
+        int avail = this.width - 2 * EDGE;
+        int colW = (avail - COL_GAP) / 2;
+        int rowH = Math.max(52, Math.min(72, colW / 4));
+        return LIST_HEADER_H + 3 * rowH + 2 * 4 + 2;
+    }
+
+    private void renderSummaryGrid(GuiGraphics ctx, int mouseX, int mouseY, int top, int gridH) {
+        int edge = EDGE;
+        int avail = this.width - 2 * edge;
+        int colW = (avail - COL_GAP) / 2;
+        int rowH = Math.max(52, Math.min(72, colW / 4));
+        int ax = edge;
+        int bx = edge + colW + COL_GAP;
+
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.summary_title")), ax, top, -1118482);
+        int gy = top + LIST_HEADER_H;
+
+        this.renderAvgFpsCell(ctx, ax, gy, colW, rowH);
+        this.renderNavCell(ctx, bx, gy, colW, rowH, mouseX, mouseY);
+        gy += rowH + 4;
+
+        this.renderShaderCell(ctx, ax, gy, colW, rowH, "fpstest.results.low_title", this.idxLowPlain);
+        this.renderShaderCell(ctx, bx, gy, colW, rowH, "fpstest.results.low_pbr_title", this.idxLowPbr);
+        gy += rowH + 4;
+
+        this.renderShaderCell(ctx, ax, gy, colW, rowH, "fpstest.results.high_title", this.idxHiPlain);
+        this.renderShaderCell(ctx, bx, gy, colW, rowH, "fpstest.results.high_pbr_title", this.idxHiPbr);
+    }
+
+    private void renderAvgFpsCell(GuiGraphics ctx, int x, int y, int w, int h) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.fill(x, y, x + w, y + 2, ACCENT);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.avg_fps").toUpperCase(Locale.ROOT)), x + 4, y + 4, -1);
+        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.avg_note")), x + 4, y + 14, -7696491);
+        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.agg_unavailable")), x + 4, y + 28, DIM);
+    }
+
+    private void renderNavCell(GuiGraphics ctx, int x, int y, int w, int h, int mouseX, int mouseY) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.fill(x, y, x + w, y + 2, ACCENT);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.main_title").toUpperCase(Locale.ROOT)), x + 4, y + 4, -1);
+        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.main_note")), x + 4, y + 14, -7696491);
+        boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h && mouseY >= HEADER_H + 2 && mouseY <= this.height - FOOTER_H - 2;
+        String cta = "\u00a7l\u00a7a" + I18n.tr("fpstest.results.view_detail_cta");
+        ctx.drawString(this.font, Component.literal(cta), x + 4, y + h - 12, hovered ? -1 : ACCENT_OK);
+    }
+
+    private void renderShaderCell(GuiGraphics ctx, int x, int y, int w, int h, String titleKey, int idx) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.fill(x, y, x + w, y + 2, ACCENT);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr(titleKey).toUpperCase(Locale.ROOT)), x + 4, y + 4, -1);
+        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.stat_source")), x + 4, y + 14, -7696491);
+
+        if (idx < 0 || idx >= this.session.size()) {
+            ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.not_run")), x + 4, y + 28, DIM);
+            return;
+        }
+
+        BenchmarkResult r = this.session.get(idx);
+        int row = y + 26;
+        int rh = 9;
+        int x1 = x + w - 4;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.avg_fps", fmtFps(r.fps().avg()), fpsColor(r.fps().avg()));
+        row += rh;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.min_fps", fmtFps(r.fps().min()), fpsColor(r.fps().min()));
+        row += rh;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.max_fps", fmtFps(r.fps().max()), fpsColor(r.fps().max()));
+        row += rh;
+        if (row + rh <= y + h) {
+            double low1 = r.extras().getOrDefault("fps_1pct_low", Double.NaN);
+            this.drawKV(ctx, x + 4, row, x1, "fpstest.results.fps_1pct", fmtFps(low1), fpsColor(low1));
+            row += rh;
+            if (row + rh <= y + h) {
+                double low0p1 = r.extras().getOrDefault("fps_0p1pct_low", Double.NaN);
+                this.drawKV(ctx, x + 4, row, x1, "fpstest.results.fps_0p1pct", fmtFps(low0p1), fpsColor(low0p1));
+            }
         }
     }
 
@@ -293,33 +408,43 @@ public final class BenchmarkResultsScreen extends Screen {
         BenchmarkResult.FrameStats t = r.tickTimeMs();
         int row = y0 + 11;
         int rh = 9;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_avg", fmtMs(f.avg()), -1);
-        row += rh;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p95", fmtMs(f.p95()), -1);
-        row += rh;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p99", fmtMs(f.p99()), frameColor(f.p99(), 16.7, 33.3));
-        row += rh;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p999", fmtMs(f.p999()), frameColor(f.p999(), 33.3, 50.0));
-        row += rh;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_max", fmtMs(f.max()), frameColor(f.max(), 33.3, 50.0));
-        row += rh;
         if (row + rh <= y1) {
-            this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_min", fmtMs(f.min()), -1);
+            this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_avg", fmtMs(f.avg()), -1);
             row += rh;
             if (row + rh <= y1) {
-                this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_avg", fmtMs(t.avg()), -1);
+                this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p95", fmtMs(f.p95()), -1);
                 row += rh;
                 if (row + rh <= y1) {
-                    this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_p99", fmtMs(t.p99()), -1);
+                    this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p99", fmtMs(f.p99()), frameColor(f.p99(), 16.7, 33.3));
                     row += rh;
                     if (row + rh <= y1) {
-                        this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_max", fmtMs(t.max()), -1);
+                        this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_p999", fmtMs(f.p999()), frameColor(f.p999(), 33.3, 50.0));
                         row += rh;
                         if (row + rh <= y1) {
-                            this.drawKV(ctx, x0, row, x1, "fpstest.results.frames_total", String.valueOf(r.frameTimesMs().length), -1);
+                            this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_max", fmtMs(f.max()), frameColor(f.max(), 33.3, 50.0));
                             row += rh;
                             if (row + rh <= y1) {
-                                this.drawKV(ctx, x0, row, x1, "fpstest.results.duration", formatDuration(r.durationMillis()), -1);
+                                this.drawKV(ctx, x0, row, x1, "fpstest.results.frame_min", fmtMs(f.min()), -1);
+                                row += rh;
+                                if (row + rh <= y1) {
+                                    this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_avg", fmtMs(t.avg()), -1);
+                                    row += rh;
+                                    if (row + rh <= y1) {
+                                        this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_p99", fmtMs(t.p99()), -1);
+                                        row += rh;
+                                        if (row + rh <= y1) {
+                                            this.drawKV(ctx, x0, row, x1, "fpstest.results.tick_max", fmtMs(t.max()), -1);
+                                            row += rh;
+                                            if (row + rh <= y1) {
+                                                this.drawKV(ctx, x0, row, x1, "fpstest.results.frames_total", String.valueOf(r.frameTimesMs().length), -1);
+                                                row += rh;
+                                                if (row + rh <= y1) {
+                                                    this.drawKV(ctx, x0, row, x1, "fpstest.results.duration", formatDuration(r.durationMillis()), -1);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -332,51 +457,53 @@ public final class BenchmarkResultsScreen extends Screen {
         ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.bench_stats")), x0, y0, -1118482);
         int row = y0 + 11;
         int rh = 9;
-        this.drawKV(ctx, x0, row, x1, "fpstest.results.heap_peak", r.heapPeak() / 1048576L + " MB", -1);
-        row += rh;
         if (row + rh <= y1) {
-            this.drawKV(ctx, x0, row, x1, "fpstest.results.gc_events", r.gcEvents() + " (" + r.gcTimeMs() + " ms)", -1);
+            this.drawKV(ctx, x0, row, x1, "fpstest.results.heap_peak", r.heapPeak() / 1048576L + " MB", -1);
             row += rh;
             if (row + rh <= y1) {
-                int shown = 0;
-                int maxRows = (y1 - row) / rh;
+                this.drawKV(ctx, x0, row, x1, "fpstest.results.gc_events", r.gcEvents() + " (" + r.gcTimeMs() + " ms)", -1);
+                row += rh;
+                if (row + rh <= y1) {
+                    int shown = 0;
+                    int maxRows = (y1 - row) / rh;
 
-                for (Entry<String, String> e : r.stringExtras().entrySet()) {
-                    if (shown >= maxRows) {
-                        break;
-                    }
-
-                    String k = e.getKey();
-                    if (!k.startsWith("preset_")) {
-                        this.drawKV(ctx, x0, row, x1, "fpstest.results.extra." + k, e.getValue(), -1, prettifyKey(k));
-                        row += rh;
-                        shown++;
-                    }
-                }
-
-                for (Entry<String, Double> e : r.extras().entrySet()) {
-                    if (shown >= maxRows) {
-                        break;
-                    }
-
-                    String k = e.getKey();
-                    if (!k.startsWith("preset_") && !k.equals("fps_1pct_low") && !k.equals("fps_0p1pct_low")) {
-                        double v = e.getValue();
-                        String val;
-                        if (v == Math.floor(v) && Math.abs(v) < 1.0E15) {
-                            val = String.valueOf((long)v);
-                        } else {
-                            val = String.format(Locale.ROOT, "%.2f", v);
+                    for (Entry<String, String> e : r.stringExtras().entrySet()) {
+                        if (shown >= maxRows) {
+                            break;
                         }
 
-                        this.drawKV(ctx, x0, row, x1, "fpstest.results.extra." + k, val, -1, prettifyKey(k));
-                        row += rh;
-                        shown++;
+                        String k = e.getKey();
+                        if (!k.startsWith("preset_")) {
+                            this.drawKV(ctx, x0, row, x1, "fpstest.results.extra." + k, e.getValue(), -1, prettifyKey(k));
+                            row += rh;
+                            shown++;
+                        }
                     }
-                }
 
-                if (shown == 0) {
-                    ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.no_extras")), x0, row, -7696491);
+                    for (Entry<String, Double> e : r.extras().entrySet()) {
+                        if (shown >= maxRows) {
+                            break;
+                        }
+
+                        String k = e.getKey();
+                        if (!k.startsWith("preset_") && !k.equals("fps_1pct_low") && !k.equals("fps_0p1pct_low")) {
+                            double v = e.getValue();
+                            String val;
+                            if (v == Math.floor(v) && Math.abs(v) < 1.0E15) {
+                                val = String.valueOf((long)v);
+                            } else {
+                                val = String.format(Locale.ROOT, "%.2f", v);
+                            }
+
+                            this.drawKV(ctx, x0, row, x1, "fpstest.results.extra." + k, val, -1, prettifyKey(k));
+                            row += rh;
+                            shown++;
+                        }
+                    }
+
+                    if (shown == 0) {
+                        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.no_extras")), x0, row, -7696491);
+                    }
                 }
             }
         }
@@ -571,11 +698,22 @@ public final class BenchmarkResultsScreen extends Screen {
         double mouseY = event.y();
         int button = event.button();
 
-        if (button == 0 && this.session.size() > 1) {
-            int top = 20;
+        int top = HEADER_H + 2;
+        int bot = this.height - FOOTER_H - 2;
+        boolean inViewport = mouseY >= top && mouseY <= bot;
+
+        if (inViewport && button == 0 && this.session.size() > 1) {
+            int leftCol = EDGE;
+            int rightCol = this.width - EDGE;
             int rowsAvail = Math.min(6, this.session.size());
-            int leftCol = 6;
-            int rightCol = this.width - 6;
+            int listScreenY = this.cy(0);
+
+            int masterY = listScreenY + LIST_HEADER_H;
+            if (mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= masterY && mouseY < masterY + LIST_ROW_H) {
+                this.focusIndex = -1;
+                this.contentScrollY = 0;
+                return true;
+            }
 
             for (int i = 0; i < rowsAvail; i++) {
                 int srcIdx = this.listScroll + i;
@@ -583,9 +721,65 @@ public final class BenchmarkResultsScreen extends Screen {
                     break;
                 }
 
-                int ry = top + 12 + i * 11;
-                if (mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= ry && mouseY < ry + 11) {
+                int ry = listScreenY + LIST_HEADER_H + (i + 1) * LIST_ROW_H;
+                if (mouseX >= leftCol - 2 && mouseX <= rightCol + 2 && mouseY >= ry && mouseY < ry + LIST_ROW_H) {
+                    this.masterSelected = srcIdx;
                     this.focusIndex = srcIdx;
+                    this.contentScrollY = 0;
+                    return true;
+                }
+            }
+        }
+
+        if (inViewport && button == 0 && this.focusIndex == -1) {
+            int edge = EDGE;
+            int avail = this.width - 2 * edge;
+            int colW = (avail - COL_GAP) / 2;
+            int rowH = Math.max(52, Math.min(72, colW / 4));
+            int bx = edge + colW + COL_GAP;
+
+            int gridContentY = 0;
+            if (this.session.size() > 1) {
+                gridContentY += this.detailsListHeight() + SEC_GAP;
+            }
+            int gy = this.cy(gridContentY) + LIST_HEADER_H;
+
+            if (mouseY >= gy && mouseY < gy + rowH) {
+                if (mouseX >= bx && mouseX <= bx + colW) {
+                    this.focusIndex = -1;
+                    this.contentScrollY = 0;
+                    return true;
+                }
+            }
+            gy += rowH + 4;
+
+            if (mouseY >= gy && mouseY < gy + rowH) {
+                if (mouseX >= edge && mouseX <= edge + colW && this.idxLowPlain >= 0) {
+                    this.masterSelected = this.idxLowPlain;
+                    this.focusIndex = this.idxLowPlain;
+                    this.contentScrollY = 0;
+                    return true;
+                }
+                if (mouseX >= bx && mouseX <= bx + colW && this.idxLowPbr >= 0) {
+                    this.masterSelected = this.idxLowPbr;
+                    this.focusIndex = this.idxLowPbr;
+                    this.contentScrollY = 0;
+                    return true;
+                }
+            }
+            gy += rowH + 4;
+
+            if (mouseY >= gy && mouseY < gy + rowH) {
+                if (mouseX >= edge && mouseX <= edge + colW && this.idxHiPlain >= 0) {
+                    this.masterSelected = this.idxHiPlain;
+                    this.focusIndex = this.idxHiPlain;
+                    this.contentScrollY = 0;
+                    return true;
+                }
+                if (mouseX >= bx && mouseX <= bx + colW && this.idxHiPbr >= 0) {
+                    this.masterSelected = this.idxHiPbr;
+                    this.focusIndex = this.idxHiPbr;
+                    this.contentScrollY = 0;
                     return true;
                 }
             }
@@ -596,7 +790,17 @@ public final class BenchmarkResultsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizAmount, double vertAmount) {
-        if (this.session.size() > 6) {
+        int top = HEADER_H + 2;
+        int bot = this.height - FOOTER_H - 2;
+        if (mouseY < top || mouseY > bot) {
+            return super.mouseScrolled(mouseX, mouseY, horizAmount, vertAmount);
+        }
+
+        int listTop = this.cy(0);
+        int listBot = listTop + this.detailsListHeight();
+        boolean overList = mouseY >= listTop && mouseY <= listBot;
+
+        if (overList && this.session.size() > 6) {
             if (vertAmount < 0.0) {
                 this.listScroll = Math.min(this.session.size() - 6, this.listScroll + 1);
             } else if (vertAmount > 0.0) {
@@ -605,7 +809,14 @@ public final class BenchmarkResultsScreen extends Screen {
 
             return true;
         } else {
-            return super.mouseScrolled(mouseX, mouseY, horizAmount, vertAmount);
+            if (vertAmount < 0.0) {
+                this.contentScrollY = Math.min(this.maxScroll, this.contentScrollY + (float)(-vertAmount * 12));
+            } else if (vertAmount > 0.0) {
+                this.contentScrollY = Math.max(0, this.contentScrollY - (float)(vertAmount * 12));
+            }
+
+            this.clampScroll();
+            return true;
         }
     }
 
@@ -706,6 +917,108 @@ public final class BenchmarkResultsScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return true;
+    }
+
+    private void resolveShaderIndices() {
+        for (int i = 0; i < this.session.size(); i++) {
+            BenchmarkResult r = this.session.get(i);
+            String shader = this.strExtra(r, "shader_pack");
+            String pbr = this.strExtra(r, "resource_pack");
+            boolean isLow = "lowEnd.zip".equals(shader);
+            boolean isHigh = "highEnd.zip".equals(shader);
+            boolean hasPbr = "pbr.zip".equals(pbr);
+            if (isLow && !hasPbr) this.idxLowPlain = i;
+            if (isLow && hasPbr) this.idxLowPbr = i;
+            if (isHigh && !hasPbr) this.idxHiPlain = i;
+            if (isHigh && hasPbr) this.idxHiPbr = i;
+        }
+        if (this.idxLowPlain < 0) this.idxLowPlain = this.findByPart(2);
+        if (this.idxLowPbr < 0) this.idxLowPbr = this.findByPart(3);
+        if (this.idxHiPlain < 0) this.idxHiPlain = this.findByPart(4);
+        if (this.idxHiPbr < 0) this.idxHiPbr = this.findByPart(5);
+    }
+
+    private String strExtra(BenchmarkResult r, String key) {
+        String v = r.stringExtras().get(key);
+        if (v != null) return v;
+        Double d = r.extras().get(key);
+        return d != null ? String.valueOf(d.longValue()) : null;
+    }
+
+    private int findByPart(int part) {
+        for (int i = 0; i < this.session.size(); i++) {
+            Double p = this.session.get(i).extras().get("part");
+            if (p != null && p.intValue() == part) return i;
+        }
+        return -1;
+    }
+
+    private int cy(int contentY) {
+        return contentY - (int)this.contentScrollY + HEADER_H + 2;
+    }
+
+    private void clampScroll() {
+        if (this.contentScrollY < 0) this.contentScrollY = 0;
+        if (this.contentScrollY > this.maxScroll) this.contentScrollY = (float)this.maxScroll;
+    }
+
+    private int contentHeight() {
+        int h = 0;
+        if (this.session.size() > 1) {
+            h += this.detailsListHeight() + SEC_GAP;
+        }
+        if (this.focusIndex == -1) {
+            h += this.gridHeight() + SEC_GAP;
+            h += this.metaBandHeight(this.masterSelected);
+        } else {
+            h += this.metaBandHeight(this.focusIndex);
+        }
+        return h;
+    }
+
+    private int sharedPanelHeight(BenchmarkResult r) {
+        int h = 15 + 11 * 9; // Frame Timing: 11 rows
+        h = Math.max(h, 15 + 6 * 9); // System Spec: 6 rows
+        h = Math.max(h, 15 + 14 * 9); // Settings: 14 rows
+        int extrasRows = 2; // heap_peak, gc_events
+        int extraCount = 0;
+        for (String k : r.stringExtras().keySet()) {
+            if (!k.startsWith("preset_")) extraCount++;
+        }
+        for (String k : r.extras().keySet()) {
+            if (!k.startsWith("preset_") && !k.equals("fps_1pct_low") && !k.equals("fps_0p1pct_low")) extraCount++;
+        }
+        if (extraCount == 0) {
+            extrasRows++; // "No additional metrics" line
+        } else {
+            extrasRows += extraCount;
+        }
+        h = Math.max(h, 15 + extrasRows * 9); // Benchmark Stats
+        return h;
+    }
+
+    private int metaBandHeight(int index) {
+        if (index < 0 || index >= this.session.size()) {
+            return 0;
+        }
+        int panelH = this.sharedPanelHeight(this.session.get(index));
+        return 12 + HERO_H + SEC_GAP + panelH + SEC_GAP + panelH;
+    }
+
+    private void beginClip(GuiGraphics ctx, int top, int bot) {
+        ctx.enableScissor(EDGE, top, this.width - EDGE, bot);
+    }
+
+    private void endClip(GuiGraphics ctx) {
+        ctx.disableScissor();
+    }
+
+    private void beginPanelClip(GuiGraphics ctx, int x0, int y0, int x1, int y1) {
+        ctx.enableScissor(x0, y0, x1, y1);
+    }
+
+    private void endPanelClip(GuiGraphics ctx) {
+        ctx.disableScissor();
     }
 
     @Environment(EnvType.CLIENT)
