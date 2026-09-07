@@ -2,6 +2,8 @@ package com.fpstest.client.gui;
 
 import com.fpstest.client.bench.BenchmarkResult;
 import com.fpstest.client.bench.MasterReportSummary;
+import com.fpstest.client.bench.score.ScoreCategory;
+import com.fpstest.client.bench.score.ScoreWorkload;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -148,6 +150,9 @@ public final class BenchmarkResultsScreen extends Screen {
             }
 
             if (this.focusIndex == -1) {
+                int scoreH = this.scoreSectionHeight();
+                this.renderScoreSection(ctx, mouseX, mouseY, this.cy(y), scoreH);
+                y += scoreH + SEC_GAP;
                 int gridH = this.gridHeight();
                 this.renderSummaryGrid(ctx, mouseX, mouseY, this.cy(y), gridH);
                 y += gridH + SEC_GAP;
@@ -420,6 +425,177 @@ public final class BenchmarkResultsScreen extends Screen {
                 }
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Benchmark Score section (3DMark-style points), above Summary.
+    // ------------------------------------------------------------------
+
+    private int scoreSectionHeight() {
+        int heroH = 46;
+        int catH = 40;
+        int wlH = 46;
+        return LIST_HEADER_H + heroH + SEC_GAP + catH + SEC_GAP + wlH + SEC_GAP + wlH + SEC_GAP + wlH + SEC_GAP + 12;
+    }
+
+    private void renderScoreSection(GuiGraphics ctx, int mouseX, int mouseY, int top, int sectionH) {
+        int edge = EDGE;
+        int avail = this.width - 2 * edge;
+        int y = top;
+
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.score_title")), edge, y, -1118482);
+        y += LIST_HEADER_H;
+
+        // Overall hero card.
+        int heroH = 46;
+        this.renderScoreHero(ctx, edge, y, avail, heroH);
+        y += heroH + SEC_GAP;
+
+        // Category cards (GPU / CPU / RAM).
+        int catH = 40;
+        int colW = (avail - 2 * COL_GAP) / 3;
+        this.renderScoreCategoryCard(ctx, edge, y, colW, catH, "fpstest.results.score_gpu", this.masterSummary.score.gpuScore, ScoreCategory.GPU);
+        this.renderScoreCategoryCard(ctx, edge + colW + COL_GAP, y, colW, catH, "fpstest.results.score_cpu", this.masterSummary.score.cpuScore, ScoreCategory.CPU);
+        this.renderScoreCategoryCard(ctx, edge + 2 * (colW + COL_GAP), y, colW, catH, "fpstest.results.score_ram", this.masterSummary.score.ramScore, ScoreCategory.RAM);
+        y += catH + SEC_GAP;
+
+        // Workload cards (GPU / CPU / RAM).
+        int wlH = 46;
+        this.renderWorkloadCard(ctx, edge, y, avail, wlH, "fpstest.results.score_gpu_workloads",
+            new ScoreWorkload[] {ScoreWorkload.GPU_RASTER, ScoreWorkload.GPU_SHADER, ScoreWorkload.GPU_PBR, ScoreWorkload.GPU_EFFECTS});
+        y += wlH + SEC_GAP;
+        this.renderWorkloadCard(ctx, edge, y, avail, wlH, "fpstest.results.score_cpu_workloads",
+            new ScoreWorkload[] {ScoreWorkload.CPU_SINGLE_THREAD, ScoreWorkload.CPU_SIMULATION, ScoreWorkload.CPU_WORLD, ScoreWorkload.CPU_PARALLEL});
+        y += wlH + SEC_GAP;
+        this.renderWorkloadCard(ctx, edge, y, avail, wlH, "fpstest.results.score_ram_workloads",
+            new ScoreWorkload[] {ScoreWorkload.RAM_BANDWIDTH, ScoreWorkload.RAM_LATENCY, ScoreWorkload.RAM_ALLOCATION, ScoreWorkload.RAM_JVM_GC});
+        y += wlH + SEC_GAP;
+
+        // Baseline note.
+        ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.score_baseline")), edge, y, -7696491);
+    }
+
+    private void renderScoreHero(GuiGraphics ctx, int x, int y, int w, int h) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.fill(x, y, x + w, y + 2, ACCENT);
+        double overall = this.masterSummary.score.overallScore;
+        boolean available = !Double.isNaN(overall);
+        String scoreStr = available ? fmtScore(overall) : I18n.tr("fpstest.results.na");
+        String pointsLabel = I18n.tr("fpstest.results.score_points");
+        String overallLabel = I18n.tr("fpstest.results.score_overall");
+        String interp = available ? scoreInterpretation(overall) : "";
+
+        int scoreW = this.font.width(scoreStr);
+        int overallW = this.font.width(overallLabel);
+        int interpW = this.font.width(interp);
+        int cx = x + w / 2;
+
+        // Big score number.
+        float scale = 2.2F;
+        int scaledW = (int) (scoreW * scale);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate(cx - scaledW / 2.0F, y + 8);
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(this.font, Component.literal(scoreStr), 0, 0, available ? -1 : DIM);
+        ctx.pose().popMatrix();
+
+        // "POINTS" next to the number.
+        ctx.drawString(this.font, Component.literal("\u00a7l" + pointsLabel), cx + scaledW / 2 + 4, y + 14, ACCENT);
+        // "Overall score" below.
+        ctx.drawString(this.font, Component.literal("\u00a78" + overallLabel), cx - overallW / 2, y + h - 12, -7696491);
+        // Interpretation on the right.
+        if (available && !interp.isEmpty()) {
+            ctx.drawString(this.font, Component.literal(interp), x + w - interpW - 6, y + h - 12, scoreColor(overall));
+        }
+    }
+
+    private void renderScoreCategoryCard(GuiGraphics ctx, int x, int y, int w, int h, String titleKey, double score, ScoreCategory category) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.fill(x, y, x + w, y + 2, ACCENT);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr(titleKey).toUpperCase(Locale.ROOT)), x + 4, y + 4, -1);
+        boolean available = !Double.isNaN(score);
+        String scoreStr = available ? fmtScore(score) : I18n.tr("fpstest.results.na");
+        int weightPct = (int) Math.round(category.overallWeight * 100.0);
+        String weightStr = weightPct + "%";
+        int weightW = this.font.width(weightStr);
+        ctx.drawString(this.font, Component.literal(scoreStr), x + 4, y + h - 14, available ? -1 : DIM);
+        ctx.drawString(this.font, Component.literal("\u00a78" + weightStr), x + w - weightW - 4, y + h - 14, -7696491);
+    }
+
+    private void renderWorkloadCard(GuiGraphics ctx, int x, int y, int w, int h, String headingKey, ScoreWorkload[] workloads) {
+        this.drawCard(ctx, x, y, x + w, y + h);
+        ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr(headingKey)), x + 2, y + 2, -1118482);
+        int innerX = x + 4;
+        int innerW = w - 8;
+        int colW = (innerW - COL_GAP) / 2;
+        int rowH = 14;
+        int rowY = y + 16;
+        for (int i = 0; i < workloads.length; i++) {
+            int cx = innerX + (i % 2) * (colW + COL_GAP);
+            int cy = rowY + (i / 2) * rowH;
+            this.renderWorkloadCell(ctx, cx, cy, colW, workloads[i]);
+        }
+    }
+
+    private void renderWorkloadCell(GuiGraphics ctx, int x, int y, int w, ScoreWorkload workload) {
+        double score = this.masterSummary.score.workloadScore(workload);
+        boolean available = !Double.isNaN(score);
+        String label = workloadLabel(workload);
+        String value = available ? fmtScore(score) : I18n.tr("fpstest.results.na");
+        int valueW = this.font.width(value);
+        int maxLabelW = w - valueW - 6;
+        if (maxLabelW < 0) {
+            maxLabelW = 0;
+        }
+        ctx.drawString(this.font, Component.literal(truncate(this.font, label, maxLabelW)), x, y, -5196099);
+        ctx.drawString(this.font, Component.literal(value), x + w - valueW, y, available ? -1 : DIM);
+    }
+
+    private static String workloadLabel(ScoreWorkload workload) {
+        return switch (workload) {
+            case GPU_RASTER -> I18n.tr("fpstest.results.wl_raster");
+            case GPU_SHADER -> I18n.tr("fpstest.results.wl_shader");
+            case GPU_PBR -> I18n.tr("fpstest.results.wl_pbr");
+            case GPU_EFFECTS -> I18n.tr("fpstest.results.wl_effects");
+            case CPU_SINGLE_THREAD -> I18n.tr("fpstest.results.wl_single_thread");
+            case CPU_SIMULATION -> I18n.tr("fpstest.results.wl_simulation");
+            case CPU_WORLD -> I18n.tr("fpstest.results.wl_world");
+            case CPU_PARALLEL -> I18n.tr("fpstest.results.wl_parallel");
+            case RAM_BANDWIDTH -> I18n.tr("fpstest.results.wl_bandwidth");
+            case RAM_LATENCY -> I18n.tr("fpstest.results.wl_latency");
+            case RAM_ALLOCATION -> I18n.tr("fpstest.results.wl_allocation");
+            case RAM_JVM_GC -> I18n.tr("fpstest.results.wl_jvm_gc");
+        };
+    }
+
+    private static String fmtScore(double v) {
+        return !Double.isNaN(v) && !Double.isInfinite(v) ? String.format(Locale.ROOT, "%,.0f", v) : I18n.tr("fpstest.results.na");
+    }
+
+    private static String scoreInterpretation(double v) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) {
+            return "";
+        }
+        if (v > 10500.0) {
+            return I18n.tr("fpstest.results.score_above");
+        }
+        if (v < 9500.0) {
+            return I18n.tr("fpstest.results.score_below");
+        }
+        return I18n.tr("fpstest.results.score_near");
+    }
+
+    private static int scoreColor(double v) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) {
+            return DIM;
+        }
+        if (v > 10500.0) {
+            return ACCENT_OK;
+        }
+        if (v < 9500.0) {
+            return ACCENT_WARN;
+        }
+        return -1;
     }
 
     private int gridHeight() {
@@ -1132,6 +1308,7 @@ public final class BenchmarkResultsScreen extends Screen {
             h += this.detailsListHeight() + SEC_GAP;
         }
         if (this.focusIndex == -1) {
+            h += this.scoreSectionHeight() + SEC_GAP;
             h += this.gridHeight() + SEC_GAP;
             h += this.masterMetaBandHeight();
         } else {
