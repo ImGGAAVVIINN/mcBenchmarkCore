@@ -1,5 +1,7 @@
 package com.fpstest.client.bench;
 
+import com.fpstest.client.bench.score.BenchmarkScore;
+import com.fpstest.client.bench.score.BenchmarkScoreCalculator;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -58,6 +60,8 @@ public final class MasterReportSummary {
     public final Section hiPbr;
     /** Averaged panel data (frame timing + benchmark stats) across all valid tests. */
     public final PanelStats panels;
+    /** 3DMark-style points score computed from the complete benchmark dataset. */
+    public final BenchmarkScore score;
 
     /**
      * Aggregate of one benchmark group (e.g. Low-End Shader). Each section
@@ -108,7 +112,8 @@ public final class MasterReportSummary {
         Section lowPbr,
         Section hiPlain,
         Section hiPbr,
-        PanelStats panels
+        PanelStats panels,
+        BenchmarkScore score
     ) {
         this.overallAvgFps = overallAvgFps;
         this.overallMinFps = overallMinFps;
@@ -119,6 +124,7 @@ public final class MasterReportSummary {
         this.hiPlain = hiPlain;
         this.hiPbr = hiPbr;
         this.panels = panels;
+        this.score = score;
     }
 
     /**
@@ -160,7 +166,8 @@ public final class MasterReportSummary {
             aggregate(group(valid, "lowEnd.zip", true)),
             aggregate(group(valid, "highEnd.zip", false)),
             aggregate(group(valid, "highEnd.zip", true)),
-            aggregatePanels(valid)
+            aggregatePanels(valid),
+            BenchmarkScoreCalculator.calculate(results)
         );
     }
 
