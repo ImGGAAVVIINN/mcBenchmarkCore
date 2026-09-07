@@ -178,7 +178,7 @@
     "fpstest.results.mipmap": "Mipmap level",
     "fpstest.results.details_title": "Detailed test list",
     "fpstest.results.summary_title": "Summary",
-    "fpstest.results.avg_note": "No aggregate available",
+    "fpstest.results.avg_note": "mean of all test averages",
     "fpstest.results.agg_unavailable": "N/A",
     "fpstest.results.main_title": "Main Benchmark",
     "fpstest.results.main_note": "View underlying tests in the list above",
@@ -190,5 +190,9 @@
     "fpstest.results.stat_source": "Source data",
     "fpstest.results.not_run": "Not run",
     "fpstest.results.selected_header": "Benchmark conditions",
-    "fpstest.results.master_report": "Master report"
+    "fpstest.results.master_report": "Master report",
+    "fpstest.results.master_frame_timing": "Average Frame timing",
+    "fpstest.results.master_system_spec": "Average System specifications",
+    "fpstest.results.master_bench_stats": "Average Benchmark statistics",
+    "fpstest.results.master_settings": "Average Settings"
 }

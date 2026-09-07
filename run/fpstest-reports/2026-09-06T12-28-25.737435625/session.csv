@@ -1,0 +1,46 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+particle_cycle,Particle cycle (7 types → all together),Particles,111.915,45.359,21.410,0.551,1,108
+entity_cows,Cows ×200 ring,Entities,120.895,45.550,21.406,0.599,2,240
+entity_sheep,Sheep ×200 ring,Entities,28.574,21.465,46.138,0.587,1,404
+entity_zombies,Zombies ×150 ring (AI on),Entities,28.595,21.367,46.317,0.639,4,343
+entity_pigs,Pigs ×250 ring,Entities,28.467,20.897,46.528,0.612,1,360
+entity_villagers,Villagers ×100 ring,Entities,28.608,21.397,46.407,0.438,1,312
+entity_chickens,Chickens ×300 ring,Entities,28.858,21.366,46.461,0.612,3,384
+entity_items,Item entities ×500,Entities,28.631,21.002,46.861,1.041,2,183
+entity_xp,XP orbs ×500 ring,Entities,28.958,20.569,48.494,2.816,5,375
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,29.471,20.055,49.184,3.560,10,114
+entity_zombies_obstacle_pathfinding,Zombies obstacle pathfinding (150 + pillar maze),Entities,28.921,20.826,46.947,0.865,5,15
+villager_ai_village,"Villager AI village (80, brain on)",Entities,28.929,21.431,46.454,0.432,2,239
+tnt_field,TNT field (14×14 staggered fuses),Physics,29.277,20.346,48.573,3.423,5,301
+tnt_field_destructive,TNT field destructive (breaks terrain),Physics,29.199,20.268,48.551,2.386,2,364
+falling_sand,Falling sand wall 40×40 (heavy),Physics,35.571,14.882,62.005,13.843,29,112
+falling_gravel_mixed,Falling gravel mixed heavy (sand+gravel+concrete),Physics,35.188,14.639,64.199,14.347,26,362
+falling_sand_lite,"Falling sand wall (lite, staggered)",Physics,28.664,20.784,47.496,1.745,4,758
+falling_gravel_mixed_lite,"Falling gravel mixed (lite, staggered)",Physics,28.930,20.787,47.368,1.733,2,264
+projectile_storm,Projectile storm (arrows + snowballs),Physics,26.898,8.894,109.858,0.566,1,16
+redstone_clocks,Redstone clocks (6×6),Redstone,9.838,8.843,112.720,0.299,0,112
+redstone_dust_grid,Redstone dust grid (16 trails ×32 + repeaters + lamps),Redstone,9.848,8.787,113.652,0.250,1,456
+piston_slime_array,Piston/slime array (8×8 toggled every 8t),Redstone,9.849,8.795,113.295,0.287,1,208
+static_dense_forest,"Static dense forest (orbit canopy, no worldgen)",Chunks,9.857,8.847,112.769,0.274,0,120
+chunk_plains,Plains flyby (single-biome world),Chunks,9.806,8.372,117.073,0.362,42,425
+chunk_jungle,Jungle flyby (single-biome world),Chunks,9.846,7.828,124.681,0.330,32,643
+chunk_desert,Desert flyby (single-biome world),Chunks,9.835,7.909,124.567,0.691,22,632
+chunk_taiga,Taiga flyby (single-biome world),Chunks,9.819,8.114,118.087,0.331,25,851
+chunk_snowy,Snowy plains flyby,Chunks,9.836,8.330,116.030,0.324,23,1196
+chunk_forest,Forest flyby,Chunks,9.835,8.498,116.021,0.287,25,368
+chunk_savanna,Savanna flyby,Chunks,9.783,8.437,115.459,0.379,24,1202
+chunk_swamp,Swamp flyby,Chunks,9.806,8.248,118.795,0.424,25,960
+chunk_cherry,Cherry grove flyby,Chunks,9.852,7.946,121.014,0.409,21,416
+chunk_badlands,Badlands flyby,Chunks,9.818,8.633,115.298,0.293,25,224
+chunk_dark_forest,Dark forest flyby (dense canopy),Chunks,9.845,8.457,116.735,0.330,25,936
+chunk_mountain,Windswept hills flyby,Chunks,9.833,7.763,124.576,0.314,21,1056
+idle_baseline,Idle Baseline,Baseline,9.837,8.749,112.849,0.257,0,76
+particle_diversity_stress,Particle diversity stress (16 types simultaneously),Stress,9.845,7.541,121.275,2.639,3,432
+fluid_spread,"Fluid spread (water basin, 4-step periodic reset)",Fluids,9.810,8.867,112.532,0.268,1,164
+lighting_update,Lighting update (16×16 glowstone reveal/hide),Lighting,9.828,8.736,113.323,0.274,0,136
+hopper_grid,Hopper grid 20×20 (transfer storm),Block-Entities,9.862,8.801,113.042,0.274,0,156
+comparator_storage,Comparator storage (8×8 chests + comparators),Block-Entities,9.818,8.827,112.698,0.281,0,140
+pack_shader_showcase,LowEnd Shader,Showcase,9.849,8.515,115.435,0.665,14,20
+pack_shader_showcase,LowEnd Shader + PBR Textures,Showcase,9.858,7.960,124.065,0.630,11,678
+pack_shader_showcase,HighEnd Shader,Showcase,9.852,8.371,117.037,0.631,10,1044
+pack_shader_showcase,HighEnd Shader + PBR Textures,Showcase,9.861,8.341,118.295,0.628,11,722
