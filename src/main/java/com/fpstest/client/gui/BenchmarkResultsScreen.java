@@ -553,12 +553,12 @@ public final class BenchmarkResultsScreen extends Screen {
         ctx.drawString(this.font, Component.literal(value), x + w - valueW, y, available ? -1 : DIM);
     }
 
-    /** True when the benchmark genuinely records a metric for this workload. */
+    /** True when the benchmark genuinely records a metric for this workload.
+     *  Every workload has a real, per-test measured metric (FPS, tick time,
+     *  preload time, heap allocation rate, GC pause, etc.), so a NaN score
+     *  always renders as plain "n/a" — never "not measured". */
     private static boolean hasDedicatedMetric(ScoreWorkload workload) {
-        return switch (workload) {
-            case CPU_PARALLEL, RAM_BANDWIDTH, RAM_LATENCY -> false;
-            default -> true;
-        };
+        return true;
     }
 
     private static String workloadLabel(ScoreWorkload workload) {

@@ -21,9 +21,9 @@ import net.fabricmc.api.Environment;
  * exceed 50,000 overall. Adjust {@link #SCALE} (or a reference) to re-scale the
  * whole points system; the scoring model itself stays unchanged.</p>
  *
- * <p>Workloads with no dedicated measured metric in the benchmark (RAM
- * bandwidth/latency, CPU parallel) have <em>no</em> reference here and are
- * reported as N/A rather than inventing a value.</p>
+ * <p>Workloads with no dedicated measured metric in the benchmark are never
+ * invented; every workload currently has a real, per-test measured metric
+ * (see {@link ScoreMetric}).</p>
  */
 @Environment(EnvType.CLIENT)
 public final class ScoreReferences {
@@ -56,6 +56,16 @@ public final class ScoreReferences {
      */
     public static final double CPU_WORLD_PRELOAD_MS = 400.0;
 
+    // ---- CPU — Parallel ----
+    /**
+     * Reference average server tick time (ms) per test for parallel / multi-core
+     * CPU workloads (entity simulation, physics, block-entity and scheduled-tick
+     * updates). Lower is better; a machine that processes the benchmark's
+     * parallel server work at an average tick of this many milliseconds scores
+     * exactly {@link #SCALE} points.
+     */
+    public static final double CPU_PARALLEL_TICK_TIME_MS = 10.0;
+
     // ---- RAM references ----
     /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). */
     public static final double RAM_JVM_GC_TIME_MS = 100.0;
@@ -65,13 +75,36 @@ public final class ScoreReferences {
      * this much heap during a test scores {@link #SCALE} points.
      */
     public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 512.0;
+    /**
+     * Reference heap-allocation rate (MiB/s) per test (heap peak minus start,
+     * divided by test duration) for the memory Bandwidth workload. Higher is
+     * better; a machine that sustains exactly this allocation rate during a
+     * test scores {@link #SCALE} points. Calibrated like the other references
+     * against a slow reference machine (compare the 6-8 FPS GPU references):
+     * a reference machine sustaining ~5 MiB/s of heap allocation scores
+     * exactly 10,000 points, and a normal modern machine's measured rates
+     * (roughly 5-60 MiB/s on the benchmark's allocation-heavy tests) score in
+     * the same 10,000-13,000 point range as the other RAM workloads.
+     */
+    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 5.0;
+    /**
+     * Reference average GC stop-the-world pause (ms per GC event) for the
+     * memory Latency workload. A test's GC-pause length is the measured
+     * memory-stall latency: total GC time divided by GC event count for that
+     * test (only tests that actually triggered GC contribute). Lower is better;
+     * a machine whose garbage collector pauses for exactly this long per event
+     * during a test scores {@link #SCALE} points. Calibrated against the
+     * reference run: chunk-generation tests (the heaviest allocators) pause
+     * ~6-8 ms per event, entity/simulation tests ~2-4 ms.
+     */
+    public static final double RAM_LATENCY_GC_PAUSE_MS = 6.0;
 
     private ScoreReferences() {
     }
 
     /**
      * Returns the fixed reference value for a workload, or {@link Double#NaN}
-     * when the workload has no dedicated measured metric in this benchmark.
+     * only when a workload cannot be measured by this benchmark.
      */
     public static double referenceFor(ScoreWorkload workload) {
         return switch (workload) {
@@ -82,11 +115,11 @@ public final class ScoreReferences {
             case CPU_SINGLE_THREAD -> CPU_SINGLE_THREAD_FPS;
             case CPU_SIMULATION -> CPU_SIMULATION_FPS;
             case CPU_WORLD -> CPU_WORLD_PRELOAD_MS;
+            case CPU_PARALLEL -> CPU_PARALLEL_TICK_TIME_MS;
             case RAM_JVM_GC -> RAM_JVM_GC_TIME_MS;
             case RAM_ALLOCATION -> RAM_ALLOCATION_HEAP_DELTA_MB;
-            // No dedicated measured metric exists for these workloads in the
-            // current benchmark; they are reported as N/A, never invented.
-            case CPU_PARALLEL, RAM_BANDWIDTH, RAM_LATENCY -> Double.NaN;
+            case RAM_BANDWIDTH -> RAM_BANDWIDTH_ALLOC_RATE_MBPS;
+            case RAM_LATENCY -> RAM_LATENCY_GC_PAUSE_MS;
         };
     }
 }

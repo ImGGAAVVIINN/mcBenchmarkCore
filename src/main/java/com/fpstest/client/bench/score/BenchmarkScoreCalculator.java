@@ -37,6 +37,13 @@ import net.fabricmc.api.Environment;
  *   <li>Every valid test contributes to its primary workload group (GPU/CPU)
  *       via its average FPS, and to the RAM JVM/GC workload via its recorded GC
  *       time — both are genuinely measured per test.</li>
+ *   <li>Server-tick-heavy parallel CPU tests (entity simulation, physics,
+ *       scheduled-tick updates) also feed the Parallel workload via their
+ *       measured average server tick time.</li>
+ *   <li>Every valid test also feeds the memory Bandwidth workload via its
+ *       measured heap-allocation rate (heap delta MiB / duration s) and the
+ *       memory Latency workload via its measured average GC pause (GC time /
+ *       GC events).</li>
  *   <li>A workload's score is the <em>harmonic mean</em> of its tests' points,
  *       so a workload with many tests is not automatically more important than
  *       one with a single test (the declared weight is what matters).</li>
@@ -81,12 +88,28 @@ public final class BenchmarkScoreCalculator {
                 if (r.id().startsWith("chunk_")) {
                     addTest(byWorkload, r, ScoreWorkload.CPU_WORLD);
                 }
+                // Server-tick-heavy parallel CPU tests (entity simulation,
+                // physics, block-entity and scheduled-tick updates — the
+                // benchmark's real multi-threaded server work) also feed the
+                // Parallel workload via their measured average server tick
+                // time. Single-thread tests (redstone clocks/dust) stay in the
+                // Single-thread workload and are deliberately excluded here.
+                if (primary == ScoreWorkload.CPU_SIMULATION) {
+                    addTest(byWorkload, r, ScoreWorkload.CPU_PARALLEL);
+                }
                 // Every valid test also contributes to the allocation workload
                 // via its measured heap-growth footprint (peak minus start) and
                 // to the JVM/GC workload via its recorded GC time — both are
                 // genuinely measured per test.
                 addTest(byWorkload, r, ScoreWorkload.RAM_ALLOCATION);
                 addTest(byWorkload, r, ScoreWorkload.RAM_JVM_GC);
+                // Every valid test also feeds the memory Bandwidth workload via
+                // its measured heap-allocation rate (heap delta MiB / duration)
+                // and the memory Latency workload via its measured average GC
+                // pause (GC time / GC events). Only tests that actually
+                // triggered GC contribute to Latency.
+                addTest(byWorkload, r, ScoreWorkload.RAM_BANDWIDTH);
+                addTest(byWorkload, r, ScoreWorkload.RAM_LATENCY);
             }
         }
 
@@ -192,6 +215,13 @@ public final class BenchmarkScoreCalculator {
             case GC_TIME_MS -> (double) r.gcTimeMs();
             case HEAP_DELTA_MB -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
             case PRELOAD_MS -> r.extras().getOrDefault("preload_duration_ms", Double.NaN);
+            // Average server tick time per test — the benchmark's real parallel work.
+            case TICK_TIME_MS -> r.tickTimeMs() == null ? Double.NaN : r.tickTimeMs().avg();
+            // Heap-allocation rate in MiB/s: heap delta MiB divided by test duration seconds.
+            case ALLOC_RATE_MBPS -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0 / (r.durationMillis() / 1000.0);
+            // Average stop-the-world GC pause (ms) per GC event; only present when the
+            // test actually triggered garbage collection.
+            case GC_PAUSE_MS -> r.gcEvents() == 0 ? Double.NaN : (double) r.gcTimeMs() / r.gcEvents();
         };
     }
 
