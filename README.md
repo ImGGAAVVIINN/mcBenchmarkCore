@@ -9,5 +9,3 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 - [ ] redesign title screen
 - [ ] rebranding
 - [ ] 2nd run freeze
-- [ ] check/fix redstone lamp
-- [ ] check/fix enderdragon
