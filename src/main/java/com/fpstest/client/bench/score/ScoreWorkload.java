@@ -29,18 +29,22 @@ public enum ScoreWorkload {
     CPU_SINGLE_THREAD(ScoreCategory.CPU, 0.30, ScoreMetric.FPS),
     /** Entity simulation, physics, game logic. */
     CPU_SIMULATION(ScoreCategory.CPU, 0.35, ScoreMetric.FPS),
-    /** Chunk generation / world scanning / terrain-generation CPU work. */
-    CPU_WORLD(ScoreCategory.CPU, 0.20, ScoreMetric.FPS),
-    /** Workloads that meaningfully exercise multiple CPU cores/threads. */
+    /** Chunk generation / world scanning / terrain-generation CPU work, measured
+     *  via chunk-preload duration (milliseconds) per test. */
+    CPU_WORLD(ScoreCategory.CPU, 0.20, ScoreMetric.PRELOAD_MS),
+    /** Workloads that meaningfully exercise multiple CPU cores/threads. No
+     *  dedicated measured metric exists in this benchmark, so this workload is
+     *  reported as not measured. */
     CPU_PARALLEL(ScoreCategory.CPU, 0.15, ScoreMetric.FPS),
 
     // ---- RAM / JVM ----
-    /** Memory throughput. */
+    /** Memory throughput. No dedicated measured metric exists in this benchmark. */
     RAM_BANDWIDTH(ScoreCategory.RAM, 0.35, ScoreMetric.FPS),
-    /** Memory access latency. */
+    /** Memory access latency. No dedicated measured metric exists in this benchmark. */
     RAM_LATENCY(ScoreCategory.RAM, 0.25, ScoreMetric.FPS),
-    /** Object allocation / allocation-heavy workloads. */
-    RAM_ALLOCATION(ScoreCategory.RAM, 0.20, ScoreMetric.FPS),
+    /** Object allocation / allocation-heavy workloads, measured via the heap-growth
+     *  footprint (peak minus start, in megabytes) per test. */
+    RAM_ALLOCATION(ScoreCategory.RAM, 0.20, ScoreMetric.HEAP_DELTA_MB),
     /** Garbage collection / heap / JVM memory-management workloads. */
     RAM_JVM_GC(ScoreCategory.RAM, 0.20, ScoreMetric.GC_TIME_MS);
 

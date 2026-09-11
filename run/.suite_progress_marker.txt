@@ -1,0 +1,5 @@
+Full benchmark suite started by USER at ~09:15:56 on 2026-09-11.
+Log: /tmp/mcbench15.log
+Used preset: quick (default HubState) - still runs the FULL queue of all benchmarks + shader showcase.
+17 tests done by 09:24:36 (particle_cycle ... falling_sand_lite).
+Expected total ~44 tests, est. finish ~09:45-09:50.

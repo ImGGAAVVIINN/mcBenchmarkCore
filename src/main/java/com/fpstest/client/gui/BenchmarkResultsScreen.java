@@ -541,7 +541,9 @@ public final class BenchmarkResultsScreen extends Screen {
         double score = this.masterSummary.score.workloadScore(workload);
         boolean available = !Double.isNaN(score);
         String label = workloadLabel(workload);
-        String value = available ? fmtScore(score) : I18n.tr("fpstest.results.na");
+        // Workloads with no dedicated measured metric are reported honestly as
+        // "not measured" rather than a misleading plain "n/a".
+        String value = available ? fmtScore(score) : (hasDedicatedMetric(workload) ? I18n.tr("fpstest.results.na") : I18n.tr("fpstest.results.not_measured"));
         int valueW = this.font.width(value);
         int maxLabelW = w - valueW - 6;
         if (maxLabelW < 0) {
@@ -549,6 +551,14 @@ public final class BenchmarkResultsScreen extends Screen {
         }
         ctx.drawString(this.font, Component.literal(truncate(this.font, label, maxLabelW)), x, y, -5196099);
         ctx.drawString(this.font, Component.literal(value), x + w - valueW, y, available ? -1 : DIM);
+    }
+
+    /** True when the benchmark genuinely records a metric for this workload. */
+    private static boolean hasDedicatedMetric(ScoreWorkload workload) {
+        return switch (workload) {
+            case CPU_PARALLEL, RAM_BANDWIDTH, RAM_LATENCY -> false;
+            default -> true;
+        };
     }
 
     private static String workloadLabel(ScoreWorkload workload) {
@@ -617,7 +627,7 @@ public final class BenchmarkResultsScreen extends Screen {
         int gy = top + LIST_HEADER_H;
 
         this.renderAvgFpsCell(ctx, ax, gy, colW, rowH);
-        this.renderNavCell(ctx, bx, gy, colW, rowH, mouseX, mouseY);
+        this.renderMainBenchmarkCell(ctx, bx, gy, colW, rowH);
         gy += rowH + 4;
 
         this.renderShaderCell(ctx, ax, gy, colW, rowH, "fpstest.results.low_title", this.masterSummary.lowPlain);
@@ -647,14 +657,30 @@ public final class BenchmarkResultsScreen extends Screen {
         this.drawKV(ctx, x + 4, row, x1, "fpstest.results.max_fps", fmtFps(this.masterSummary.overallMaxFps), fpsColor(this.masterSummary.overallMaxFps));
     }
 
-    private void renderNavCell(GuiGraphics ctx, int x, int y, int w, int h, int mouseX, int mouseY) {
+    private void renderMainBenchmarkCell(GuiGraphics ctx, int x, int y, int w, int h) {
         this.drawCard(ctx, x, y, x + w, y + h);
         ctx.fill(x, y, x + w, y + 2, ACCENT);
         ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.tr("fpstest.results.main_title").toUpperCase(Locale.ROOT)), x + 4, y + 4, -1);
         ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.main_note")), x + 4, y + 14, -7696491);
-        boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h && mouseY >= HEADER_H + 2 && mouseY <= this.height - FOOTER_H - 2;
-        String cta = "\u00a7l\u00a7a" + I18n.tr("fpstest.results.view_detail_cta");
-        ctx.drawString(this.font, Component.literal(cta), x + 4, y + h - 12, hovered ? -1 : ACCENT_OK);
+
+        MasterReportSummary.Section main = this.masterSummary.main;
+        if (main == null || main.testCount() == 0) {
+            ctx.drawString(this.font, Component.literal("\u00a78" + I18n.tr("fpstest.results.agg_unavailable")), x + 4, y + 28, DIM);
+            return;
+        }
+
+        int row = y + 26;
+        int rh = 9;
+        int x1 = x + w - 4;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.avg_fps", fmtFps(main.avgFps()), fpsColor(main.avgFps()));
+        row += rh;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.min_fps", fmtFps(main.minFps()), fpsColor(main.minFps()));
+        row += rh;
+        this.drawKV(ctx, x + 4, row, x1, "fpstest.results.max_fps", fmtFps(main.maxFps()), fpsColor(main.maxFps()));
+        row += rh;
+        if (row + rh <= y + h) {
+            this.drawKV(ctx, x + 4, row, x1, "fpstest.results.test_count", String.valueOf(main.testCount()), -1);
+        }
     }
 
     private void renderShaderCell(GuiGraphics ctx, int x, int y, int w, int h, String titleKey, MasterReportSummary.Section section) {

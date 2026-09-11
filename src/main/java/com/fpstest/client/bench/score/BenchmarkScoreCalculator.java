@@ -72,22 +72,21 @@ public final class BenchmarkScoreCalculator {
                 }
                 ScoreWorkload primary = classifyPrimary(r);
                 if (primary != null) {
-                    double ref = ScoreReferences.referenceFor(primary);
-                    double measured = measuredFor(r, primary.metric);
-                    double points = normalize(measured, ref, primary.metric.higherIsBetter);
-                    if (!Double.isNaN(points)) {
-                        byWorkload.get(primary).add(new BenchmarkScore.TestScore(r.id(), r.displayName(), points, measured, ref));
-                    }
+                    addTest(byWorkload, r, primary);
                 }
-                // Every valid test also contributes to the JVM/GC workload via its
-                // recorded GC time (a genuinely measured per-test metric).
-                double gcRef = ScoreReferences.referenceFor(ScoreWorkload.RAM_JVM_GC);
-                double gcMeasured = measuredFor(r, ScoreMetric.GC_TIME_MS);
-                double gcPoints = normalize(gcMeasured, gcRef, ScoreMetric.GC_TIME_MS.higherIsBetter);
-                if (!Double.isNaN(gcPoints)) {
-                    byWorkload.get(ScoreWorkload.RAM_JVM_GC)
-                        .add(new BenchmarkScore.TestScore(r.id(), r.displayName(), gcPoints, gcMeasured, gcRef));
+                // Chunk flyby tests also generate/stream the world; their chunk
+                // preload duration is a genuine terrain-generation signal that
+                // feeds the CPU World workload (in addition to their FPS
+                // feeding the GPU Raster workload above).
+                if (r.id().startsWith("chunk_")) {
+                    addTest(byWorkload, r, ScoreWorkload.CPU_WORLD);
                 }
+                // Every valid test also contributes to the allocation workload
+                // via its measured heap-growth footprint (peak minus start) and
+                // to the JVM/GC workload via its recorded GC time — both are
+                // genuinely measured per test.
+                addTest(byWorkload, r, ScoreWorkload.RAM_ALLOCATION);
+                addTest(byWorkload, r, ScoreWorkload.RAM_JVM_GC);
             }
         }
 
@@ -173,11 +172,26 @@ public final class BenchmarkScoreCalculator {
         return null;
     }
 
+    /**
+     * Normalizes and records a test's measurement for a workload, if the test
+     * actually has a value for that workload's metric (never invented).
+     */
+    private static void addTest(Map<ScoreWorkload, List<BenchmarkScore.TestScore>> byWorkload, BenchmarkResult r, ScoreWorkload w) {
+        double ref = ScoreReferences.referenceFor(w);
+        double measured = measuredFor(r, w.metric);
+        double points = normalize(measured, ref, w.metric.higherIsBetter);
+        if (!Double.isNaN(points)) {
+            byWorkload.get(w).add(new BenchmarkScore.TestScore(r.id(), r.displayName(), points, measured, ref));
+        }
+    }
+
     /** Extracts the raw measured value for a metric from a result. */
     private static double measuredFor(BenchmarkResult r, ScoreMetric metric) {
         return switch (metric) {
             case FPS -> r.fps().avg();
             case GC_TIME_MS -> (double) r.gcTimeMs();
+            case HEAP_DELTA_MB -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
+            case PRELOAD_MS -> r.extras().getOrDefault("preload_duration_ms", Double.NaN);
         };
     }
 

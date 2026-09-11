@@ -89,7 +89,13 @@ public final class FullBenchmarkConfig {
         try {
             PackRepository repo = mc.getResourcePackRepository();
             repo.setSelected(originalPackIds);
-            mc.reloadResourcePacks();
+            // NOTE: intentionally NOT calling mc.reloadResourcePacks() here. During
+            // session cleanup the singleplayer server has just been disconnected and a
+            // synchronous resource reload leaves a LoadingOverlay (the red Mojang screen)
+            // that never completes, freezing the client before the results screen appears.
+            // The selection above is persisted and restored by the normal vanilla flow on
+            // the next world load.
+            LOG.info("[FPS Test] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
             LOG.warn("[FPS Test] resource pack restore failed", t);
         }

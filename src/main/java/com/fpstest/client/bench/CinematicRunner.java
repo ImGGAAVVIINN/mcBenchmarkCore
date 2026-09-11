@@ -591,6 +591,13 @@ public final class CinematicRunner {
         Runnable cb = onFinished;
         onFinished = null;
         mc.execute(() -> {
+            // Defensive: clear any lingering resource-reload overlay (e.g. a stuck
+            // LoadingOverlay from the last benchmark's cleanup) so the results screen is
+            // never hidden behind the red Mojang loading screen.
+            try {
+                mc.setOverlay(null);
+            } catch (Throwable ignored) {
+            }
             if (sessionCopy.isEmpty()) {
                 if (cb != null) {
                     cb.run();
