@@ -32,16 +32,20 @@ public enum ScoreWorkload {
     /** Chunk generation / world scanning / terrain-generation CPU work, measured
      *  via chunk-preload duration (milliseconds) per test. */
     CPU_WORLD(ScoreCategory.CPU, 0.20, ScoreMetric.PRELOAD_MS),
-    /** Workloads that meaningfully exercise multiple CPU cores/threads. No
-     *  dedicated measured metric exists in this benchmark, so this workload is
-     *  reported as not measured. */
-    CPU_PARALLEL(ScoreCategory.CPU, 0.15, ScoreMetric.FPS),
+    /** Workloads that meaningfully exercise multiple CPU cores/threads (entity
+     *  simulation, physics, block-entity and scheduled-tick updates), measured
+     *  via average server tick time (milliseconds) per test. The server tick
+     *  loop is the benchmark's real parallel work. */
+    CPU_PARALLEL(ScoreCategory.CPU, 0.15, ScoreMetric.TICK_TIME_MS),
 
     // ---- RAM / JVM ----
-    /** Memory throughput. No dedicated measured metric exists in this benchmark. */
-    RAM_BANDWIDTH(ScoreCategory.RAM, 0.35, ScoreMetric.FPS),
-    /** Memory access latency. No dedicated measured metric exists in this benchmark. */
-    RAM_LATENCY(ScoreCategory.RAM, 0.25, ScoreMetric.FPS),
+    /** Memory write/allocate throughput, measured via heap-allocation rate
+     *  (heap delta MiB divided by test duration seconds) per test. */
+    RAM_BANDWIDTH(ScoreCategory.RAM, 0.35, ScoreMetric.ALLOC_RATE_MBPS),
+    /** Memory access latency, measured via average GC stop-the-world pause
+     *  (ms per GC event) per test — a memory-stalled machine pauses garbage
+     *  collection longer. Only tests that actually triggered GC contribute. */
+    RAM_LATENCY(ScoreCategory.RAM, 0.25, ScoreMetric.GC_PAUSE_MS),
     /** Object allocation / allocation-heavy workloads, measured via the heap-growth
      *  footprint (peak minus start, in megabytes) per test. */
     RAM_ALLOCATION(ScoreCategory.RAM, 0.20, ScoreMetric.HEAP_DELTA_MB),
