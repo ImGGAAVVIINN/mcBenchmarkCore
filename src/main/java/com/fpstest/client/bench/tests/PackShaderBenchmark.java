@@ -325,22 +325,16 @@ public final class PackShaderBenchmark implements Benchmark {
             }
         }
 
-        // 2. Restore the user's exact resource-pack selection.
+        // 2. Restore the user's exact resource-pack selection WITHOUT triggering a hot
+        // resource reload here. A reload in this cleanup window (while the singleplayer
+        // server is being torn down / the player is disconnecting) leaves a
+        // LoadingOverlay on screen that never completes, freezing the game on the red
+        // Mojang screen and blocking the Benchmark Results screen. The selection is
+        // persisted and is loaded by the normal vanilla flow on the next world entry.
         try {
             PackRepository repo = mc.getResourcePackRepository();
             repo.setSelected(originalPackIds);
-            if (packReloadFuture != null && !packReloadFuture.isDone()) {
-                // The enable-reload is still in flight; apply the restore after it finishes.
-                packReloadFuture.thenRun(() -> {
-                    try {
-                        mc.reloadResourcePacks();
-                    } catch (Throwable t) {
-                        LOG.warn("[FPS Test] resource pack restore reload failed", t);
-                    }
-                });
-            } else {
-                mc.reloadResourcePacks();
-            }
+            LOG.info("[FPS Test] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
             LOG.warn("[FPS Test] resource pack restore failed", t);
         }

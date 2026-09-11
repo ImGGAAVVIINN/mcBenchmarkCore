@@ -15,7 +15,11 @@ public enum ScoreMetric {
     /** Frames per second — higher is better. */
     FPS(true),
     /** Total garbage-collection time in milliseconds — lower is better. */
-    GC_TIME_MS(false);
+    GC_TIME_MS(false),
+    /** Heap-growth footprint (peak minus start) in megabytes — lower is better. */
+    HEAP_DELTA_MB(false),
+    /** Chunk-preload duration in milliseconds (terrain generation) — lower is better. */
+    PRELOAD_MS(false);
 
     /** Whether a larger measured value means better performance. */
     public final boolean higherIsBetter;

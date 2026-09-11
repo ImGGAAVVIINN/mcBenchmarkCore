@@ -1,5 +1,7 @@
 package com.fpstest.client.gui;
 
+import com.fpstest.client.bench.BenchmarkResult;
+import com.fpstest.client.report.ReportReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,11 +78,14 @@ public final class ReportsScreen extends Screen {
                 String btnLbl = (this.selected.contains(name) ? "\u00a7l[ \u2713 ] " : "[   ] ") + name;
                 this.addRenderableWidget(
                     FlatButton.flatBuilder(Component.literal(btnLbl), b -> this.toggleSelection(name))
-                        .dimensions(pad, rowY, this.width - 240, 20)
+                        .dimensions(pad, rowY, this.width - 254, 20)
                         .build()
                 );
                 this.addRenderableWidget(
-                    FlatButton.flatBuilder(I18n.t("fpstest.reports.open"), b -> openInOs(p)).dimensions(this.width - 220, rowY, 100, 20).build()
+                    FlatButton.flatBuilder(I18n.t("fpstest.reports.open"), b -> openInOs(p)).dimensions(this.width - 220, rowY, 70, 20).build()
+                );
+                this.addRenderableWidget(
+                    FlatButton.flatBuilder(I18n.t("fpstest.reports.results"), b -> this.openResults(p)).dimensions(this.width - 145, rowY, 100, 20).accent(-7686401).build()
                 );
             }
         }
@@ -141,6 +146,22 @@ public final class ReportsScreen extends Screen {
         try {
             java.awt.Desktop.getDesktop().open(p.toFile());
         } catch (IOException e) {
+        }
+    }
+
+    private void openResults(Path p) {
+        try {
+            List<BenchmarkResult> results = ReportReader.read(p);
+            if (results.isEmpty()) {
+                LOG.warn("[FPS Test] no results in {}", p);
+                this.minecraft.setScreen(new GenericMessageScreen(Component.literal(I18n.tr("fpstest.reports.no_results"))));
+                return;
+            }
+            String name = p.getFileName().toString();
+            this.minecraft.setScreen(new BenchmarkResultsScreen(results, p, name, "", this::onClose));
+        } catch (Throwable t) {
+            LOG.error("[FPS Test] failed to load results from {}", p, t);
+            this.minecraft.setScreen(new GenericMessageScreen(Component.literal(String.format(I18n.tr("fpstest.reports.load_failed"), t.getMessage()))));
         }
     }
 

@@ -58,6 +58,9 @@ public final class MasterReportSummary {
     public final Section hiPlain;
     /** High-End + PBR section (its own tests only). */
     public final Section hiPbr;
+    /** Main Benchmark (Part 1, no shaders) section: every valid test that is
+     *  not a shader/resource-pack showcase phase. */
+    public final Section main;
     /** Averaged panel data (frame timing + benchmark stats) across all valid tests. */
     public final PanelStats panels;
     /** 3DMark-style points score computed from the complete benchmark dataset. */
@@ -112,6 +115,7 @@ public final class MasterReportSummary {
         Section lowPbr,
         Section hiPlain,
         Section hiPbr,
+        Section main,
         PanelStats panels,
         BenchmarkScore score
     ) {
@@ -123,6 +127,7 @@ public final class MasterReportSummary {
         this.lowPbr = lowPbr;
         this.hiPlain = hiPlain;
         this.hiPbr = hiPbr;
+        this.main = main;
         this.panels = panels;
         this.score = score;
     }
@@ -166,9 +171,26 @@ public final class MasterReportSummary {
             aggregate(group(valid, "lowEnd.zip", true)),
             aggregate(group(valid, "highEnd.zip", false)),
             aggregate(group(valid, "highEnd.zip", true)),
+            aggregate(mainTests(valid)),
             aggregatePanels(valid),
             BenchmarkScoreCalculator.calculate(results)
         );
+    }
+
+    /**
+     * The Main Benchmark aggregate: every valid test that is not a
+     * shader/resource-pack showcase phase (i.e. the Part 1 Main Benchmark
+     * suite, which never runs under a shader pack). This is the real data the
+     * "Main Benchmark" card on the results screen shows.
+     */
+    private static List<BenchmarkResult> mainTests(List<BenchmarkResult> valid) {
+        List<BenchmarkResult> out = new ArrayList<>();
+        for (BenchmarkResult r : valid) {
+            if (groupOf(r) == 0) {
+                out.add(r);
+            }
+        }
+        return out;
     }
 
     /** A test is valid when it has real FPS samples and a finite average. */

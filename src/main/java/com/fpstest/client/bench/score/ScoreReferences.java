@@ -22,8 +22,8 @@ import net.fabricmc.api.Environment;
  * whole points system; the scoring model itself stays unchanged.</p>
  *
  * <p>Workloads with no dedicated measured metric in the benchmark (RAM
- * bandwidth/latency/allocation, CPU world/parallel) have <em>no</em> reference
- * here and are reported as N/A rather than inventing a value.</p>
+ * bandwidth/latency, CPU parallel) have <em>no</em> reference here and are
+ * reported as N/A rather than inventing a value.</p>
  */
 @Environment(EnvType.CLIENT)
 public final class ScoreReferences {
@@ -49,10 +49,22 @@ public final class ScoreReferences {
     public static final double CPU_SINGLE_THREAD_FPS = 12.0;
     /** Reference average FPS for entity-simulation / physics / game-logic workloads. */
     public static final double CPU_SIMULATION_FPS = 10.0;
+    /**
+     * Reference chunk-preload duration (ms) for terrain-generation workloads.
+     * Lower is better; a machine that generates the benchmark's world area with
+     * this much preload time scores exactly {@link #SCALE} points.
+     */
+    public static final double CPU_WORLD_PRELOAD_MS = 400.0;
 
     // ---- RAM references ----
     /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). */
     public static final double RAM_JVM_GC_TIME_MS = 100.0;
+    /**
+     * Reference heap-growth footprint (MB) per test (peak minus start) for the
+     * Allocation workload. Lower is better; a machine that allocates exactly
+     * this much heap during a test scores {@link #SCALE} points.
+     */
+    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 512.0;
 
     private ScoreReferences() {
     }
@@ -69,10 +81,12 @@ public final class ScoreReferences {
             case GPU_EFFECTS -> GPU_EFFECTS_FPS;
             case CPU_SINGLE_THREAD -> CPU_SINGLE_THREAD_FPS;
             case CPU_SIMULATION -> CPU_SIMULATION_FPS;
+            case CPU_WORLD -> CPU_WORLD_PRELOAD_MS;
             case RAM_JVM_GC -> RAM_JVM_GC_TIME_MS;
+            case RAM_ALLOCATION -> RAM_ALLOCATION_HEAP_DELTA_MB;
             // No dedicated measured metric exists for these workloads in the
             // current benchmark; they are reported as N/A, never invented.
-            case CPU_WORLD, CPU_PARALLEL, RAM_BANDWIDTH, RAM_LATENCY, RAM_ALLOCATION -> Double.NaN;
+            case CPU_PARALLEL, RAM_BANDWIDTH, RAM_LATENCY -> Double.NaN;
         };
     }
 }
