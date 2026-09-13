@@ -7,4 +7,3 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 ## todo
 - [ ] redesign title screen
 - [ ] rebranding
-- [ ] 2nd run freeze
