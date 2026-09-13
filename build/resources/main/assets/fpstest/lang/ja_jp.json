@@ -37,6 +37,8 @@
   "fpstest.preset.long.desc": "約4000tick(詳細)",
   "fpstest.overview.body": "全体・カテゴリー単位での実行や、カスタムキューの作成(次のタブ)ができます。",
   "fpstest.overview.full_button": "フルベンチマーク (%s  ·  ≈ %s)",
+  "fpstest.hub.experimental": "実験用ベンチマークメニュー",
+  "fpstest.hub.experimental.body": "このメニューは実験的な機能です。通常の Test FPS ボタンでフルベンチマークを実行してください。",
   "fpstest.overview.full_tooltip": "プリセット「%s」で各ベンチマークを1回ずつ実行します。\n\n推定時間:%s\n結果はひとつのセッションレポートにまとめられます。",
   "fpstest.overview.run_all": "%s をすべて実行 (%dテスト  ·  ≈ %s)",
   "fpstest.overview.run_all_tooltip": "%d 件のベンチマークを実行:%s\n\n推定時間:%s",

@@ -37,6 +37,8 @@
   "fpstest.preset.long.desc": "~4000 тіків (глибокий)",
   "fpstest.overview.body": "Запусти все, окрему категорію або збери свій список (наступна вкладка).",
   "fpstest.overview.full_button": "ПОВНИЙ ПРОГІН (%s  ·  ≈ %s)",
+  "fpstest.hub.experimental": "Експериментальне меню бенчмарку",
+  "fpstest.hub.experimental.body": "Це меню — експериментальна функція. Використовуйте звичайну кнопку Test FPS для запуску повного прогону.",
   "fpstest.overview.full_tooltip": "Прогоняє всі тести по разу з пресетом «%s».\n\nОчікуваний час: %s\nРезультати збираються в один звіт сесії.",
   "fpstest.overview.run_all": "Запустити все: %s (тестів: %d  ·  ≈ %s)",
   "fpstest.overview.run_all_tooltip": "Запустить %d тест(ів): %s\n\nОчікуваний час: %s",
