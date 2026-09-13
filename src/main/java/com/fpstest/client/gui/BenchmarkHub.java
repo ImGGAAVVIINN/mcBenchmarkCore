@@ -31,6 +31,8 @@ public final class BenchmarkHub extends Screen {
     private static final int HEADER_H_BASE = 56;
     private static final int TAB_H = 26;
     private static final int ROW_H = 28;
+    /** Set when the hub is opened via the experimental CTRL+ALT+SHIFT+F+J hotkey. */
+    public static boolean experimentalMenu = false;
     private int scroll;
     private int headerRightEdge;
     private int tabRows;
@@ -40,7 +42,7 @@ public final class BenchmarkHub extends Screen {
     private final Set<String> customQueue;
 
     private int headerH() {
-        return 56;
+        return experimentalMenu ? 78 : 56;
     }
 
     private static String truncate(Font font, String s, int pixelWidth) {
@@ -119,7 +121,7 @@ public final class BenchmarkHub extends Screen {
                 .build()
         );
         this.headerRightEdge = rx - btnGap;
-        int presetY = 30;
+        int presetY = experimentalMenu ? 42 : 30;
         int presetX = 8;
 
         for (BenchmarkHub.Preset p : BenchmarkHub.Preset.values()) {
@@ -315,36 +317,17 @@ public final class BenchmarkHub extends Screen {
         }
     }
 
-    private List<RunPlan> allPlans() {
-        List<RunPlan> out = new ArrayList<>();
-
-        for (String cat : this.orderedCategories()) {
-            if (!"Showcase".equals(cat)) {
-                for (Benchmark b : BenchmarkRegistry.byCategory(cat)) {
-                    out.add(this.planFor(b));
-                }
-            }
-        }
-
-        return out;
-    }
-
     /**
      * The FULL BENCHMARK queue: the original main workload (all non-Showcase
      * benchmarks, Part 1) followed by the shader/resource-pack showcase
      * (Parts 2-5). Used for both the Overview button ETA and the actual run.
      */
     private List<RunPlan> fullSuitePlans() {
-        List<RunPlan> plans = new ArrayList<>(this.allPlans());
-        Benchmark showcase = BenchmarkRegistry.get("pack_shader_showcase").orElse(null);
-        if (showcase != null) {
-            plans.add(this.planFor(showcase));
-        }
-        return plans;
+        return fullSuitePlansStatic();
     }
 
     private RunPlan planFor(Benchmark b) {
-        return b.fixedDuration() ? RunPlan.fromBench(b) : this.preset.factory.apply(b);
+        return planForStatic(b);
     }
 
     private static long totalEtaMs(List<RunPlan> plans) {
@@ -358,6 +341,15 @@ public final class BenchmarkHub extends Screen {
     }
 
     private List<String> orderedCategories() {
+        return orderedCategoriesStatic();
+    }
+
+    /**
+     * Static plan builders shared by the hub's own buttons and the title-screen
+     * "Test FPS" direct launcher. They use {@link HubState#preset} so both entry
+     * points produce the exact same FULL BENCHMARK queue.
+     */
+    private static List<String> orderedCategoriesStatic() {
         List<String> ordered = new ArrayList<>();
 
         for (String want : List.of("Showcase", "Particles", "Entities", "Physics", "Redstone", "Chunks", "Baseline")) {
@@ -373,6 +365,54 @@ public final class BenchmarkHub extends Screen {
         }
 
         return ordered;
+    }
+
+    private static RunPlan planForStatic(Benchmark b) {
+        return b.fixedDuration() ? RunPlan.fromBench(b) : HubState.preset.factory.apply(b);
+    }
+
+    private static List<RunPlan> allPlansStatic() {
+        List<RunPlan> out = new ArrayList<>();
+
+        for (String cat : orderedCategoriesStatic()) {
+            if (!"Showcase".equals(cat)) {
+                for (Benchmark b : BenchmarkRegistry.byCategory(cat)) {
+                    out.add(planForStatic(b));
+                }
+            }
+        }
+
+        return out;
+    }
+
+    private static List<RunPlan> fullSuitePlansStatic() {
+        List<RunPlan> plans = new ArrayList<>(allPlansStatic());
+        Benchmark showcase = BenchmarkRegistry.get("pack_shader_showcase").orElse(null);
+        if (showcase != null) {
+            plans.add(planForStatic(showcase));
+        }
+        return plans;
+    }
+
+    /**
+     * Direct FULL BENCHMARK launcher used by the title-screen "Test FPS" button.
+     * Starts the exact same queue as the hub's "Run FULL BENCHMARK" button but
+     * skips the menu/confirm step entirely. {@code onFinished} is {@code null} so
+     * the results screen's Close button returns to the title screen.
+     *
+     * @return {@code true} if the queue was started, {@code false} if the runner
+     *         was already busy.
+     */
+    public static boolean startFullBenchmark() {
+        if (FpsTestClient.RUNNER.busy()) {
+            return false;
+        }
+        List<RunPlan> plans = fullSuitePlansStatic();
+        String label = I18n.trf("fpstest.label.full", presetLabel(HubState.preset));
+        FullBenchmarkConfig config = new FullBenchmarkConfig();
+        FpsTestClient.RUNNER.setMainPartLabel(I18n.tr("fpstest.part.main"));
+        FpsTestClient.RUNNER.setSessionHooks(config::saveAndDisable, config::restore);
+        return FpsTestClient.RUNNER.startQueue(plans, label, null);
     }
 
     private void buildCategory(BenchmarkHub.Tab tab) {
@@ -554,6 +594,12 @@ public final class BenchmarkHub extends Screen {
         return () -> this.minecraft.setScreen(new BenchmarkHub(p));
     }
 
+    @Override
+    public void onClose() {
+        experimentalMenu = false;
+        super.onClose();
+    }
+
     private void cancelRunning() {
         if (FpsTestClient.RUNNER.busy()) {
             FpsTestClient.RUNNER.abortAll("canceled by user (hub)");
@@ -591,6 +637,11 @@ public final class BenchmarkHub extends Screen {
         }
 
         ctx.drawString(this.font, Component.literal(title), 8, 10, -1);
+        if (experimentalMenu) {
+            int warnW = Math.max(40, this.headerRightEdge - 8 - 4);
+            ctx.drawString(this.font, Component.literal("\u00a7l\u00a7e" + I18n.t("fpstest.hub.experimental")), 8, 20, -1);
+            ctx.drawString(this.font, Component.literal("\u00a77" + truncate(this.font, I18n.tr("fpstest.hub.experimental.body"), warnW)), 8, 30, -5592406);
+        }
         this.renderContent(ctx, mouseX, mouseY);
         this.renderFooter(ctx);
     }

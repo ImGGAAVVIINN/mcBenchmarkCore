@@ -37,6 +37,8 @@
   "fpstest.preset.long.desc": "约 4000 tick(深度)",
   "fpstest.overview.body": "运行全部、整个分类,或在下一个标签页里自定义队列。",
   "fpstest.overview.full_button": "完整基准测试 (%s  ·  ≈ %s)",
+  "fpstest.hub.experimental": "实验性基准测试菜单",
+  "fpstest.hub.experimental.body": "此菜单为实验性功能。请使用正常的 Test FPS 按钮运行完整基准测试。",
   "fpstest.overview.full_tooltip": "用「%s」预设把每个基准测试各运行一次。\n\n预计耗时:%s\n所有结果汇总到一份会话报告中。",
   "fpstest.overview.run_all": "运行全部 %s (%d 项测试  ·  ≈ %s)",
   "fpstest.overview.run_all_tooltip": "运行 %d 个基准测试:%s\n\n预计耗时:%s",

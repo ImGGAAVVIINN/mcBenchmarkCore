@@ -3,6 +3,7 @@ package com.fpstest.client;
 import com.fpstest.client.bench.BenchmarkRegistry;
 import com.fpstest.client.bench.CinematicRunner;
 import com.fpstest.client.bench.world.EphemeralWorld;
+import com.fpstest.client.gui.BenchmarkHub;
 import com.fpstest.client.hud.PerfHud;
 import com.fpstest.client.metrics.FpsTracker;
 import com.fpstest.client.metrics.MemoryTracker;
@@ -32,6 +33,7 @@ public class FpsTestClient implements ClientModInitializer {
     public static final CinematicRunner RUNNER = new CinematicRunner();
 
     private boolean escWasDown = false;
+    private boolean hotkeyWasDown = false;
     private boolean startupCleanupDone = false;
     private final PerfHud perfHud = new PerfHud();
 
@@ -50,6 +52,7 @@ public class FpsTestClient implements ClientModInitializer {
             SYSTEM_USAGE.tick();
             RUNNER.onClientTick(client);
             pollAbortKey(client);
+            pollBenchmarkMenuHotkey(client);
 
             if (!startupCleanupDone) {
                 startupCleanupDone = true;
@@ -78,6 +81,30 @@ public class FpsTestClient implements ClientModInitializer {
             }
 
             this.escWasDown = escDown;
+        }
+    }
+
+    /**
+     * Experimental access path: CTRL+ALT+SHIFT+F+J opens the existing benchmark
+     * menu (with the experimental warning). It never starts a benchmark itself.
+     */
+    private void pollBenchmarkMenuHotkey(net.minecraft.client.Minecraft client) {
+        if (client != null && client.getWindow() != null) {
+            long handle = client.getWindow().handle();
+            boolean ctrl = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
+                    || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
+            boolean alt = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_ALT) == GLFW.GLFW_PRESS
+                    || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_ALT) == GLFW.GLFW_PRESS;
+            boolean shift = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
+                    || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+            boolean f = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_F) == GLFW.GLFW_PRESS;
+            boolean j = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_J) == GLFW.GLFW_PRESS;
+            boolean combo = ctrl && alt && shift && f && j;
+            if (combo && !this.hotkeyWasDown && !RUNNER.busy()) {
+                BenchmarkHub.experimentalMenu = true;
+                client.setScreen(new BenchmarkHub(client.screen));
+            }
+            this.hotkeyWasDown = combo;
         }
     }
 }

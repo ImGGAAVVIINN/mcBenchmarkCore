@@ -37,6 +37,8 @@
   "fpstest.preset.long.desc": "~4000 ticks (profundo)",
   "fpstest.overview.body": "Ejecuta todo, una categoría completa o crea una cola personalizada (siguiente pestaña).",
   "fpstest.overview.full_button": "BENCHMARK COMPLETO (%s  ·  ≈ %s)",
+  "fpstest.hub.experimental": "Menú de benchmark experimental",
+  "fpstest.hub.experimental.body": "Este menú es una función experimental. Usa el botón normal de Test FPS para ejecutar el Full Benchmark.",
   "fpstest.overview.full_tooltip": "Ejecuta todos los benchmarks una vez con el preset «%s».\n\nTiempo estimado: %s\nLos resultados se agrupan en un único informe de sesión.",
   "fpstest.overview.run_all": "Ejecutar todo %s (%d tests  ·  ≈ %s)",
   "fpstest.overview.run_all_tooltip": "Ejecuta %d benchmark(s): %s\n\nTiempo estimado: %s",

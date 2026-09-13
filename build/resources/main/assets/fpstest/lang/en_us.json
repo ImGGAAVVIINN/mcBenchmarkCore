@@ -37,6 +37,8 @@
     "fpstest.preset.long.desc": "~4000 tick sample (deep)",
     "fpstest.overview.body": "Run everything, an entire category, or build a Custom queue (next tab).",
     "fpstest.overview.full_button": "Run FULL BENCHMARK (%s  ·  ≈ %s)",
+    "fpstest.hub.experimental": "Experimental Benchmark Menu",
+    "fpstest.hub.experimental.body": "This menu is an experimental feature. Use the normal Test FPS button to run the Full Benchmark.",
     "fpstest.overview.full_tooltip": "Runs every benchmark once with the %s preset.\n\nEstimated wall-clock: %s\nResults are aggregated into a single session report.",
     "fpstest.overview.run_all": "Run all %s (%d tests  ·  ≈ %s)",
     "fpstest.overview.run_all_tooltip": "Runs %d benchmark(s): %s\n\nEstimated wall-clock: %s",
