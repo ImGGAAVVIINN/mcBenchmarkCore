@@ -6,6 +6,7 @@ import com.fpstest.client.bench.world.EphemeralWorld;
 import com.fpstest.client.hud.PerfHud;
 import com.fpstest.client.metrics.FpsTracker;
 import com.fpstest.client.metrics.MemoryTracker;
+import com.fpstest.client.metrics.SystemUsageTracker;
 import com.fpstest.client.metrics.TickTracker;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
@@ -27,6 +28,7 @@ public class FpsTestClient implements ClientModInitializer {
     public static final FpsTracker FPS = new FpsTracker();
     public static final TickTracker TICKS = new TickTracker();
     public static final MemoryTracker MEMORY = new MemoryTracker();
+    public static final SystemUsageTracker SYSTEM_USAGE = new SystemUsageTracker();
     public static final CinematicRunner RUNNER = new CinematicRunner();
 
     private boolean escWasDown = false;
@@ -45,6 +47,7 @@ public class FpsTestClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             TICKS.onTickEnd();
             MEMORY.sample();
+            SYSTEM_USAGE.tick();
             RUNNER.onClientTick(client);
             pollAbortKey(client);
 

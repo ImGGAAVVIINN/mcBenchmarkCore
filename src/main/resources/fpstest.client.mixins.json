@@ -16,6 +16,7 @@
 		"FallingBlockEntityMixin",
 		"ItemInHandRendererMixin",
 		"GuiMixin",
+		"MinecraftGpuUtilizationMixin",
 		"MinecraftServerAccessor"
 	],
 	"injectors": {

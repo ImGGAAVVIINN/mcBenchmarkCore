@@ -17,6 +17,8 @@ import net.minecraft.client.gui.GuiGraphics;
 
 @Environment(EnvType.CLIENT)
 public final class PerfHud {
+   private long lastUsageLogMs = 0L;
+
    public void render(GuiGraphics ctx) {
       CinematicRunner runner = FpsTestClient.RUNNER;
       if (runner.busy()) {
@@ -89,6 +91,15 @@ public final class PerfHud {
                }
             }
 
+            // Reserve room inside the box for the live CPU / GPU / RAM usage
+            // column (non-compact HUDs only, and only while a world is loaded
+            // so the entities row exists to align against).
+            boolean drawUsage = !compact && mc.level != null;
+            int usageColW = drawUsage ? this.usageColumnWidth(font) : 0;
+            if (drawUsage) {
+               width += 6 + usageColW;
+            }
+
             int totalH = lineH * lines.size() + 4;
             int sw = ctx.guiWidth();
             int sh = ctx.guiHeight();
@@ -125,6 +136,14 @@ public final class PerfHud {
             int contentLeft = x;
             int contentRight = x + width - 2;
 
+            // Live system usage column (non-compact only): CPU / GPU / RAM
+            // percentages, drawn just outside the box to the right (or to the
+            // left for right-anchored HUDs). The three values are aligned with
+            // the tick, heap/GC and entities rows respectively.
+            int usageYyTick = -1;
+            int usageYyHeap = -1;
+            int usageYyEntities = -1;
+
             for (String linex : lines) {
                if ("__bar__".equals(linex)) {
                   int barW = width - 10;
@@ -141,11 +160,99 @@ public final class PerfHud {
                } else {
                   int textX = rightAlign ? contentRight - font.width(linex) : contentLeft;
                   ctx.drawString(font, linex, textX, yy, -1);
+                  // Track the vertical row positions of the usage-aligned lines.
+                  if (!compact) {
+                     if (linex.startsWith("§7tick ")) {
+                        usageYyTick = yy;
+                     } else if (linex.startsWith("§7heap ")) {
+                        usageYyHeap = yy;
+                     } else if (linex.startsWith("§7") && linex.contains(I18n.tr("fpstest.hud.entities") + " ")) {
+                        usageYyEntities = yy;
+                     }
+                  }
                   yy += lineH;
                }
             }
+
+            // Draw the CPU / GPU / RAM usage column at the exact row heights of
+            // tick / heap / entities, right-aligned INSIDE the box so the
+            // values never spill outside the HUD. The values are real
+            // in-process measurements ("--" when a metric reports itself
+            // unavailable); nothing is ever fabricated.
+            if (drawUsage && usageYyTick >= 0 && usageYyHeap >= 0 && usageYyEntities >= 0) {
+               int colRight = contentRight - 4;
+               this.drawUsageLine(ctx, font, I18n.tr("fpstest.hud.cpu"), FpsTestClient.SYSTEM_USAGE.cpuPercent(), colRight, usageYyTick);
+               this.drawUsageLine(ctx, font, I18n.tr("fpstest.hud.gpu"), FpsTestClient.SYSTEM_USAGE.gpuPercent(), colRight, usageYyHeap);
+               this.drawUsageLine(ctx, font, I18n.tr("fpstest.hud.ram"), FpsTestClient.SYSTEM_USAGE.ramPercent(), colRight, usageYyEntities);
+               this.logUsageOnce(usageYyTick, usageYyHeap, usageYyEntities);
+            }
          }
       }
+   }
+
+   /**
+    * Width of the whole usage column (label + value), used to reserve space so
+    * the column never overlaps the box.
+    */
+   private int usageColumnWidth(Font font) {
+      int w = 0;
+      for (String label : new String[]{"CPU", "GPU", "RAM"}) {
+         w = Math.max(w, font.width(label + " 100%"));
+      }
+      return w + 2;
+   }
+
+   private void drawUsageLine(GuiGraphics ctx, Font font, String label, double value, int columnRightX, int yy) {
+      String text;
+      if (value < 0.0) {
+         text = label + " --";
+      } else {
+         text = label + " " + usageColor(value) + (int)Math.round(value) + "%";
+      }
+      ctx.drawString(font, text, columnRightX - font.width(text), yy, -1);
+   }
+
+   /**
+    * Color for a live usage percentage: green below 60%, yellow at 60-79%,
+    * gold at 80-89%, red at 90-95%, dark red above 95%. The gray "--"
+    * placeholder (metric unavailable) stays gray.
+    */
+   private ChatFormatting usageColor(double value) {
+      if (value > 95.0) {
+         return ChatFormatting.DARK_RED;
+      } else if (value >= 90.0) {
+         return ChatFormatting.RED;
+      } else if (value >= 80.0) {
+         return ChatFormatting.GOLD;
+      } else if (value >= 60.0) {
+         return ChatFormatting.YELLOW;
+      } else {
+         return ChatFormatting.GREEN;
+      }
+   }
+
+   /**
+    * Best-effort, throttled log of the exact values being drawn in the usage
+    * column (about once every 10 seconds while the HUD is rendering). This is
+    * used to verify the live sampled values from the running client without
+    * relying on screen scraping.
+    */
+   private void logUsageOnce(int tickYy, int heapYy, int entitiesYy) {
+      long now = System.currentTimeMillis();
+      if (now - this.lastUsageLogMs < 10000L) {
+         return;
+      }
+      this.lastUsageLogMs = now;
+      double cpu = FpsTestClient.SYSTEM_USAGE.cpuPercent();
+      double gpu = FpsTestClient.SYSTEM_USAGE.gpuPercent();
+      double ram = FpsTestClient.SYSTEM_USAGE.ramPercent();
+      String cpuS = cpu < 0.0 ? "--" : String.valueOf((int)Math.round(cpu));
+      String gpuS = gpu < 0.0 ? "--" : String.valueOf((int)Math.round(gpu));
+      String ramS = ram < 0.0 ? "--" : String.valueOf((int)Math.round(ram));
+      FpsTestClient.LOG.info(
+         "[HUD] usage column — CPU {}% GPU {}% RAM {}% (tickY={} heapY={} entitiesY={})",
+         cpuS, gpuS, ramS, tickYy, heapYy, entitiesYy
+      );
    }
 
    private int phaseTotal(CinematicRunner.State state, RunPlan plan, Benchmark cur) {
