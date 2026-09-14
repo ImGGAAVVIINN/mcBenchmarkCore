@@ -180,7 +180,7 @@ public final class PackShaderBenchmark implements Benchmark {
         shaderInUseDuringSample = false;
         shaderWaitTicks = 0;
         LOG.info(
-            "[FPS Test] Pack + Shader Benchmark starting ({} phases: {})",
+            "[Minecraft Benchmark Core] Pack + Shader Benchmark starting ({} phases: {})",
             phaseCount(),
             String.join(", ", java.util.Arrays.stream(PHASES).map(Phase::label).toList())
         );
@@ -196,12 +196,12 @@ public final class PackShaderBenchmark implements Benchmark {
                 originalShadersEnabled = IrisShaderControl.areShadersEnabled();
                 originalShaderPackName = IrisShaderControl.getShaderPackName().orElse(null);
                 LOG.info(
-                    "[FPS Test] saved Iris state: enabled={}, pack={}",
+                    "[Minecraft Benchmark Core] saved Iris state: enabled={}, pack={}",
                     originalShadersEnabled,
                     originalShaderPackName == null ? "(internal)" : originalShaderPackName
                 );
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] could not read Iris state; treating Iris as absent", t);
+                LOG.warn("[Minecraft Benchmark Core] could not read Iris state; treating Iris as absent", t);
                 irisPresent = false;
             }
         }
@@ -232,9 +232,9 @@ public final class PackShaderBenchmark implements Benchmark {
             try {
                 IrisShaderControl.enableShaderPack(phase.shaderPack());
                 shaderEnabled = true;
-                LOG.info("[FPS Test] Phase {}/{}: {} — shader enabled", phaseIndex + 1, phaseCount(), phase.label());
+                LOG.info("[Minecraft Benchmark Core] Phase {}/{}: {} — shader enabled", phaseIndex + 1, phaseCount(), phase.label());
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] shader enable failed for '{}'; continuing without shader", phase.shaderPack(), t);
+                LOG.warn("[Minecraft Benchmark Core] shader enable failed for '{}'; continuing without shader", phase.shaderPack(), t);
                 shaderFailed = true;
             }
         }
@@ -247,13 +247,13 @@ public final class PackShaderBenchmark implements Benchmark {
             if (isShaderActive(phase.shaderPack())) {
                 shaderInUseDuringSample = true;
                 phaseReady = true;
-                LOG.info("[FPS Test] Shader active: {}", phase.shaderPack());
+                LOG.info("[Minecraft Benchmark Core] Shader active: {}", phase.shaderPack());
                 return true;
             }
             shaderWaitTicks++;
             if (shaderWaitTicks >= SHADER_READY_TIMEOUT_TICKS) {
                 LOG.warn(
-                    "[FPS Test] shader pack '{}' did not become active within {} ticks; continuing without it",
+                    "[Minecraft Benchmark Core] shader pack '{}' did not become active within {} ticks; continuing without it",
                     phase.shaderPack(),
                     SHADER_READY_TIMEOUT_TICKS
                 );
@@ -283,7 +283,7 @@ public final class PackShaderBenchmark implements Benchmark {
         // redstone animation, particles) so every phase measures an identical scene.
         CinematicState.pathTick = 0;
         delegate.resetAnimation();
-        LOG.info("[FPS Test] Phase {}/{}: {} — switching", phaseIndex + 1, phaseCount(), phase.label());
+        LOG.info("[Minecraft Benchmark Core] Phase {}/{}: {} — switching", phaseIndex + 1, phaseCount(), phase.label());
     }
 
     @Override
@@ -316,12 +316,12 @@ public final class PackShaderBenchmark implements Benchmark {
             try {
                 IrisShaderControl.restore(originalShaderPackName, originalShadersEnabled);
                 LOG.info(
-                    "[FPS Test] restored Iris state: enabled={}, pack={}",
+                    "[Minecraft Benchmark Core] restored Iris state: enabled={}, pack={}",
                     originalShadersEnabled,
                     originalShaderPackName == null ? "(internal)" : originalShaderPackName
                 );
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] Iris state restore failed", t);
+                LOG.warn("[Minecraft Benchmark Core] Iris state restore failed", t);
             }
         }
 
@@ -334,16 +334,16 @@ public final class PackShaderBenchmark implements Benchmark {
         try {
             PackRepository repo = mc.getResourcePackRepository();
             repo.setSelected(originalPackIds);
-            LOG.info("[FPS Test] restored resource pack selection (hot reload deferred to next world load)");
+            LOG.info("[Minecraft Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] resource pack restore failed", t);
+            LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
         }
 
         // 3. Delegate cleanup (removes spawned entities, resets camera, etc.).
         try {
             delegate.cleanup(ctx);
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] delegate cleanup failed", t);
+            LOG.warn("[Minecraft Benchmark Core] delegate cleanup failed", t);
         }
     }
 
@@ -381,12 +381,12 @@ public final class PackShaderBenchmark implements Benchmark {
         }
         try {
             if (resourcePackId != null && !repo.getAvailableIds().contains(resourcePackId)) {
-                LOG.warn("[FPS Test] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, resourcePackId);
+                LOG.warn("[Minecraft Benchmark Core] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, resourcePackId);
             }
             repo.setSelected(selection);
             return mc.reloadResourcePacks();
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] resource pack apply failed for '{}'", resourcePackId, t);
+            LOG.warn("[Minecraft Benchmark Core] resource pack apply failed for '{}'", resourcePackId, t);
             return CompletableFuture.completedFuture(null);
         }
     }

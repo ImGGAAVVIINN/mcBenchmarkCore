@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 @Environment(EnvType.CLIENT)
 final class LangAssets {
-    private static final Logger LOG = LoggerFactory.getLogger("fpstest-i18n");
+    private static final Logger LOG = LoggerFactory.getLogger("mcbenchmarkcore-i18n");
 
     private LangAssets() {
     }
@@ -26,7 +26,7 @@ final class LangAssets {
                 parseFlatJson(text, out);
             }
         } catch (IOException var8) {
-            LOG.warn("[FPS Test] failed to read {}", path, var8);
+            LOG.warn("[Minecraft Benchmark Core] failed to read {}", path, var8);
         }
         return out;
     }
@@ -110,11 +110,11 @@ final class LangAssets {
                                 sb.append((char) cp);
                                 i += 4;
                             } catch (NumberFormatException var7) {
-                                LOG.warn("[FPS Test] lang: malformed \\u escape '{}' — keeping literal", hex);
+                                LOG.warn("[Minecraft Benchmark Core] lang: malformed \\u escape '{}' — keeping literal", hex);
                                 sb.append('\\').append('u');
                             }
                         } else {
-                            LOG.warn("[FPS Test] lang: truncated \\u escape near end of string — keeping literal");
+                            LOG.warn("[Minecraft Benchmark Core] lang: truncated \\u escape near end of string — keeping literal");
                             sb.append('\\').append('u');
                         }
                         break;

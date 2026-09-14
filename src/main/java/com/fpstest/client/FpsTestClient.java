@@ -40,7 +40,7 @@ public class FpsTestClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         BenchmarkRegistry.bootstrap();
-        LOG.info("FPS Test loaded — {} benchmarks registered", BenchmarkRegistry.all().size());
+        LOG.info("MC Benchmark Core loaded — {} benchmarks registered", BenchmarkRegistry.all().size());
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             TICKS.onTickStart();

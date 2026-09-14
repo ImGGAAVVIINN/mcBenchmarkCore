@@ -262,7 +262,7 @@ public final class ReportWriter {
 
    private static void writeMarkdown(Path file, List<BenchmarkResult> results) throws IOException {
       StringBuilder sb = new StringBuilder();
-      sb.append("# FPS Test session — ").append(nowIso()).append("\n\n");
+      sb.append("# MC Benchmark Core session — ").append(nowIso()).append("\n\n");
       sb.append(systemMarkdown()).append("\n\n");
       sb.append("## Summary\n\n");
       sb.append("| # | Benchmark | Cat. | Avg FPS | 1% low | 0.1% low | p99 frame ms | Tick avg ms | GC | Heap Δ MB |\n");

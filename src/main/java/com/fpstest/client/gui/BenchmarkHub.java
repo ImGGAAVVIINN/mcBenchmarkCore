@@ -75,7 +75,7 @@ public final class BenchmarkHub extends Screen {
     }
 
     public BenchmarkHub(Screen parent) {
-        super(Component.literal("FPS Test"));
+        super(Component.literal("MC Benchmark Core"));
         this.preset = HubState.preset;
         this.scroll = 0;
         this.headerRightEdge = Integer.MAX_VALUE;

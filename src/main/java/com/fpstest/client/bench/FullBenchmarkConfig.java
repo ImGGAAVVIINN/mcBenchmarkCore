@@ -48,7 +48,7 @@ public final class FullBenchmarkConfig {
                 originalShadersEnabled = IrisShaderControl.areShadersEnabled();
                 originalShaderPackName = IrisShaderControl.getShaderPackName().orElse(null);
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] could not read Iris state; treating Iris as absent", t);
+                LOG.warn("[Minecraft Benchmark Core] could not read Iris state; treating Iris as absent", t);
                 irisPresent = false;
             }
         }
@@ -59,17 +59,17 @@ public final class FullBenchmarkConfig {
             repo.setSelected(clean);
             mc.reloadResourcePacks();
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] could not disable benchmark resource packs", t);
+            LOG.warn("[Minecraft Benchmark Core] could not disable benchmark resource packs", t);
         }
         if (irisPresent) {
             try {
                 IrisShaderControl.restore(null, false);
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] could not disable shaders", t);
+                LOG.warn("[Minecraft Benchmark Core] could not disable shaders", t);
             }
         }
         saved = true;
-        LOG.info("[FPS Test] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF");
+        LOG.info("[Minecraft Benchmark Core] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF");
     }
 
     /** Restores the user's exact previous configuration. */
@@ -83,7 +83,7 @@ public final class FullBenchmarkConfig {
             try {
                 IrisShaderControl.restore(originalShaderPackName, originalShadersEnabled);
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] Iris state restore failed", t);
+                LOG.warn("[Minecraft Benchmark Core] Iris state restore failed", t);
             }
         }
         try {
@@ -95,12 +95,12 @@ public final class FullBenchmarkConfig {
             // that never completes, freezing the client before the results screen appears.
             // The selection above is persisted and restored by the normal vanilla flow on
             // the next world load.
-            LOG.info("[FPS Test] restored resource pack selection (hot reload deferred to next world load)");
+            LOG.info("[Minecraft Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] resource pack restore failed", t);
+            LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
         }
         LOG.info(
-            "[FPS Test] FULL BENCHMARK restored user config: shaders={}, pack={}, resourcePacks={}",
+            "[Minecraft Benchmark Core] FULL BENCHMARK restored user config: shaders={}, pack={}, resourcePacks={}",
             originalShadersEnabled,
             originalShaderPackName == null ? "(internal)" : originalShaderPackName,
             originalPackIds
