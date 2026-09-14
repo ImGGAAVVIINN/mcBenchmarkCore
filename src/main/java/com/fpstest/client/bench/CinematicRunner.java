@@ -133,7 +133,7 @@ public final class CinematicRunner {
                 try {
                     sessionSetup.run();
                 } catch (Throwable t) {
-                    LOG.warn("[FPS Test] session setup failed", t);
+                    LOG.warn("[MC Benchmark Core] session setup failed", t);
                 }
             }
             return dequeueNext();
@@ -206,7 +206,7 @@ public final class CinematicRunner {
                 partLabel = mainPartLabel;
             }
             applyRenderDistanceFor(current);
-            LOG.info("[FPS Test] starting benchmark: {} (preset={})", current.id(), plan.presetName);
+            LOG.info("[MC Benchmark Core] starting benchmark: {} (preset={})", current.id(), plan.presetName);
             if (onProgress != null) {
                 onProgress.accept("Loading " + current.displayName());
             }
@@ -216,7 +216,7 @@ public final class CinematicRunner {
             try {
                 EphemeralWorld.create(current.seed(), current.worldType());
             } catch (Throwable var3) {
-                LOG.error("[FPS Test] world creation failed", var3);
+                LOG.error("[MC Benchmark Core] world creation failed", var3);
                 abortCurrent("world creation failed: " + var3.getMessage());
                 return false;
             }
@@ -227,7 +227,7 @@ public final class CinematicRunner {
     }
 
     public synchronized void abortAll(String reason) {
-        LOG.warn("[FPS Test] abort all: {}", reason);
+        LOG.warn("[MC Benchmark Core] abort all: {}", reason);
         queue.clear();
         abortCurrent(reason);
     }
@@ -239,7 +239,7 @@ public final class CinematicRunner {
     }
 
     private void abortCurrent(String reason) {
-        LOG.warn("[FPS Test] abort current: {}", reason);
+        LOG.warn("[MC Benchmark Core] abort current: {}", reason);
         if (current != null) {
             // Restore any temporary environment changes (resource packs, shaders, etc.)
             // even when a benchmark is aborted mid-run.
@@ -248,7 +248,7 @@ public final class CinematicRunner {
                     current.cleanup(ctx);
                 }
             } catch (Throwable var7) {
-                LOG.warn("[FPS Test] cleanup during abort failed for {}", current.id(), var7);
+                LOG.warn("[MC Benchmark Core] cleanup during abort failed for {}", current.id(), var7);
             }
             try {
                 BenchmarkResult.Builder b = builder != null
@@ -263,18 +263,18 @@ public final class CinematicRunner {
                 }
                 session.add(b.build());
             } catch (Throwable var6) {
-                LOG.warn("[FPS Test] could not record failed-bench placeholder", var6);
+                LOG.warn("[MC Benchmark Core] could not record failed-bench placeholder", var6);
             }
         }
         CinematicState.reset();
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
             try {
-                mc.level.disconnect(Component.literal("FPS Test — aborted"));
+                mc.level.disconnect(Component.literal("MC Benchmark Core — aborted"));
             } catch (Throwable ignored) {
             }
             try {
-                mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test — aborted")));
+                mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — aborted")));
             } catch (Throwable ignored) {
             }
         }
@@ -286,7 +286,7 @@ public final class CinematicRunner {
         try {
             tickInternal(mc);
         } catch (Throwable var5) {
-            LOG.error("[FPS Test] runner tick failed — aborting current benchmark", var5);
+            LOG.error("[MC Benchmark Core] runner tick failed — aborting current benchmark", var5);
             try {
                 abortCurrent("runner tick threw: " + var5.getMessage());
             } catch (Throwable ignored) {
@@ -363,7 +363,7 @@ public final class CinematicRunner {
                             try {
                                 current.onPhaseComplete(ctx);
                             } catch (Throwable t) {
-                                LOG.warn("[FPS Test] onPhaseComplete failed for {}", current.id(), t);
+                                LOG.warn("[MC Benchmark Core] onPhaseComplete failed for {}", current.id(), t);
                             }
                             builder = newBuilder(phaseIndex);
                             state = State.PHASE_TRANSITION;
@@ -470,7 +470,7 @@ public final class CinematicRunner {
         try {
             current.tick(ctx);
         } catch (Throwable var2) {
-            LOG.warn("[FPS Test] tick failed for {}", current.id(), var2);
+            LOG.warn("[MC Benchmark Core] tick failed for {}", current.id(), var2);
         }
     }
 
@@ -520,29 +520,29 @@ public final class CinematicRunner {
         try {
             current.recordExtra(ctx, builder);
         } catch (Throwable var13) {
-            LOG.warn("[FPS Test] recordExtra failed for {}", current.id(), var13);
+            LOG.warn("[MC Benchmark Core] recordExtra failed for {}", current.id(), var13);
         }
 
         BenchmarkResult r = builder.build();
         session.add(r);
         LOG.info(
-            "[FPS Test] {} done — avg {} fps, 1%low {} fps, tick {} ms",
+            "[MC Benchmark Core] {} done — avg {} fps, 1%low {} fps, tick {} ms",
             current.id(), (int) r.fps().avg(), (int) com.fpstest.client.metrics.Stats.lowPercentFps(r.frameTimesMs(), 0.01), (int) r.tickTimeMs().avg()
         );
     }
 
     private void disconnectWorld(Minecraft mc) {
-        mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test — finishing " + current.displayName() + "…")));
+        mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — finishing " + current.displayName() + "…")));
         CinematicState.holdPose = false;
         CinematicState.active = false;
         CinematicState.path = null;
         try {
             if (mc.level != null) {
-                mc.level.disconnect(Component.literal("FPS Test — finished"));
+                mc.level.disconnect(Component.literal("MC Benchmark Core — finished"));
             }
-            mc.setScreen(new GenericMessageScreen(Component.literal("FPS Test")));
+            mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core")));
         } catch (Throwable var3) {
-            LOG.warn("[FPS Test] disconnect failed", var3);
+            LOG.warn("[MC Benchmark Core] disconnect failed", var3);
         }
         state = State.DISCONNECTING;
         waitTicks = 0;
@@ -558,9 +558,9 @@ public final class CinematicRunner {
             try {
                 Path dir = ReportWriter.write(sessionCopy, sid);
                 lastReportDir = dir;
-                LOG.info("[FPS Test] session report written to {}", dir);
+                LOG.info("[MC Benchmark Core] session report written to {}", dir);
             } catch (Throwable var4x) {
-                LOG.error("[FPS Test] report export failed", var4x);
+                LOG.error("[MC Benchmark Core] report export failed", var4x);
             }
         });
         if (FpsTestConfig.get().completionSound) {
@@ -574,7 +574,7 @@ public final class CinematicRunner {
             try {
                 sessionCleanup.run();
             } catch (Throwable t) {
-                LOG.warn("[FPS Test] session cleanup failed", t);
+                LOG.warn("[MC Benchmark Core] session cleanup failed", t);
             }
         }
         restoreRenderDistance();
@@ -629,7 +629,7 @@ public final class CinematicRunner {
         try {
             current.prepare(ctx);
         } catch (Throwable t) {
-            LOG.error("[FPS Test] prepare failed for {}", current.id(), t);
+            LOG.error("[MC Benchmark Core] prepare failed for {}", current.id(), t);
             abortCurrent("prepare failed: " + t.getMessage());
             return;
         }
@@ -655,9 +655,9 @@ public final class CinematicRunner {
             Minecraft mc = Minecraft.getInstance();
             originalRenderDistance = mc.options.renderDistance().get();
             renderDistanceSaved = true;
-            LOG.info("[FPS Test] saved original render distance: {} chunks", originalRenderDistance);
+            LOG.info("[MC Benchmark Core] saved original render distance: {} chunks", originalRenderDistance);
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] could not save render distance", t);
+            LOG.warn("[MC Benchmark Core] could not save render distance", t);
             originalRenderDistance = -1;
             renderDistanceSaved = false;
         }
@@ -686,9 +686,9 @@ public final class CinematicRunner {
         try {
             Minecraft mc = Minecraft.getInstance();
             mc.options.renderDistance().set(rd);
-            LOG.info("[FPS Test] render distance set to {} chunks for benchmark {}", rd, bench.id());
+            LOG.info("[MC Benchmark Core] render distance set to {} chunks for benchmark {}", rd, bench.id());
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] could not set render distance to {} for {}", rd, bench.id(), t);
+            LOG.warn("[MC Benchmark Core] could not set render distance to {} for {}", rd, bench.id(), t);
         }
     }
 
@@ -700,9 +700,9 @@ public final class CinematicRunner {
         try {
             Minecraft mc = Minecraft.getInstance();
             mc.options.renderDistance().set(originalRenderDistance);
-            LOG.info("[FPS Test] restored render distance to {} chunks", originalRenderDistance);
+            LOG.info("[MC Benchmark Core] restored render distance to {} chunks", originalRenderDistance);
         } catch (Throwable t) {
-            LOG.warn("[FPS Test] could not restore render distance", t);
+            LOG.warn("[MC Benchmark Core] could not restore render distance", t);
         }
         originalRenderDistance = -1;
         renderDistanceSaved = false;

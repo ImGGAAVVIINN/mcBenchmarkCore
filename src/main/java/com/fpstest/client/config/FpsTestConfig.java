@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 @Environment(EnvType.CLIENT)
 public final class FpsTestConfig {
-    private static final Logger LOG = LoggerFactory.getLogger("fpstest-config");
+    private static final Logger LOG = LoggerFactory.getLogger("mcbenchmarkcore-config");
     public HudAnchor hudAnchor = HudAnchor.TOP_LEFT;
     public boolean hudCompact = false;
     public boolean completionSound = true;
@@ -61,11 +61,11 @@ public final class FpsTestConfig {
                 if (isKnownLocale(loc)) {
                     c.locale = loc;
                 } else {
-                    LOG.warn("[FPS Test] config: unknown locale '{}', falling back to vanilla", loc);
+                    LOG.warn("[Minecraft Benchmark Core] config: unknown locale '{}', falling back to vanilla", loc);
                 }
             }
         } catch (Throwable var8) {
-            LOG.warn("[FPS Test] config load failed, using defaults", var8);
+            LOG.warn("[Minecraft Benchmark Core] config load failed, using defaults", var8);
         }
         return c;
     }
@@ -82,7 +82,7 @@ public final class FpsTestConfig {
             sb.append("}\n");
             Files.writeString(p, sb.toString());
         } catch (IOException var3) {
-            LOG.warn("[FPS Test] config save failed", var3);
+            LOG.warn("[Minecraft Benchmark Core] config save failed", var3);
         }
     }
 

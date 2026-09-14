@@ -30,7 +30,7 @@ public final class ReportComparator {
         String tag = a.getFileName().toString() + "_vs_" + b.getFileName().toString();
         Path out = outDir.resolve("compare-" + tag + ".md");
         StringBuilder sb = new StringBuilder();
-        sb.append("# FPS Test compare: ").append(a.getFileName()).append(" vs ").append(b.getFileName()).append("\n\n");
+        sb.append("# MC Benchmark Core compare: ").append(a.getFileName()).append(" vs ").append(b.getFileName()).append("\n\n");
         sb.append("| Benchmark | A FPS | B FPS | \u0394 FPS | A 1% low | B 1% low | A p99 ms | B p99 ms | A tick ms | B tick ms |\n");
         sb.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n");
         Set<String> keys = new LinkedHashSet<>();
@@ -57,7 +57,7 @@ public final class ReportComparator {
         sb.append("- A: `").append(a).append("`\n");
         sb.append("- B: `").append(b).append("`\n");
         Files.writeString(out, sb.toString());
-        LOG.info("[FPS Test] compare written to {}", out);
+        LOG.info("[MC Benchmark Core] compare written to {}", out);
         return out;
     }
 

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 @Environment(EnvType.CLIENT)
 public final class ReportReader {
-    private static final Logger LOG = LoggerFactory.getLogger("fpstest-report-reader");
+    private static final Logger LOG = LoggerFactory.getLogger("mcbenchmarkcore-report-reader");
 
     private ReportReader() {
     }
@@ -59,7 +59,7 @@ public final class ReportReader {
                 out.add(parseResult(el.getAsJsonObject()));
             }
         }
-        LOG.info("[FPS Test] loaded {} results from {}", out.size(), reportDir);
+        LOG.info("[Minecraft Benchmark Core] loaded {} results from {}", out.size(), reportDir);
         return out;
     }
 

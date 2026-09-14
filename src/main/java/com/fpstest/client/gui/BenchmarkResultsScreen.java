@@ -66,7 +66,7 @@ public final class BenchmarkResultsScreen extends Screen {
     private final MasterReportSummary masterSummary;
 
     public BenchmarkResultsScreen(List<BenchmarkResult> session, Path reportDir, String sessionLabel, String sessionPreset, Runnable onClose) {
-        super(Component.literal("FPS Test — Results"));
+        super(Component.literal("Benchmark Result"));
         this.session = session == null ? List.of() : session;
         this.reportDir = reportDir;
         this.sessionLabel = sessionLabel == null ? "" : sessionLabel;
@@ -177,7 +177,7 @@ public final class BenchmarkResultsScreen extends Screen {
     }
 
     private void renderHeader(GuiGraphics ctx) {
-        ctx.drawString(this.font, Component.literal("\u00a7l[FPS Test] " + this.reportTitle()), 8, 5, -1);
+        ctx.drawString(this.font, Component.literal("\u00a7l[Benchmark Result] " + this.reportTitle()), 8, 5, -1);
     }
 
     /**

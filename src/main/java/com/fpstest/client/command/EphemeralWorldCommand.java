@@ -42,7 +42,7 @@ public class EphemeralWorldCommand {
         // Check if we have an integrated server (singleplayer)
         Minecraft minecraft = source.getClient();
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[FPS Test] No integrated server running. Please load a singleplayer world first."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
@@ -51,7 +51,7 @@ public class EphemeralWorldCommand {
         long testSeed = 12345L;
         EphemeralWorld.create(testSeed, WorldType.OVERWORLD);
         
-        source.sendFeedback(Component.literal("[FPS Test] Ephemeral world created with seed " + testSeed + ". The client will now load the new world."));
+        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Ephemeral world created with seed " + testSeed + ". The client will now load the new world."));
         return 1;
     }
 
@@ -62,14 +62,14 @@ public class EphemeralWorldCommand {
         // Check if we have an integrated server (singleplayer)
         Minecraft minecraft = source.getClient();
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[FPS Test] No integrated server running. Please load a singleplayer world first."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
         // Destroy the ephemeral world (deletes the save directory)
         EphemeralWorld.destroy();
         
-        source.sendFeedback(Component.literal("[FPS Test] Ephemeral world destroyed."));
+        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Ephemeral world destroyed."));
         return 1;
     }
 
@@ -80,7 +80,7 @@ public class EphemeralWorldCommand {
         // Check if we have an integrated server (singleplayer)
         Minecraft minecraft = source.getClient();
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[FPS Test] No integrated server running. Please load a singleplayer world first."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
@@ -89,21 +89,21 @@ public class EphemeralWorldCommand {
         // Get the local player (client-side) to find the corresponding server-side player
         net.minecraft.client.player.LocalPlayer localPlayer = source.getPlayer();
         if (localPlayer == null) {
-            source.sendError(Component.literal("[FPS Test] No local player found."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] No local player found."));
             return 0;
         }
         
         // Get the server-side player from the integrated server using the local player's UUID
         ServerPlayer player = server.getPlayerList().getPlayer(localPlayer.getUUID());
         if (player == null) {
-            source.sendError(Component.literal("[FPS Test] No server-side player found for local player."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] No server-side player found for local player."));
             return 0;
         }
         
         // Get the overworld dimension (the ephemeral world is the current singleplayer world)
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
         if (overworld == null) {
-            source.sendError(Component.literal("[FPS Test] Overworld not found in server."));
+            source.sendError(Component.literal("[Minecraft Benchmark Core] Overworld not found in server."));
             return 0;
         }
         
@@ -125,10 +125,10 @@ public class EphemeralWorldCommand {
             player.teleport(transition);
             teleportResult = true;
         } catch (Exception e) {
-            FpsTestClient.LOG.error("[FPS Test] Teleport failed with exception", e);
+            FpsTestClient.LOG.error("[Minecraft Benchmark Core] Teleport failed with exception", e);
         }
         
-        source.sendFeedback(Component.literal("[FPS Test] Attempted to teleport to overworld at 0, 100, 0. Teleport call success: " + teleportResult));
+        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Attempted to teleport to overworld at 0, 100, 0. Teleport call success: " + teleportResult));
         return 1;
     }
 }

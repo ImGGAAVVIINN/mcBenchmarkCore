@@ -41,7 +41,7 @@ public final class PerfHud {
             RunPlan plan = runner.currentPlan();
             CinematicRunner.State st = runner.state();
             if (!compact) {
-               lines.add("§r§l[" + I18n.tr("fpstest.hud.title") + "]");
+               lines.add("§r§l" + I18n.tr("fpstest.hud.title"));
             }
 
             if (runner.hasParts()) {

@@ -97,15 +97,15 @@ public final class EphemeralWorld {
             Path existing = mc.getLevelSource().getLevelPath(LevelResource.ROOT.getId()).resolve("fpstest-arena");
             if (Files.exists(existing)) {
                 levelId = "fpstest-arena-" + System.currentTimeMillis() / 1000L;
-                FpsTestClient.LOG.warn("[FPS Test] using fallback arena name: {} (previous save tree still present)", levelId);
+                FpsTestClient.LOG.warn("[MC Benchmark Core] using fallback arena name: {} (previous save tree still present)", levelId);
             }
         } catch (Exception var9) {
-            FpsTestClient.LOG.debug("[FPS Test] could not probe save dir for fallback name: {}", var9.getMessage());
+            FpsTestClient.LOG.debug("[MC Benchmark Core] could not probe save dir for fallback name: {}", var9.getMessage());
         }
 
         currentLevelId = levelId;
 
-        FpsTestClient.LOG.info("[FPS Test] creating ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
+        FpsTestClient.LOG.info("[MC Benchmark Core] creating ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
 
         // Create game rules for the ephemeral world
         GameRules rules = new GameRules(FeatureFlagSet.of());
@@ -122,7 +122,7 @@ public final class EphemeralWorld {
         rules.set(GameRules.SPAWN_WARDENS, false, null);
 
         // Create level settings
-        LevelSettings settings = new LevelSettings("FPS Test Arena", GameType.CREATIVE, false, Difficulty.NORMAL, true, rules, WorldDataConfiguration.DEFAULT);
+        LevelSettings settings = new LevelSettings("MC Benchmark Core Arena", GameType.CREATIVE, false, Difficulty.NORMAL, true, rules, WorldDataConfiguration.DEFAULT);
         WorldOptions opts = new WorldOptions(seed, false, false);
 
         // Build the WorldDimensions using a function that takes HolderLookup.Provider
@@ -135,7 +135,7 @@ public final class EphemeralWorld {
         // This replaces the manual ServerLevel construction and insertion into levels map
         mc.createWorldOpenFlows().createFreshLevel(levelId, settings, opts, dims, null);
 
-        FpsTestClient.LOG.info("[FPS Test] created ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
+        FpsTestClient.LOG.info("[MC Benchmark Core] created ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
     }
 
     /**
@@ -146,7 +146,7 @@ public final class EphemeralWorld {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null || currentDimensionKey == null) {
-            FpsTestClient.LOG.debug("[FPS Test] No ephemeral world to destroy");
+            FpsTestClient.LOG.debug("[MC Benchmark Core] No ephemeral world to destroy");
             return;
         }
 
@@ -157,11 +157,11 @@ public final class EphemeralWorld {
             try {
                 level.close();
             } catch (IOException e) {
-                FpsTestClient.LOG.error("[FPS Test] Failed to close ephemeral world", e);
+                FpsTestClient.LOG.error("[MC Benchmark Core] Failed to close ephemeral world", e);
             }
-            FpsTestClient.LOG.info("[FPS Test] destroyed ephemeral world dimensionKey={}", currentDimensionKey);
+            FpsTestClient.LOG.info("[MC Benchmark Core] destroyed ephemeral world dimensionKey={}", currentDimensionKey);
         } else {
-            FpsTestClient.LOG.warn("[FPS Test] Ephemeral world not found in levels map for dimensionKey={}", currentDimensionKey);
+            FpsTestClient.LOG.warn("[MC Benchmark Core] Ephemeral world not found in levels map for dimensionKey={}", currentDimensionKey);
         }
 
         currentDimensionKey = null;
@@ -269,7 +269,7 @@ public final class EphemeralWorld {
         LevelStorageSource src = mc.getLevelSource();
         Path saveDir = src.getLevelPath(LevelResource.ROOT.getId()).resolve("fpstest-arena");
         if (!Files.exists(saveDir)) {
-            FpsTestClient.LOG.debug("[FPS Test] cleanup: no stale arena directory at {}", saveDir);
+            FpsTestClient.LOG.debug("[MC Benchmark Core] cleanup: no stale arena directory at {}", saveDir);
         } else {
             try {
                 Thread.sleep(200L);
@@ -302,7 +302,7 @@ public final class EphemeralWorld {
                     access.close();
                 }
             } catch (Exception var15) {
-                FpsTestClient.LOG.info("[FPS Test] could not open arena session for cleanup ({})", var15.getMessage());
+                FpsTestClient.LOG.info("[MC Benchmark Core] could not open arena session for cleanup ({})", var15.getMessage());
             }
 
             int maxPasses = blocking ? 3 : 5;
@@ -324,9 +324,9 @@ public final class EphemeralWorld {
                     });
                     if (!Files.exists(saveDir)) {
                         if (pass > 0) {
-                            FpsTestClient.LOG.info("[FPS Test] cleanup succeeded (pass {})", pass + 1);
+                            FpsTestClient.LOG.info("[MC Benchmark Core] cleanup succeeded (pass {})", pass + 1);
                         } else {
-                            FpsTestClient.LOG.debug("[FPS Test] cleanup succeeded (first pass)");
+                            FpsTestClient.LOG.debug("[MC Benchmark Core] cleanup succeeded (first pass)");
                         }
 
                         return;
@@ -348,13 +348,13 @@ public final class EphemeralWorld {
             if (lastError != null) {
                 FpsTestClient.LOG
                     .warn(
-                        "[FPS Test] cleanup deferred: failed to delete arena save tree at {} after {} passes ({}). Next run will use a fallback arena name; full retry on next FPS Test launch.",
+                        "[MC Benchmark Core] cleanup deferred: failed to delete arena save tree at {} after {} passes ({}). Next run will use a fallback arena name; full retry on next MC Benchmark Core launch.",
                         new Object[]{saveDir, maxPasses, lastError.getMessage()}
                     );
             } else if (Files.exists(saveDir)) {
                 FpsTestClient.LOG
                     .warn(
-                        "[FPS Test] cleanup deferred: arena save tree at {} still present after {} passes. Next run will use a fallback arena name; full retry on next FPS Test launch.",
+                        "[MC Benchmark Core] cleanup deferred: arena save tree at {} still present after {} passes. Next run will use a fallback arena name; full retry on next MC Benchmark Core launch.",
                         saveDir,
                         maxPasses
                     );
@@ -371,12 +371,12 @@ public final class EphemeralWorld {
                 return;
             }
 
-            FpsTestClient.LOG.info("[FPS Test] startup cleanup: stale arena save tree found at {}, removing on background thread", saveDir);
-            Thread t = new Thread(EphemeralWorld::deleteSaveQuietly, "FPS Test-arena-startup-cleanup");
+            FpsTestClient.LOG.info("[MC Benchmark Core] startup cleanup: stale arena save tree found at {}, removing on background thread", saveDir);
+            Thread t = new Thread(EphemeralWorld::deleteSaveQuietly, "MC Benchmark Core-arena-startup-cleanup");
             t.setDaemon(true);
             t.start();
         } catch (Throwable var3) {
-            FpsTestClient.LOG.warn("[FPS Test] startup cleanup raised an exception, ignoring: {}", var3.getMessage());
+            FpsTestClient.LOG.warn("[MC Benchmark Core] startup cleanup raised an exception, ignoring: {}", var3.getMessage());
         }
     }
 

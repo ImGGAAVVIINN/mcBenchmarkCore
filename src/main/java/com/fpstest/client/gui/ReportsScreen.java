@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 @Environment(EnvType.CLIENT)
 public final class ReportsScreen extends Screen {
-    private static final Logger LOG = LoggerFactory.getLogger("fpstest-reports-screen");
+    private static final Logger LOG = LoggerFactory.getLogger("mcbenchmarkcore-reports-screen");
     private final Screen parent;
     private final Set<String> selected = new LinkedHashSet<>();
     private List<Path> sessions = List.of();
@@ -129,9 +129,9 @@ public final class ReportsScreen extends Screen {
                         }
 
                         this.minecraft.execute(() -> this.minecraft.setScreen(new ReportsScreen(this.parent)));
-                    }, "fpstest-reports-compare-bounce").start();
+                    }, "mcbenchmarkcore-reports-compare-bounce").start();
                 } catch (Throwable var6) {
-                    LOG.error("[FPS Test] compare failed", var6);
+                    LOG.error("[Minecraft Benchmark Core] compare failed", var6);
                 }
             }
         }
@@ -153,14 +153,14 @@ public final class ReportsScreen extends Screen {
         try {
             List<BenchmarkResult> results = ReportReader.read(p);
             if (results.isEmpty()) {
-                LOG.warn("[FPS Test] no results in {}", p);
+                LOG.warn("[Minecraft Benchmark Core] no results in {}", p);
                 this.minecraft.setScreen(new GenericMessageScreen(Component.literal(I18n.tr("fpstest.reports.no_results"))));
                 return;
             }
             String name = p.getFileName().toString();
             this.minecraft.setScreen(new BenchmarkResultsScreen(results, p, name, "", this::onClose));
         } catch (Throwable t) {
-            LOG.error("[FPS Test] failed to load results from {}", p, t);
+            LOG.error("[Minecraft Benchmark Core] failed to load results from {}", p, t);
             this.minecraft.setScreen(new GenericMessageScreen(Component.literal(String.format(I18n.tr("fpstest.reports.load_failed"), t.getMessage()))));
         }
     }
@@ -198,7 +198,7 @@ public final class ReportsScreen extends Screen {
 
                 return var2;
             } catch (IOException var6) {
-                LOG.warn("[FPS Test] listSessions failed", var6);
+                LOG.warn("[Minecraft Benchmark Core] listSessions failed", var6);
                 return List.of();
             }
         }

@@ -33,7 +33,7 @@ public abstract class TitleScreenMixin extends Screen {
     private void fpstest$addBenchmarkButton(CallbackInfo ci) {
         this.fpstest$removeVanillaButtons();
         Button btn = Button.builder(
-                Component.literal("⚡ " + I18n.tr("fpstest.title")),
+                Component.literal(I18n.tr("fpstest.button.run_benchmark")),
                 b -> BenchmarkHub.startFullBenchmark()
         )
         .bounds(this.width - 110, 4, 100, 20)
