@@ -325,16 +325,23 @@ public final class PackShaderBenchmark implements Benchmark {
             }
         }
 
-        // 2. Restore the user's exact resource-pack selection WITHOUT triggering a hot
-        // resource reload here. A reload in this cleanup window (while the singleplayer
-        // server is being torn down / the player is disconnecting) leaves a
-        // LoadingOverlay on screen that never completes, freezing the game on the red
-        // Mojang screen and blocking the Benchmark Results screen. The selection is
-        // persisted and is loaded by the normal vanilla flow on the next world entry.
+        // 2. Restore the user's exact resource-pack selection WITH a resource reload
+        // to ensure the PBR pack is fully unloaded. Log diagnostics to verify state.
         try {
             PackRepository repo = mc.getResourcePackRepository();
+            final List<String> before = List.copyOf(repo.getSelectedIds());
             repo.setSelected(originalPackIds);
-            LOG.info("[Minecraft Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
+            final CompletableFuture<Void> reloadFuture = mc.reloadResourcePacks();
+            // Optional: await completion for extra safety in testing (non-blocking in prod)
+            reloadFuture.whenComplete((unused, throwable) -> {
+                if (throwable != null) {
+                    LOG.warn("[Minecraft Benchmark Core] resource pack restore reload failed", throwable);
+                } else {
+                    final List<String> after = List.copyOf(repo.getSelectedIds());
+                    LOG.info("[Minecraft Benchmark Core] restored resource pack selection and reloaded: before={}, after={}, pbr.zip present={}", 
+                             before, after, after.contains(RESOURCE_PACK_ID));
+                }
+            });
         } catch (Throwable t) {
             LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
         }
