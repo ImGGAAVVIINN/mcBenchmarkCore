@@ -7,4 +7,5 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 ## todo
 - [ ] icon change
 - [ ] in benchmark loading name dynamntic (core/non core)
+- [ ] distant horizon compatablity and useage when doing chunk load test
  
