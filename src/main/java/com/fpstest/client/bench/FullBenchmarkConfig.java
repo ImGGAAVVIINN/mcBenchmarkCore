@@ -1,5 +1,6 @@
 package com.fpstest.client.bench;
 
+import com.fpstest.client.FpsTestClient;
 import com.fpstest.client.bench.iris.IrisShaderControl;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,15 @@ import org.slf4j.LoggerFactory;
  * {@code PackShaderBenchmark}: save original state, change configuration, run,
  * then restore the original configuration. The shader parts (Parts 2-5) keep their
  * own nested save/restore; this guard wraps the whole session.</p>
+ *
+ * <p>Additionally, this class manages Distant Horizons and Voxy rendering state:
+ * <ol>
+ *   <li>At session start: capture original DH/Voxy config, disable both</li>
+ *   <li>Before chunk-loading benchmarks (Part 1 "Chunks" category): enable DH at 4096 chunks, Voxy at 1024</li>
+ *   <li>After chunk-loading benchmarks: disable both</li>
+ *   <li>At session end: restore original DH/Voxy config</li>
+ * </ol>
+ * </p>
  */
 @Environment(EnvType.CLIENT)
 public final class FullBenchmarkConfig {
@@ -37,6 +47,9 @@ public final class FullBenchmarkConfig {
     private boolean originalShadersEnabled;
     private boolean irisPresent;
     private boolean saved;
+
+    // DH/Voxy controller for managing rendering state during chunk-loading tests
+    private final DistantHorizonsVoxyController dhVoxyController = new DistantHorizonsVoxyController();
 
     /** Saves the user's configuration and applies the clean baseline (shaders OFF, benchmark packs OFF). */
     public void saveAndDisable() {
@@ -69,8 +82,28 @@ public final class FullBenchmarkConfig {
                 LOG.warn("[Minecraft Benchmark Core] could not disable shaders", t);
             }
         }
+
+        // Capture and disable DH/Voxy at session start
+        dhVoxyController.captureAndDisable();
+
+        // Set DH/Voxy callbacks on the runner for category transitions
+        FpsTestClient.RUNNER.setDhVoxyCallbacks(
+            dhVoxyController::enableForChunkLoading,
+            dhVoxyController::disableAfterChunkLoading
+        );
+
         saved = true;
-        LOG.info("[Minecraft Benchmark Core] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF");
+        LOG.info("[Minecraft Benchmark Core] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF, DH/Voxy disabled");
+    }
+
+    /** Enables DH and Voxy for chunk-loading benchmarks (called before Chunks category runs). */
+    public void enableDhVoxyForChunkLoading() {
+        dhVoxyController.enableForChunkLoading();
+    }
+
+    /** Disables DH and Voxy after chunk-loading benchmarks (called after Chunks category completes). */
+    public void disableDhVoxyAfterChunkLoading() {
+        dhVoxyController.disableAfterChunkLoading();
     }
 
     /** Restores the user's exact previous configuration. */
@@ -112,6 +145,9 @@ public final class FullBenchmarkConfig {
         } catch (Throwable t) {
             LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
         }
+        // Restore DH/Voxy configuration
+        dhVoxyController.restore();
+
         LOG.info(
             "[Minecraft Benchmark Core] FULL BENCHMARK restored user config: shaders={}, pack={}, resourcePacks={}",
             originalShadersEnabled,

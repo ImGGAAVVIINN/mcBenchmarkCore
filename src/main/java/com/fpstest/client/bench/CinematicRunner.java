@@ -63,6 +63,10 @@ public final class CinematicRunner {
     private int originalRenderDistance = -1;
     private boolean renderDistanceSaved = false;
 
+    // Track previous benchmark category to detect Chunks category transitions
+    private String previousCategory = "";
+    private boolean dhVoxyEnabledForChunks = false;
+
     public State state() {
         return state;
     }
@@ -188,6 +192,35 @@ public final class CinematicRunner {
             finishSession();
             return false;
         } else {
+            // Check for category transition to/from "Chunks" to manage DH/Voxy
+            String newCategory = next.bench.category();
+            if (!previousCategory.isEmpty() && !newCategory.equals(previousCategory)) {
+                // Category changed
+                if ("Chunks".equals(previousCategory)) {
+                    // Leaving Chunks category - disable DH/Voxy
+                    LOG.info("[MC Benchmark Core] leaving Chunks category, disabling DH/Voxy");
+                    if (dhVoxyEnabledForChunks) {
+                        // Access FullBenchmarkConfig via the session hooks - we need a reference
+                        // The sessionCleanup is FullBenchmarkConfig.restore, but we need the intermediate methods
+                        // We'll handle this via a callback mechanism
+                        disableDhVoxyForChunks.run();
+                        dhVoxyEnabledForChunks = false;
+                    }
+                }
+                if ("Chunks".equals(newCategory)) {
+                    // Entering Chunks category - enable DH/Voxy
+                    LOG.info("[MC Benchmark Core] entering Chunks category, enabling DH/Voxy");
+                    enableDhVoxyForChunks.run();
+                    dhVoxyEnabledForChunks = true;
+                }
+            } else if (previousCategory.isEmpty() && "Chunks".equals(newCategory)) {
+                // First benchmark is in Chunks category
+                LOG.info("[MC Benchmark Core] first benchmark is Chunks category, enabling DH/Voxy");
+                enableDhVoxyForChunks.run();
+                dhVoxyEnabledForChunks = true;
+            }
+            previousCategory = newCategory;
+
             plan = next;
             current = plan.bench;
             phaseTicks = 0;
@@ -226,6 +259,15 @@ public final class CinematicRunner {
         }
     }
 
+    // Callbacks for DH/Voxy management - will be set by FullBenchmarkConfig
+    private Runnable enableDhVoxyForChunks = () -> {};
+    private Runnable disableDhVoxyForChunks = () -> {};
+
+    public void setDhVoxyCallbacks(Runnable enable, Runnable disable) {
+        this.enableDhVoxyForChunks = enable;
+        this.disableDhVoxyForChunks = disable;
+    }
+
     public synchronized void abortAll(String reason) {
         LOG.warn("[MC Benchmark Core] abort all: {}", reason);
         queue.clear();
@@ -240,6 +282,12 @@ public final class CinematicRunner {
 
     private void abortCurrent(String reason) {
         LOG.warn("[MC Benchmark Core] abort current: {}", reason);
+        // If we're in the Chunks category and DH/Voxy was enabled, disable it first
+        if (dhVoxyEnabledForChunks) {
+            LOG.info("[MC Benchmark Core] aborting while in Chunks category, disabling DH/Voxy");
+            disableDhVoxyForChunks.run();
+            dhVoxyEnabledForChunks = false;
+        }
         if (current != null) {
             // Restore any temporary environment changes (resource packs, shaders, etc.)
             // even when a benchmark is aborted mid-run.
@@ -569,12 +617,19 @@ public final class CinematicRunner {
             } catch (Throwable var8) {
             }
         }
+        // If we're still in the Chunks category when session ends, disable DH/Voxy
+        // before the final restore (which will restore original config)
+        if (dhVoxyEnabledForChunks) {
+            LOG.info("[MC Benchmark Core] session ending while in Chunks category, disabling DH/Voxy");
+            disableDhVoxyForChunks.run();
+            dhVoxyEnabledForChunks = false;
+        }
         // Session-level cleanup (restore the user's original config) before showing results.
         if (sessionCleanup != null) {
             try {
                 sessionCleanup.run();
             } catch (Throwable t) {
-                LOG.warn("[MC Benchmark Core] session cleanup failed", t);
+                LOG.warn("[Minecraft Benchmark Core] session cleanup failed", t);
             }
         }
         restoreRenderDistance();
@@ -588,6 +643,8 @@ public final class CinematicRunner {
         builder = null;
         phaseTicks = 0;
         waitTicks = 0;
+        previousCategory = "";
+        dhVoxyEnabledForChunks = false;
         Runnable cb = onFinished;
         onFinished = null;
         mc.execute(() -> {

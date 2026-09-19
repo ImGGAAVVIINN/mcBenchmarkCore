@@ -50,6 +50,25 @@ dependencies {
 	// `modCompileOnly` = compile against Iris classes, but do NOT bundle Iris
 	// into the mod jar and do NOT make it a runtime requirement.
 	modCompileOnly "maven.modrinth:YL57xq9U:1.10.7+1.21.11-fabric"
+
+	// Distant Horizons API (compile-only, optional at runtime).
+	// Local JAR from run/mods/DistantHorizonsApi-7.1.0.jar (mod id "dh-api").
+	// Used to control DH rendering state and chunk render distance.
+	// `modCompileOnly` = compile against DH API classes, but do NOT bundle
+	// into the mod jar and do NOT make it a runtime requirement.
+	modCompileOnly files("run/mods/DistantHorizonsApi-7.1.0.jar")
+
+	// Distant Horizons main mod (compile-only, optional at runtime).
+	// Local JAR from run/mods/DistantHorizons-3.3.0-1.21.11-fabric-neoforge.jar (mod id "distanthorizons").
+	// Provides the actual implementation behind the API.
+	modCompileOnly files("run/mods/DistantHorizons-3.3.0-1.21.11-fabric-neoforge.jar")
+
+	// Voxy (compile-only, optional at runtime).
+	// Local JAR from run/mods/voxy-0.2.16-beta+1.21.11.jar (mod id "voxy").
+	// Used to control Voxy rendering state and section render distance.
+	// `modCompileOnly` = compile against Voxy classes, but do NOT bundle
+	// into the mod jar and do NOT make it a runtime requirement.
+	modCompileOnly files("run/mods/voxy-0.2.16-beta+1.21.11.jar")
 }
 
 processResources {
