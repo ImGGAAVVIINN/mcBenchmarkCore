@@ -44,21 +44,29 @@ public abstract class TitleScreenMixin extends Screen {
 
     /**
      * Removes the vanilla Singleplayer / Multiplayer / Realms / Accessibility
-     * buttons from the title screen. The benchmark title-screen UI (Test FPS,
-     * Language, Options, Quit, copyright) is left untouched.
+     * buttons from the title screen. Also removes the "Create Test World" button
+     * that appears in development environments (IS_RUNNING_IN_IDE).
+     * The benchmark title-screen UI (Test FPS, Language, Options, Quit, copyright) is left untouched.
      */
     private void fpstest$removeVanillaButtons() {
         List<GuiEventListener> toRemove = new ArrayList<>();
         for (GuiEventListener child : this.children()) {
             if (child instanceof AbstractWidget widget) {
                 Component message = widget.getMessage();
-                if (message != null && message.getContents() instanceof TranslatableContents contents) {
-                    String key = contents.getKey();
-                    if ("menu.singleplayer".equals(key)
-                            || "menu.multiplayer".equals(key)
-                            || "menu.online".equals(key)
-                            || "options.accessibility".equals(key)
-                            || "accessibility.onboarding.accessibility.button".equals(key)) {
+                if (message != null) {
+                    // Check for translation keys (vanilla buttons)
+                    if (message.getContents() instanceof TranslatableContents contents) {
+                        String key = contents.getKey();
+                        if ("menu.singleplayer".equals(key)
+                                || "menu.multiplayer".equals(key)
+                                || "menu.online".equals(key)
+                                || "options.accessibility".equals(key)
+                                || "accessibility.onboarding.accessibility.button".equals(key)) {
+                            toRemove.add(child);
+                        }
+                    }
+                    // Check for literal "Create Test World" button (vanilla IDE-only button)
+                    else if (message.getString().equals("Create Test World")) {
                         toRemove.add(child);
                     }
                 }
