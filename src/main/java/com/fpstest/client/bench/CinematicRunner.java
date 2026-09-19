@@ -9,6 +9,7 @@ import com.fpstest.client.config.FpsTestConfig;
 import com.fpstest.client.gui.BenchmarkResultsScreen;
 import com.fpstest.client.gui.I18n;
 import com.fpstest.client.report.ReportWriter;
+import com.fpstest.client.bench.ModDetector;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -318,11 +319,11 @@ public final class CinematicRunner {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
             try {
-                mc.level.disconnect(Component.literal("MC Benchmark Core — aborted"));
+                mc.level.disconnect(Component.literal(ModDetector.getBenchmarkTitle(" — aborted")));
             } catch (Throwable ignored) {
             }
             try {
-                mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — aborted")));
+                mc.setScreen(new GenericMessageScreen(Component.literal(ModDetector.getBenchmarkTitle(" — aborted"))));
             } catch (Throwable ignored) {
             }
         }
@@ -580,15 +581,15 @@ public final class CinematicRunner {
     }
 
     private void disconnectWorld(Minecraft mc) {
-        mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — finishing " + current.displayName() + "…")));
+        mc.setScreen(new GenericMessageScreen(Component.literal(ModDetector.getBenchmarkTitle(" — finishing " + current.displayName() + "…"))));
         CinematicState.holdPose = false;
         CinematicState.active = false;
         CinematicState.path = null;
         try {
             if (mc.level != null) {
-                mc.level.disconnect(Component.literal("MC Benchmark Core — finished"));
+                mc.level.disconnect(Component.literal(ModDetector.getBenchmarkTitle(" — finished")));
             }
-            mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core")));
+            mc.setScreen(new GenericMessageScreen(Component.literal(ModDetector.getBenchmarkTitle())));
         } catch (Throwable var3) {
             LOG.warn("[MC Benchmark Core] disconnect failed", var3);
         }
