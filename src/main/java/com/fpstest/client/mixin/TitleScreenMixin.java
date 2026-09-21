@@ -7,7 +7,6 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,14 +34,28 @@ public abstract class TitleScreenMixin extends Screen {
     private void fpstest$addBenchmarkButton(CallbackInfo ci) {
         this.fpstest$removeVanillaButtons();
         this.fpstest$replaceCopyrightText();
-        Button btn = Button.builder(
-                Component.literal(I18n.tr("fpstest.button.run_benchmark")),
-                b -> BenchmarkHub.startFullBenchmark()
-        )
-        .bounds(this.width - 110, 4, 100, 20)
-        .build();
+        this.fpstest$addBenchmarkVersionWidget();
+        this.fpstest$addRunBenchmarkWidget();
+    }
 
-        this.addRenderableWidget(btn);
+    /**
+     * Adds the "Run Benchmark" button as a PlainTextButton at the top-right
+     * so FancyMenu can discover and customize it (Button widgets are skipped by FancyMenu).
+     */
+    private void fpstest$addRunBenchmarkWidget() {
+        String buttonText = I18n.tr("fpstest.button.run_benchmark");
+        int width = this.font.width(buttonText) + 20; // add padding
+        int height = this.font.lineHeight + 4; // add padding
+        int x = this.width - width - 4;
+        int y = 4;
+        
+        PlainTextButton benchmarkWidget = new PlainTextButton(
+            x, y, width, height,
+            Component.literal(buttonText),
+            b -> BenchmarkHub.startFullBenchmark(),
+            this.font
+        );
+        this.addRenderableWidget(benchmarkWidget);
     }
 
     /**
@@ -115,32 +128,26 @@ public abstract class TitleScreenMixin extends Screen {
     }
 
     /**
-     * Redirects drawString calls to inject our benchmark text before the version string.
+     * Adds the "MC Benchmark Core V1.0.0" text as a widget at the bottom-left
+     * so FancyMenu can discover and customize it.
+     * Position is chosen to avoid overlap with vanilla version text
+     * (drawn at y=height-10 by vanilla TitleScreen).
      */
-    @Redirect(
-        method = "render",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"
-        )
-    )
-    private void fpstest$redirectDrawString(net.minecraft.client.gui.GuiGraphics instance, net.minecraft.client.gui.Font font, String text, int x, int y, int color) {
-        // If this is the Minecraft version text, draw our benchmark text above it
-        if (text.contains("Minecraft") && text.contains("Fabric")) {
-            String benchmarkText = "MC Benchmark Core V1.0.0";
-            instance.drawString(font, benchmarkText, 2, y - 12, color);
-        }
-        instance.drawString(font, text, x, y, color);
-    }
-
-    @Inject(
-        method = "render",
-        at = @At("TAIL")
-    )
-    private void fpstest$renderBenchmarkVersion(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+    private void fpstest$addBenchmarkVersionWidget() {
         String benchmarkText = "MC Benchmark Core V1.0.0";
-        int y = this.height - 22;
-        guiGraphics.drawString(this.font, benchmarkText, 2, y, 0xFF0000);
-        System.out.println("[FPSTEST] TAIL injection - drawing red text at (2, " + y + ")");
+        int width = this.font.width(benchmarkText) + 10; // add some padding
+        int height = this.font.lineHeight;
+        // Position at bottom-left, just above the vanilla version text
+        // Vanilla text is at y=height-10, so we place our widget just above it with a small gap
+        int x = 2;
+        int y = this.height - height - 12;
+        
+        PlainTextButton benchmarkWidget = new PlainTextButton(
+            x, y, width, height,
+            Component.literal(benchmarkText),
+            b -> {}, // no-op onPress
+            this.font
+        );
+        this.addRenderableWidget(benchmarkWidget);
     }
 }
