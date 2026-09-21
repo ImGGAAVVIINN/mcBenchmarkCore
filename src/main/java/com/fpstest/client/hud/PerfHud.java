@@ -10,21 +10,21 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Formatting;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 
 @Environment(EnvType.CLIENT)
 public final class PerfHud {
    private long lastUsageLogMs = 0L;
 
-   public void render(GuiGraphics ctx) {
+   public void render(DrawContext ctx) {
       CinematicRunner runner = FpsTestClient.RUNNER;
       if (runner.busy()) {
-         Minecraft mc = Minecraft.getInstance();
-         if (!mc.options.hideGui) {
-            Font font = mc.font;
+         MinecraftClient mc = MinecraftClient.getInstance();
+         if (!mc.options.hudHidden) {
+            TextRenderer font = mc.textRenderer;
             FpsTestConfig cfg = FpsTestConfig.get();
             boolean compact = cfg.hudCompact;
             double fps = FpsTestClient.FPS.smoothedFps();
@@ -36,7 +36,7 @@ public final class PerfHud {
             int lineH = 10;
             int minWidth = compact ? 180 : 240;
             List<String> lines = new ArrayList<>();
-            ChatFormatting fpsColor = fps >= 60.0 ? ChatFormatting.GREEN : (fps >= 30.0 ? ChatFormatting.YELLOW : ChatFormatting.RED);
+            Formatting fpsColor = fps >= 60.0 ? Formatting.GREEN : (fps >= 30.0 ? Formatting.YELLOW : Formatting.RED);
             Benchmark cur = runner.current();
             RunPlan plan = runner.currentPlan();
             CinematicRunner.State st = runner.state();
@@ -68,11 +68,11 @@ public final class PerfHud {
             if (!compact) {
                lines.add(String.format("§7tick %.2f ms (client)", tickMs));
                lines.add(String.format("§7heap %d / %d MB   GC %d", usedMb, maxMb, gcCount));
-               if (mc.level != null) {
+               if (mc.world != null) {
                   String chunkPart = st == CinematicRunner.State.CHUNK_PRELOAD
                      ? "   " + I18n.tr("fpstest.hud.loading_chunks") + " " + runner.preloadedChunks()
                      : "";
-                  lines.add("§7" + I18n.tr("fpstest.hud.entities") + " " + mc.level.getEntityCount() + chunkPart);
+                  lines.add("§7" + I18n.tr("fpstest.hud.entities") + " " + mc.world.getRegularEntityCount() + chunkPart);
                }
 
                lines.add("§8" + I18n.tr("fpstest.hud.abort_hint"));
@@ -84,7 +84,7 @@ public final class PerfHud {
 
             for (String line : lines) {
                if (!"__bar__".equals(line)) {
-                  int w = font.width(line) + 6;
+                  int w = font.getWidth(line) + 6;
                   if (w > width) {
                      width = w;
                   }
@@ -94,15 +94,15 @@ public final class PerfHud {
             // Reserve room inside the box for the live CPU / GPU / RAM usage
             // column (non-compact HUDs only, and only while a world is loaded
             // so the entities row exists to align against).
-            boolean drawUsage = !compact && mc.level != null;
+            boolean drawUsage = !compact && mc.world != null;
             int usageColW = drawUsage ? this.usageColumnWidth(font) : 0;
             if (drawUsage) {
                width += 6 + usageColW;
             }
 
             int totalH = lineH * lines.size() + 4;
-            int sw = ctx.guiWidth();
-            int sh = ctx.guiHeight();
+            int sw = ctx.getScaledWindowWidth();
+            int sh = ctx.getScaledWindowHeight();
             int topMargin = 4;
             int bottomMargin = 26;
             int sideMargin = 4;
@@ -158,8 +158,8 @@ public final class PerfHud {
                   ctx.fill(filledX0, yy + 1, filledX0 + filled, yy + 1 + barH, barColor);
                   yy += barH + 4;
                } else {
-                  int textX = rightAlign ? contentRight - font.width(linex) : contentLeft;
-                  ctx.drawString(font, linex, textX, yy, -1);
+                  int textX = rightAlign ? contentRight - font.getWidth(linex) : contentLeft;
+                  ctx.drawTextWithShadow(font, linex, textX, yy, -1);
                   // Track the vertical row positions of the usage-aligned lines.
                   if (!compact) {
                      if (linex.startsWith("§7tick ")) {
@@ -194,22 +194,22 @@ public final class PerfHud {
     * Width of the whole usage column (label + value), used to reserve space so
     * the column never overlaps the box.
     */
-   private int usageColumnWidth(Font font) {
+   private int usageColumnWidth(TextRenderer font) {
       int w = 0;
       for (String label : new String[]{"CPU", "GPU", "RAM"}) {
-         w = Math.max(w, font.width(label + " 100%"));
+         w = Math.max(w, font.getWidth(label + " 100%"));
       }
       return w + 2;
    }
 
-   private void drawUsageLine(GuiGraphics ctx, Font font, String label, double value, int columnRightX, int yy) {
+   private void drawUsageLine(DrawContext ctx, TextRenderer font, String label, double value, int columnRightX, int yy) {
       String text;
       if (value < 0.0) {
          text = label + " --";
       } else {
          text = label + " " + usageColor(value) + (int)Math.round(value) + "%";
       }
-      ctx.drawString(font, text, columnRightX - font.width(text), yy, -1);
+      ctx.drawTextWithShadow(font, text, columnRightX - font.getWidth(text), yy, -1);
    }
 
    /**
@@ -217,17 +217,17 @@ public final class PerfHud {
     * gold at 80-89%, red at 90-95%, dark red above 95%. The gray "--"
     * placeholder (metric unavailable) stays gray.
     */
-   private ChatFormatting usageColor(double value) {
+   private Formatting usageColor(double value) {
       if (value > 95.0) {
-         return ChatFormatting.DARK_RED;
+         return Formatting.DARK_RED;
       } else if (value >= 90.0) {
-         return ChatFormatting.RED;
+         return Formatting.RED;
       } else if (value >= 80.0) {
-         return ChatFormatting.GOLD;
+         return Formatting.GOLD;
       } else if (value >= 60.0) {
-         return ChatFormatting.YELLOW;
+         return Formatting.YELLOW;
       } else {
-         return ChatFormatting.GREEN;
+         return Formatting.GREEN;
       }
    }
 

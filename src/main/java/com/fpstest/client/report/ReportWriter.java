@@ -22,7 +22,7 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import org.lwjgl.opengl.GL11;
 
 @Environment(EnvType.CLIENT)
@@ -31,7 +31,7 @@ public final class ReportWriter {
    }
 
    public static Path write(List<BenchmarkResult> results, String sessionId) throws IOException {
-      Path base = Minecraft.getInstance().gameDirectory.toPath().resolve("fpstest-reports").resolve(sanitize(sessionId));
+      Path base = MinecraftClient.getInstance().runDirectory.toPath().resolve("fpstest-reports").resolve(sanitize(sessionId));
       Files.createDirectories(base);
       writeJson(base.resolve("report.json"), results);
       writeMarkdown(base.resolve("report.md"), results);
@@ -580,7 +580,7 @@ public final class ReportWriter {
       String gpuRenderer = safeGl(() -> GL11.glGetString(7937));
       String gpuVersion = safeGl(() -> GL11.glGetString(7938));
       return "{\"minecraft\":"
-         + jsonStr(Minecraft.getInstance().getLaunchedVersion())
+         + jsonStr(MinecraftClient.getInstance().getGameVersion())
          + ",\"os\":"
          + jsonStr(os.getName() + " " + os.getVersion() + " (" + os.getArch() + ")")
          + ",\"cpu_cores\":"
@@ -617,8 +617,8 @@ public final class ReportWriter {
       OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
       Runtime rt = Runtime.getRuntime();
       String gpu = safeGl(() -> GL11.glGetString(7937)) + " / " + safeGl(() -> GL11.glGetString(7938));
-      return "- Minecraft: `"
-         + Minecraft.getInstance().getLaunchedVersion()
+      return "- MinecraftClient: `"
+         + MinecraftClient.getInstance().getGameVersion()
          + "`\n- OS: `"
          + os.getName()
          + " "

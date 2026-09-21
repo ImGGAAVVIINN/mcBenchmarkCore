@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.resource.ResourcePackManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,16 +39,16 @@ public final class FullBenchmarkConfig {
 
     /** Saves the user's configuration and applies the clean baseline (shaders OFF, benchmark packs OFF). */
     public void saveAndDisable() {
-        Minecraft mc = Minecraft.getInstance();
-        PackRepository repo = mc.getResourcePackRepository();
-        originalPackIds = List.copyOf(repo.getSelectedIds());
+        MinecraftClient mc = MinecraftClient.getInstance();
+        ResourcePackManager repo = mc.getResourcePackManager();
+        originalPackIds = List.copyOf(repo.getEnabledIds());
         irisPresent = IrisShaderControl.isPresent();
         if (irisPresent) {
             try {
                 originalShadersEnabled = IrisShaderControl.areShadersEnabled();
                 originalShaderPackName = IrisShaderControl.getShaderPackName().orElse(null);
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] could not read Iris state; treating Iris as absent", t);
+                LOG.warn("[MinecraftClient Benchmark Core] could not read Iris state; treating Iris as absent", t);
                 irisPresent = false;
             }
         }
@@ -56,20 +56,20 @@ public final class FullBenchmarkConfig {
         List<String> clean = new ArrayList<>(originalPackIds);
         clean.remove(RESOURCE_PACK_ID);
         try {
-            repo.setSelected(clean);
-            mc.reloadResourcePacks();
+            repo.setEnabledProfiles(clean);
+            mc.reloadResources();
         } catch (Throwable t) {
-            LOG.warn("[Minecraft Benchmark Core] could not disable benchmark resource packs", t);
+            LOG.warn("[MinecraftClient Benchmark Core] could not disable benchmark resource packs", t);
         }
         if (irisPresent) {
             try {
                 IrisShaderControl.restore(null, false);
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] could not disable shaders", t);
+                LOG.warn("[MinecraftClient Benchmark Core] could not disable shaders", t);
             }
         }
         saved = true;
-        LOG.info("[Minecraft Benchmark Core] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF");
+        LOG.info("[MinecraftClient Benchmark Core] FULL BENCHMARK baseline: shaders OFF, benchmark resource packs OFF");
     }
 
     /** Restores the user's exact previous configuration. */
@@ -78,29 +78,29 @@ public final class FullBenchmarkConfig {
             return;
         }
         saved = false;
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (irisPresent) {
             try {
                 IrisShaderControl.restore(originalShaderPackName, originalShadersEnabled);
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] Iris state restore failed", t);
+                LOG.warn("[MinecraftClient Benchmark Core] Iris state restore failed", t);
             }
         }
         try {
-            PackRepository repo = mc.getResourcePackRepository();
-            repo.setSelected(originalPackIds);
-            // NOTE: intentionally NOT calling mc.reloadResourcePacks() here. During
+            ResourcePackManager repo = mc.getResourcePackManager();
+            repo.setEnabledProfiles(originalPackIds);
+            // NOTE: intentionally NOT calling mc.reloadResources() here. During
             // session cleanup the singleplayer server has just been disconnected and a
             // synchronous resource reload leaves a LoadingOverlay (the red Mojang screen)
             // that never completes, freezing the client before the results screen appears.
             // The selection above is persisted and restored by the normal vanilla flow on
             // the next world load.
-            LOG.info("[Minecraft Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
+            LOG.info("[MinecraftClient Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
-            LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
+            LOG.warn("[MinecraftClient Benchmark Core] resource pack restore failed", t);
         }
         LOG.info(
-            "[Minecraft Benchmark Core] FULL BENCHMARK restored user config: shaders={}, pack={}, resourcePacks={}",
+            "[MinecraftClient Benchmark Core] FULL BENCHMARK restored user config: shaders={}, pack={}, resourcePacks={}",
             originalShadersEnabled,
             originalShaderPackName == null ? "(internal)" : originalShaderPackName,
             originalPackIds

@@ -14,12 +14,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.GenericMessageScreen;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.MessageScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ public final class ReportsScreen extends Screen {
     }
 
     private void rebuild() {
-        this.clearWidgets();
+        this.clearChildren();
         int pad = 8;
         int top = 30;
         int rowH = 22;
@@ -53,38 +53,38 @@ public final class ReportsScreen extends Screen {
             this.scroll = max;
         }
 
-        this.addRenderableWidget(
+        this.addDrawableChild(
             FlatButton.flatBuilder(I18n.t("fpstest.reports.open_root"), b -> openRootInOs())
                 .dimensions(this.width - 330, 4, 100, 20)
-                .tooltip(Tooltip.create(I18n.t("fpstest.reports.open_root.tooltip")))
+                .tooltip(Tooltip.of(I18n.t("fpstest.reports.open_root.tooltip")))
                 .build()
         );
         FlatButton compareBtn = FlatButton.flatBuilder(I18n.t("fpstest.reports.compare"), b -> this.doCompare())
             .dimensions(this.width - 220, 4, 100, 20)
-            .tooltip(Tooltip.create(this.selected.size() == 2 ? I18n.t("fpstest.reports.compare_pick") : I18n.t("fpstest.reports.compare_pick_hint")))
+            .tooltip(Tooltip.of(this.selected.size() == 2 ? I18n.t("fpstest.reports.compare_pick") : I18n.t("fpstest.reports.compare_pick_hint")))
             .build();
         compareBtn.active = this.selected.size() == 2;
-        this.addRenderableWidget(compareBtn);
-        this.addRenderableWidget(
-            FlatButton.flatBuilder(I18n.t("fpstest.settings.back"), b -> this.onClose()).dimensions(this.width - 110, 4, 100, 20).build()
+        this.addDrawableChild(compareBtn);
+        this.addDrawableChild(
+            FlatButton.flatBuilder(I18n.t("fpstest.settings.back"), b -> this.close()).dimensions(this.width - 110, 4, 100, 20).build()
         );
         if (this.sessions.isEmpty()) {
-            this.addRenderableOnly((ctx, mx, my, dt) -> ctx.drawCenteredString(this.font, Component.literal(I18n.tr("fpstest.reports.empty")), this.width / 2, this.height / 2, -5592406));
+            this.addDrawable((ctx, mx, my, dt) -> ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal(I18n.tr("fpstest.reports.empty")), this.width / 2, this.height / 2, -5592406));
         } else {
             for (int i = 0; i < Math.min(rowsAvail, this.sessions.size() - this.scroll); i++) {
                 Path p = this.sessions.get(this.scroll + i);
                 String name = p.getFileName().toString();
                 int rowY = top + i * rowH;
                 String btnLbl = (this.selected.contains(name) ? "\u00a7l[ \u2713 ] " : "[   ] ") + name;
-                this.addRenderableWidget(
-                    FlatButton.flatBuilder(Component.literal(btnLbl), b -> this.toggleSelection(name))
+                this.addDrawableChild(
+                    FlatButton.flatBuilder(Text.literal(btnLbl), b -> this.toggleSelection(name))
                         .dimensions(pad, rowY, this.width - 254, 20)
                         .build()
                 );
-                this.addRenderableWidget(
+                this.addDrawableChild(
                     FlatButton.flatBuilder(I18n.t("fpstest.reports.open"), b -> openInOs(p)).dimensions(this.width - 220, rowY, 70, 20).build()
                 );
-                this.addRenderableWidget(
+                this.addDrawableChild(
                     FlatButton.flatBuilder(I18n.t("fpstest.reports.results"), b -> this.openResults(p)).dimensions(this.width - 145, rowY, 100, 20).accent(-7686401).build()
                 );
             }
@@ -121,17 +121,17 @@ public final class ReportsScreen extends Screen {
             if (picks.size() == 2) {
                 try {
                     Path out = ReportComparator.compare(picks.get(0), picks.get(1));
-                    this.minecraft.setScreen(new GenericMessageScreen(Component.literal(String.format(I18n.tr("fpstest.reports.compare_done"), out.toString()))));
+                    this.client.setScreen(new MessageScreen(Text.literal(String.format(I18n.tr("fpstest.reports.compare_done"), out.toString()))));
                     new Thread(() -> {
                         try {
                             Thread.sleep(1200L);
                         } catch (InterruptedException var2) {
                         }
 
-                        this.minecraft.execute(() -> this.minecraft.setScreen(new ReportsScreen(this.parent)));
+                        this.client.execute(() -> this.client.setScreen(new ReportsScreen(this.parent)));
                     }, "mcbenchmarkcore-reports-compare-bounce").start();
                 } catch (Throwable var6) {
-                    LOG.error("[Minecraft Benchmark Core] compare failed", var6);
+                    LOG.error("[MinecraftClient Benchmark Core] compare failed", var6);
                 }
             }
         }
@@ -153,20 +153,20 @@ public final class ReportsScreen extends Screen {
         try {
             List<BenchmarkResult> results = ReportReader.read(p);
             if (results.isEmpty()) {
-                LOG.warn("[Minecraft Benchmark Core] no results in {}", p);
-                this.minecraft.setScreen(new GenericMessageScreen(Component.literal(I18n.tr("fpstest.reports.no_results"))));
+                LOG.warn("[MinecraftClient Benchmark Core] no results in {}", p);
+                this.client.setScreen(new MessageScreen(Text.literal(I18n.tr("fpstest.reports.no_results"))));
                 return;
             }
             String name = p.getFileName().toString();
-            this.minecraft.setScreen(new BenchmarkResultsScreen(results, p, name, "", this::onClose));
+            this.client.setScreen(new BenchmarkResultsScreen(results, p, name, "", this::close));
         } catch (Throwable t) {
-            LOG.error("[Minecraft Benchmark Core] failed to load results from {}", p, t);
-            this.minecraft.setScreen(new GenericMessageScreen(Component.literal(String.format(I18n.tr("fpstest.reports.load_failed"), t.getMessage()))));
+            LOG.error("[MinecraftClient Benchmark Core] failed to load results from {}", p, t);
+            this.client.setScreen(new MessageScreen(Text.literal(String.format(I18n.tr("fpstest.reports.load_failed"), t.getMessage()))));
         }
     }
 
     private static void openRootInOs() {
-        Path root = Minecraft.getInstance().gameDirectory.toPath().resolve("fpstest-reports");
+        Path root = MinecraftClient.getInstance().runDirectory.toPath().resolve("fpstest-reports");
 
         try {
             Files.createDirectories(root);
@@ -180,7 +180,7 @@ public final class ReportsScreen extends Screen {
     }
 
     private static List<Path> listSessions() {
-        Path root = Minecraft.getInstance().gameDirectory.toPath().resolve("fpstest-reports");
+        Path root = MinecraftClient.getInstance().runDirectory.toPath().resolve("fpstest-reports");
         if (!Files.isDirectory(root)) {
             return List.of();
         } else {
@@ -198,7 +198,7 @@ public final class ReportsScreen extends Screen {
 
                 return var2;
             } catch (IOException var6) {
-                LOG.warn("[Minecraft Benchmark Core] listSessions failed", var6);
+                LOG.warn("[MinecraftClient Benchmark Core] listSessions failed", var6);
                 return List.of();
             }
         }
@@ -217,12 +217,13 @@ public final class ReportsScreen extends Screen {
     }
 
     @Override
-    public void onClose() {
-        this.minecraft.setScreen(this.parent);
+    public void close() {
+        this.client.setScreen(this.parent);
+        super.close();
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(DrawContext guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 }

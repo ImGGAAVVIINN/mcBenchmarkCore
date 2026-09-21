@@ -15,17 +15,16 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.particles.PowerParticleOption;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class ParticleCycleBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int PIT_HALF = 14;
    private static final int PIT_DEPTH = 16;
    private static final int PARTICLES_PER_EMITTER_BURST = 80;
@@ -114,14 +113,14 @@ public final class ParticleCycleBenchmark implements Benchmark {
       this.tickCounter = 0;
       Arena.freezeDaytime(ctx);
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int) CENTER.y - 16, 0, 14, 14);
             Arena.carveBox(lvl, 0, (int) CENTER.y - 16, 0, 14, 16, 14);
          }
       });
       ctx.setArenaOrigin(CENTER);
-      Vec3 lookAt = new Vec3(CENTER.x, CENTER.y - 11.2, CENTER.z);
+      Vec3d lookAt = new Vec3d(CENTER.x, CENTER.y - 11.2, CENTER.z);
       ctx.setCameraPath(new OrbitPath(lookAt, 8.4, 4.0, 0.8));
       Arena.teleport(ctx, CENTER, 0.0F, 0.0F);
    }
@@ -159,16 +158,16 @@ public final class ParticleCycleBenchmark implements Benchmark {
             }
          }
          ctx.onServer(s -> {
-            ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+            ServerWorld lvl = (ServerWorld) ctx.serverLevel();
             if (lvl != null) {
                ThreadLocalRandom rng = ThreadLocalRandom.current();
                int emittersAround = 8;
-               List<ServerPlayer> players = new ArrayList<>(lvl.players());
+               List<ServerPlayerEntity> players = new ArrayList<>(lvl.getPlayers());
                List<ParticleType<?>> emitTypes = allTypesThisBurst ? typeList : List.of(onlyType);
 
                for (int e = 0; e < emitTypes.size(); e++) {
                   ParticleType<?> type = emitTypes.get(e);
-                  ParticleOptions particle = toParticleOptions(type);
+                  ParticleEffect particle = toParticleOptions(type);
                   int em = e % emittersAround;
                   double angle = em * (Math.PI * 2) / emittersAround;
                   double ex = CENTER.x + Math.cos(angle) * 12.0;
@@ -182,10 +181,10 @@ public final class ParticleCycleBenchmark implements Benchmark {
                      double py = CENTER.y - 16.0 + dy;
                      double pz = ez + jz;
                      if (players.isEmpty()) {
-                        lvl.sendParticles(particle, px, py, pz, 1, 0.0, 0.0, 0.0, 0.04);
+                        lvl.spawnParticles(particle, px, py, pz, 1, 0.0, 0.0, 0.0, 0.04);
                      } else {
-                        for (ServerPlayer p : players) {
-                           lvl.sendParticles(p, particle, true, false, px, py, pz, 1, 0.0, 0.0, 0.0, 0.04);
+                        for (ServerPlayerEntity p : players) {
+                           lvl.spawnParticles(p, particle, true, false, px, py, pz, 1, 0.0, 0.0, 0.0, 0.04);
                         }
                      }
 
@@ -202,15 +201,13 @@ public final class ParticleCycleBenchmark implements Benchmark {
       }
    }
 
-   private static ParticleOptions toParticleOptions(ParticleType<?> type) {
-      if (type instanceof ParticleOptions opts) {
+   private static ParticleEffect toParticleOptions(ParticleType<?> type) {
+      if (type instanceof ParticleEffect opts) {
          return opts;
       } else if (type == ParticleTypes.DRAGON_BREATH) {
-         return PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F);
+         return ParticleTypes.DRAGON_BREATH;
       } else {
-         @SuppressWarnings("unchecked")
-         ParticleType<PowerParticleOption> powerType = (ParticleType<PowerParticleOption>) type;
-         return PowerParticleOption.create(powerType, 1.0F);
+         throw new IllegalArgumentException("Particle type is not a ParticleEffect: " + type);
       }
    }
 

@@ -9,15 +9,15 @@ import com.fpstest.client.bench.scene.Arena;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class StaticDenseForestBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int FOREST_HALF = 24;
    private static final int TREE_COUNT = 64;
    private static final int TRUNK_HEIGHT = 5;
@@ -73,20 +73,20 @@ public final class StaticDenseForestBenchmark implements Benchmark {
       this.leafBlocks = 0;
       this.logBlocks = 0;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int by = (int)CENTER.y;
-            BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
+            BlockState grass = Blocks.GRASS_BLOCK.getDefaultState();
 
             for (int dx = -24; dx <= 24; dx++) {
                for (int dz = -24; dz <= 24; dz++) {
-                  lvl.setBlock(new BlockPos((int)CENTER.x + dx, by - 1, (int)CENTER.z + dz), grass, 3);
+                  lvl.setBlockState(new BlockPos((int)CENTER.x + dx, by - 1, (int)CENTER.z + dz), grass, 3);
                }
             }
 
             Random rng = new Random(this.seed());
-            BlockState log = Blocks.OAK_LOG.defaultBlockState();
-            BlockState leaves = Blocks.OAK_LEAVES.defaultBlockState();
+            BlockState log = Blocks.OAK_LOG.getDefaultState();
+            BlockState leaves = Blocks.OAK_LEAVES.getDefaultState();
             int placed = 0;
             int attempts = 0;
 
@@ -97,20 +97,20 @@ public final class StaticDenseForestBenchmark implements Benchmark {
                BlockPos base = new BlockPos((int)CENTER.x + x, by, (int)CENTER.z + z);
                if (lvl.getBlockState(base).isAir()) {
                   for (int h = 0; h < 5; h++) {
-                     lvl.setBlock(base.above(h), log, 3);
+                     lvl.setBlockState(base.up(h), log, 3);
                      this.logBlocks++;
                   }
 
-                  BlockPos leafCentre = base.above(5);
+                  BlockPos leafCentre = base.up(5);
 
                   for (int lx = -3; lx <= 3; lx++) {
                      for (int ly = -3; ly <= 3; ly++) {
                         for (int lz = -3; lz <= 3; lz++) {
                            int distSq = lx * lx + ly * ly + lz * lz;
                            if (distSq <= 9) {
-                              BlockPos lp = leafCentre.offset(lx, ly, lz);
-                              if (!lvl.getBlockState(lp).is(Blocks.OAK_LOG)) {
-                                 lvl.setBlock(lp, leaves, 3);
+                              BlockPos lp = leafCentre.add(lx, ly, lz);
+                              if (!lvl.getBlockState(lp).isOf(Blocks.OAK_LOG)) {
+                                 lvl.setBlockState(lp, leaves, 3);
                                  this.leafBlocks++;
                               }
                            }

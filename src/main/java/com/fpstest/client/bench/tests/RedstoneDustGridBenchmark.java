@@ -13,17 +13,17 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class RedstoneDustGridBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int TRAIL_COUNT = 16;
    private static final int TRAIL_LENGTH = 32;
    private static final int TRAIL_SPACING = 3;
@@ -88,23 +88,23 @@ public final class RedstoneDustGridBenchmark implements Benchmark {
       this.instrStart = null;
       this.sourcePositions.clear();
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int halfX = 38;
             int halfZ = 54;
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 2, 0, halfX, halfZ);
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, halfX, halfZ);
-            BlockState dust = Blocks.REDSTONE_WIRE.defaultBlockState();
-            BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
-            BlockState repeaterE = (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST);
-            BlockState stone = Blocks.STONE.defaultBlockState();
+            BlockState dust = Blocks.REDSTONE_WIRE.getDefaultState();
+            BlockState lamp = Blocks.REDSTONE_LAMP.getDefaultState();
+            BlockState repeaterE = (BlockState)Blocks.REPEATER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST);
+            BlockState stone = Blocks.STONE.getDefaultState();
             int by = (int)CENTER.y;
 
             for (int t = 0; t < 16; t++) {
                int z = (int)CENTER.z + (t - 8) * 3;
                int startX = (int)CENTER.x - 16;
                BlockPos sourcePos = new BlockPos(startX - 1, by, z);
-               lvl.setBlock(sourcePos, stone, 3);
+               lvl.setBlockState(sourcePos, stone, 3);
                this.sourcePositions.add(sourcePos);
 
                for (int i = 0; i < 32; i++) {
@@ -112,20 +112,20 @@ public final class RedstoneDustGridBenchmark implements Benchmark {
                   BlockPos pos = new BlockPos(x, by, z);
                   boolean isRepeater = i > 0 && i % 8 == 0 && i < 31;
                   if (isRepeater) {
-                     lvl.setBlock(pos, repeaterE, 3);
+                     lvl.setBlockState(pos, repeaterE, 3);
                   } else {
-                     lvl.setBlock(pos, dust, 3);
+                     lvl.setBlockState(pos, dust, 3);
                      this.dustPlaced++;
                   }
 
                   if (i > 0 && i % 4 == 0) {
                      BlockPos lampPos = new BlockPos(x, by, z - 1);
-                     lvl.setBlock(lampPos, lamp, 3);
+                     lvl.setBlockState(lampPos, lamp, 3);
                   }
                }
 
                BlockPos terminalLamp = new BlockPos(startX + 32, by, z);
-               lvl.setBlock(terminalLamp, lamp, 3);
+               lvl.setBlockState(terminalLamp, lamp, 3);
                this.trailsBuilt++;
             }
          }
@@ -145,12 +145,12 @@ public final class RedstoneDustGridBenchmark implements Benchmark {
 
       if (this.phaseTicks % 10 == 0) {
          this.pulseHigh = !this.pulseHigh;
-         BlockState target = this.pulseHigh ? Blocks.REDSTONE_BLOCK.defaultBlockState() : Blocks.STONE.defaultBlockState();
+         BlockState target = this.pulseHigh ? Blocks.REDSTONE_BLOCK.getDefaultState() : Blocks.STONE.getDefaultState();
          ctx.onServer(s -> {
-            ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+            ServerWorld lvl = (ServerWorld) ctx.serverLevel();
             if (lvl != null) {
                for (BlockPos p : this.sourcePositions) {
-                  lvl.setBlock(p, target, 3);
+                  lvl.setBlockState(p, target, 3);
                }
 
                this.pulses++;

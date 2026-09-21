@@ -15,56 +15,56 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.entry.RegistryEntryList;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlagSet;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.biome.FixedBiomeSource;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.dimension.DimensionType;
-import net.minecraft.world.level.dimension.LevelStem;
-import net.minecraft.world.level.gamerules.GameRules;
-import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.world.level.levelgen.WorldDimensions;
-import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
-import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
-import net.minecraft.world.level.levelgen.FlatLevelSource;
-import net.minecraft.world.level.storage.LevelResource;
-import net.minecraft.world.level.storage.LevelStorageSource;
-import net.minecraft.world.level.storage.PrimaryLevelData;
-import net.minecraft.world.level.storage.DerivedLevelData;
-import net.minecraft.world.level.storage.ServerLevelData;
-import net.minecraft.world.level.storage.WorldData;
-import net.minecraft.world.level.WorldDataConfiguration;
-import net.minecraft.world.level.LevelSettings;
-import net.minecraft.world.level.border.WorldBorder;
-import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
-import net.minecraft.world.level.levelgen.structure.StructureSet;
-import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import net.minecraft.world.level.levelgen.GenerationStep;
-import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
-import net.minecraft.world.level.levelgen.RandomState;
-import net.minecraft.world.RandomSequences;
-import net.minecraft.util.random.WeightedRandom;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.level.CustomSpawner;
+import net.minecraft.resource.featuretoggle.FeatureSet;
+import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.world.biome.source.FixedBiomeSource;
+import net.minecraft.block.Blocks;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.dimension.DimensionOptions;
+import net.minecraft.world.GameRules;
+import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
+import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.server.integrated.IntegratedServerLoader;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.world.dimension.DimensionOptionsRegistryHolder;
+import net.minecraft.world.gen.GeneratorOptions;
+import net.minecraft.world.gen.chunk.FlatChunkGeneratorLayer;
+import net.minecraft.world.gen.chunk.FlatChunkGeneratorConfig;
+import net.minecraft.world.gen.chunk.FlatChunkGenerator;
+import net.minecraft.util.WorldSavePath;
+import net.minecraft.world.level.storage.LevelStorage;
+import net.minecraft.world.level.LevelProperties;
+import net.minecraft.world.level.UnmodifiableLevelProperties;
+import net.minecraft.world.level.ServerWorldProperties;
+import net.minecraft.world.SaveProperties;
+import net.minecraft.resource.DataConfiguration;
+import net.minecraft.world.level.LevelInfo;
+import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.dimension.DimensionTypes;
+import net.minecraft.structure.StructureSet;
+import net.minecraft.world.gen.feature.PlacedFeature;
+import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.chunk.placement.StructurePlacementCalculator;
+import net.minecraft.world.gen.noise.NoiseConfig;
+import net.minecraft.util.math.random.RandomSequencesState;
+import net.minecraft.util.collection.Weighting;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnGroup;
+import net.minecraft.world.spawner.SpecialSpawner;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.Map;
@@ -76,7 +76,7 @@ import java.util.function.Supplier;
 public final class EphemeralWorld {
     public static final String LEVEL_ID = "fpstest-arena";
     private static volatile String currentLevelId = "fpstest-arena";
-    private static volatile ResourceKey<Level> currentDimensionKey = null;
+    private static volatile RegistryKey<World> currentDimensionKey = null;
 
     private EphemeralWorld() {
     }
@@ -85,16 +85,16 @@ public final class EphemeralWorld {
         return currentLevelId;
     }
 
-    public static ResourceKey<Level> currentDimensionKey() {
+    public static RegistryKey<World> currentDimensionKey() {
         return currentDimensionKey;
     }
 
     public static void create(long seed, WorldType type) {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         String levelId = "fpstest-arena";
 
         try {
-            Path existing = mc.getLevelSource().getLevelPath(LevelResource.ROOT.getId()).resolve("fpstest-arena");
+            Path existing = LevelStorage.create(mc.runDirectory.toPath().resolve("saves")).resolve("fpstest-arena");
             if (Files.exists(existing)) {
                 levelId = "fpstest-arena-" + System.currentTimeMillis() / 1000L;
                 FpsTestClient.LOG.warn("[MC Benchmark Core] using fallback arena name: {} (previous save tree still present)", levelId);
@@ -108,32 +108,32 @@ public final class EphemeralWorld {
         FpsTestClient.LOG.info("[MC Benchmark Core] creating ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
 
         // Create game rules for the ephemeral world
-        GameRules rules = new GameRules(FeatureFlagSet.of());
-        rules.set(GameRules.ADVANCE_TIME, false, null);
-        rules.set(GameRules.ADVANCE_WEATHER, false, null);
-        rules.set(GameRules.SPAWN_MOBS, false, null);
-        rules.set(GameRules.MOB_DROPS, false, null);
-        rules.set(GameRules.BLOCK_DROPS, false, null);
-        rules.set(GameRules.ENTITY_DROPS, false, null);
-        rules.set(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0, null);
-        rules.set(GameRules.MOB_GRIEFING, false, null);
-        rules.set(GameRules.SPAWN_PATROLS, false, null);
-        rules.set(GameRules.SPAWN_WANDERING_TRADERS, false, null);
-        rules.set(GameRules.SPAWN_WARDENS, false, null);
+        GameRules rules = new GameRules(FeatureSet.empty());
+        rules.get(GameRules.DO_DAYLIGHT_CYCLE).set(false, null);
+        rules.get(GameRules.DO_WEATHER_CYCLE).set(false, null);
+        rules.get(GameRules.DO_MOB_SPAWNING).set(false, null);
+        rules.get(GameRules.DO_MOB_LOOT).set(false, null);
+        rules.get(GameRules.DO_TILE_DROPS).set(false, null);
+        rules.get(GameRules.DO_ENTITY_DROPS).set(false, null);
+        rules.get(GameRules.DO_FIRE_TICK).set(false, null);
+        rules.get(GameRules.DO_MOB_GRIEFING).set(false, null);
+        rules.get(GameRules.DO_PATROL_SPAWNING).set(false, null);
+        rules.get(GameRules.DO_TRADER_SPAWNING).set(false, null);
+        rules.get(GameRules.DO_WARDEN_SPAWNING).set(false, null);
 
         // Create level settings
-        LevelSettings settings = new LevelSettings("MC Benchmark Core Arena", GameType.CREATIVE, false, Difficulty.NORMAL, true, rules, WorldDataConfiguration.DEFAULT);
-        WorldOptions opts = new WorldOptions(seed, false, false);
+        LevelInfo settings = new LevelInfo("MC Benchmark Core Arena", GameMode.CREATIVE, false, Difficulty.NORMAL, true, rules, DataConfiguration.SAFE_MODE);
+        GeneratorOptions opts = new GeneratorOptions(seed, false, false);
 
-        // Build the WorldDimensions using a function that takes HolderLookup.Provider
-        // This matches the reference implementation's approach using WorldOpenFlows.createFreshLevel
-        java.util.function.Function<HolderLookup.Provider, WorldDimensions> dims = provider -> {
+        // Build the DimensionOptionsRegistryHolder using a function that takes RegistryWrapper.WrapperLookup
+        // This matches the reference implementation's approach using IntegratedServerLoader.createAndStart
+        java.util.function.Function<RegistryWrapper.WrapperLookup, DimensionOptionsRegistryHolder> dims = provider -> {
             return buildDimensions(provider, type);
         };
 
-        // Use WorldOpenFlows.createFreshLevel() to properly create the level
-        // This replaces the manual ServerLevel construction and insertion into levels map
-        mc.createWorldOpenFlows().createFreshLevel(levelId, settings, opts, dims, null);
+        // Use IntegratedServerLoader.createAndStart() to properly create the level
+        // This replaces the manual ServerWorld construction and insertion into levels map
+        mc.createIntegratedServerLoader().createAndStart(levelId, settings, opts, dims, null);
 
         FpsTestClient.LOG.info("[MC Benchmark Core] created ephemeral world seed={}, type={}, levelId={}", seed, type.kind, levelId);
     }
@@ -143,15 +143,15 @@ public final class EphemeralWorld {
      * and cleaning up resources. Must be called on the server thread.
      */
     public static void destroy() {
-        Minecraft mc = Minecraft.getInstance();
-        MinecraftServer server = mc.getSingleplayerServer();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        MinecraftServer server = mc.getServer();
         if (server == null || currentDimensionKey == null) {
             FpsTestClient.LOG.debug("[MC Benchmark Core] No ephemeral world to destroy");
             return;
         }
 
         // Remove from levels map
-        ServerLevel level = ((MinecraftServerAccessor) server).fpstest$getLevels().remove(currentDimensionKey);
+        ServerWorld level = ((MinecraftServerAccessor) server).fpstest$getLevels().remove(currentDimensionKey);
         if (level != null) {
             // Close the level resources
             try {
@@ -172,88 +172,88 @@ public final class EphemeralWorld {
      * Use this when calling from the client thread.
      */
     public static void destroyAsync() {
-        Minecraft mc = Minecraft.getInstance();
-        MinecraftServer server = mc.getSingleplayerServer();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        MinecraftServer server = mc.getServer();
         if (server == null) {
             return;
         }
         server.execute(EphemeralWorld::destroy);
     }
 
-    private static WorldDimensions buildDimensions(HolderLookup.Provider provider, WorldType type) {
-        LevelStem stem = switch (type.kind) {
+    private static DimensionOptionsRegistryHolder buildDimensions(RegistryWrapper.WrapperLookup provider, WorldType type) {
+        DimensionOptions stem = switch (type.kind) {
             case OVERWORLD -> buildOverworldDimensions(provider);
             case FLAT -> buildFlatDimensions(provider);
             case FIXED_BIOME -> buildFixedBiomeDimensions(provider, type.biome);
         };
-        Map<ResourceKey<LevelStem>, LevelStem> dimMap = new HashMap<>();
-        dimMap.put(LevelStem.OVERWORLD, stem);
-        return new WorldDimensions(dimMap);
+        Map<RegistryKey<DimensionOptions>, DimensionOptions> dimMap = new HashMap<>();
+        dimMap.put(DimensionOptions.OVERWORLD, stem);
+        return new DimensionOptionsRegistryHolder(dimMap);
     }
 
-    private static LevelStem buildOverworldDimensions(HolderLookup.Provider provider) {
-        // Get the overworld dimension type from BuiltinDimensionTypes
-        ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+    private static DimensionOptions buildOverworldDimensions(RegistryWrapper.WrapperLookup provider) {
+        // Get the overworld dimension type from DimensionTypes
+        RegistryKey<DimensionType> overworldDimTypeKey = DimensionTypes.OVERWORLD;
+        RegistryEntry<DimensionType> dimTypeHolder = provider.getOrThrow(RegistryKeys.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
         // Get the overworld noise settings
-        ResourceKey<NoiseGeneratorSettings> overworldNoiseKey = NoiseGeneratorSettings.OVERWORLD;
-        Holder<NoiseGeneratorSettings> noiseSettings = provider.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
+        RegistryKey<ChunkGeneratorSettings> overworldNoiseKey = ChunkGeneratorSettings.OVERWORLD;
+        RegistryEntry<ChunkGeneratorSettings> noiseSettings = provider.getOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS).getOrThrow(overworldNoiseKey);
         
         // Create the chunk generator
-        NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(
-            new FixedBiomeSource(provider.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS)),
+        NoiseChunkGenerator generator = new NoiseChunkGenerator(
+            new FixedBiomeSource(provider.getOrThrow(RegistryKeys.BIOME).getOrThrow(BiomeKeys.PLAINS)),
             noiseSettings
         );
         
-        return new LevelStem(dimTypeHolder, generator);
+        return new DimensionOptions(dimTypeHolder, generator);
     }
 
-    private static LevelStem buildFlatDimensions(HolderLookup.Provider provider) {
-        Holder<Biome> biomeHolder = provider.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
+    private static DimensionOptions buildFlatDimensions(RegistryWrapper.WrapperLookup provider) {
+        RegistryEntry<Biome> biomeHolder = provider.getOrThrow(RegistryKeys.BIOME).getOrThrow(BiomeKeys.PLAINS);
         
-        // FlatLayerInfo constructor takes (int, Block) not BlockState
-        List<FlatLayerInfo> layers = List.of(
-            new FlatLayerInfo(1, Blocks.BEDROCK),
-            new FlatLayerInfo(2, Blocks.DIRT),
-            new FlatLayerInfo(1, Blocks.GRASS_BLOCK)
+        // FlatChunkGeneratorLayer constructor takes (int, Block) not BlockState
+        List<FlatChunkGeneratorLayer> layers = List.of(
+            new FlatChunkGeneratorLayer(1, Blocks.BEDROCK),
+            new FlatChunkGeneratorLayer(2, Blocks.DIRT),
+            new FlatChunkGeneratorLayer(1, Blocks.GRASS_BLOCK)
         );
         
-        // FlatLevelGeneratorSettings: use withBiomeAndLayers for layers
-        // Constructor: (Optional<HolderSet<StructureSet>>, Holder<Biome>, List<Holder<PlacedFeature>>)
-        // Method: withBiomeAndLayers(List<FlatLayerInfo>, Optional<HolderSet<StructureSet>>, Holder<Biome>)
-        FlatLevelGeneratorSettings flatSettings = new FlatLevelGeneratorSettings(
+        // FlatChunkGeneratorConfig: use with() for layers
+        // Constructor: (Optional<RegistryEntryList<StructureSet>>, RegistryEntry<Biome>, List<RegistryEntry<PlacedFeature>>)
+        // Method: with(List<FlatChunkGeneratorLayer>, Optional<RegistryEntryList<StructureSet>>, RegistryEntry<Biome>)
+        FlatChunkGeneratorConfig flatSettings = new FlatChunkGeneratorConfig(
             Optional.empty(),
             biomeHolder,
             List.of()
-        ).withBiomeAndLayers(layers, Optional.empty(), biomeHolder);
+        ).with(layers, Optional.empty(), biomeHolder);
         
-        // FlatLevelSource constructor takes only FlatLevelGeneratorSettings
-        FlatLevelSource generator = new FlatLevelSource(flatSettings);
+        // FlatChunkGenerator constructor takes only FlatChunkGeneratorConfig
+        FlatChunkGenerator generator = new FlatChunkGenerator(flatSettings);
         
-        // Get the overworld dimension type from BuiltinDimensionTypes
-        ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+        // Get the overworld dimension type from DimensionTypes
+        RegistryKey<DimensionType> overworldDimTypeKey = DimensionTypes.OVERWORLD;
+        RegistryEntry<DimensionType> dimTypeHolder = provider.getOrThrow(RegistryKeys.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
-        return new LevelStem(dimTypeHolder, generator);
+        return new DimensionOptions(dimTypeHolder, generator);
     }
 
-    private static LevelStem buildFixedBiomeDimensions(HolderLookup.Provider provider, ResourceKey<Biome> biomeKey) {
-        Holder<Biome> biomeHolder = provider.lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
+    private static DimensionOptions buildFixedBiomeDimensions(RegistryWrapper.WrapperLookup provider, RegistryKey<Biome> biomeKey) {
+        RegistryEntry<Biome> biomeHolder = provider.getOrThrow(RegistryKeys.BIOME).getOrThrow(biomeKey);
         
         // Get the overworld noise settings
-        ResourceKey<NoiseGeneratorSettings> overworldNoiseKey = NoiseGeneratorSettings.OVERWORLD;
-        Holder<NoiseGeneratorSettings> noiseSettings = provider.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(overworldNoiseKey);
+        RegistryKey<ChunkGeneratorSettings> overworldNoiseKey = ChunkGeneratorSettings.OVERWORLD;
+        RegistryEntry<ChunkGeneratorSettings> noiseSettings = provider.getOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS).getOrThrow(overworldNoiseKey);
         
         FixedBiomeSource source = new FixedBiomeSource(biomeHolder);
-        // NoiseGeneratorSettings is a record, use it directly
-        NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(source, noiseSettings);
+        // ChunkGeneratorSettings is a record, use it directly
+        NoiseChunkGenerator generator = new NoiseChunkGenerator(source, noiseSettings);
         
-        // Get the overworld dimension type from BuiltinDimensionTypes
-        ResourceKey<DimensionType> overworldDimTypeKey = BuiltinDimensionTypes.OVERWORLD;
-        Holder<DimensionType> dimTypeHolder = provider.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
+        // Get the overworld dimension type from DimensionTypes
+        RegistryKey<DimensionType> overworldDimTypeKey = DimensionTypes.OVERWORLD;
+        RegistryEntry<DimensionType> dimTypeHolder = provider.getOrThrow(RegistryKeys.DIMENSION_TYPE).getOrThrow(overworldDimTypeKey);
         
-        return new LevelStem(dimTypeHolder, generator);
+        return new DimensionOptions(dimTypeHolder, generator);
     }
 
     public static void deleteSaveQuietly() {
@@ -265,9 +265,9 @@ public final class EphemeralWorld {
     }
 
     private static void deleteSaveCore(boolean blocking) {
-        Minecraft mc = Minecraft.getInstance();
-        LevelStorageSource src = mc.getLevelSource();
-        Path saveDir = src.getLevelPath(LevelResource.ROOT.getId()).resolve("fpstest-arena");
+        MinecraftClient mc = MinecraftClient.getInstance();
+        LevelStorage src = LevelStorage.create(mc.runDirectory.toPath().resolve("saves"));
+        Path saveDir = src.resolve("fpstest-arena");
         if (!Files.exists(saveDir)) {
             FpsTestClient.LOG.debug("[MC Benchmark Core] cleanup: no stale arena directory at {}", saveDir);
         } else {
@@ -279,27 +279,9 @@ public final class EphemeralWorld {
             }
 
             try {
-                LevelStorageSource.LevelStorageAccess access = src.createAccess("fpstest-arena");
-
-                try {
-                    try {
-                        access.close();
-                    } catch (IOException var11) {
-                    }
-                } catch (Throwable var14) {
-                    if (access != null) {
-                        try {
-                            access.close();
-                        } catch (Throwable var10) {
-                            var14.addSuppressed(var10);
-                        }
-                    }
-
-                    throw var14;
-                }
-
+                LevelStorage.Session access = src.createSession("fpstest-arena");
                 if (access != null) {
-                    access.close();
+                    access.tryClose();
                 }
             } catch (Exception var15) {
                 FpsTestClient.LOG.info("[MC Benchmark Core] could not open arena session for cleanup ({})", var15.getMessage());
@@ -364,9 +346,9 @@ public final class EphemeralWorld {
 
     public static void cleanupStaleOnStartup() {
         try {
-            Minecraft mc = Minecraft.getInstance();
-            LevelStorageSource src = mc.getLevelSource();
-            Path saveDir = src.getLevelPath(LevelResource.ROOT.getId()).resolve("fpstest-arena");
+            MinecraftClient mc = MinecraftClient.getInstance();
+            LevelStorage src = LevelStorage.create(mc.runDirectory.toPath().resolve("saves"));
+            Path saveDir = src.resolve("fpstest-arena");
             if (!Files.exists(saveDir)) {
                 return;
             }

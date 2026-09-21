@@ -12,28 +12,25 @@ import com.fpstest.client.bench.scene.Arena;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.entity.npc.villager.VillagerData;
-import net.minecraft.world.entity.npc.villager.VillagerProfession;
-import net.minecraft.world.entity.npc.villager.VillagerType;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.village.VillagerData;
+import net.minecraft.village.VillagerProfession;
+import net.minecraft.village.VillagerType;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.BedPart;
+import net.minecraft.state.property.Properties;
+import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class VillagerAiVillageBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int VILLAGE_RADIUS = 24;
    private static final int VILLAGER_COUNT = 80;
    private int villagersSpawned = 0;
@@ -54,7 +51,7 @@ public final class VillagerAiVillageBenchmark implements Benchmark {
 
    @Override
    public String displayName() {
-      return "Villager AI village (80, brain on)";
+      return "VillagerEntity AI village (80, brain on)";
    }
 
    @Override
@@ -92,17 +89,17 @@ public final class VillagerAiVillageBenchmark implements Benchmark {
       this.instrStart = null;
       ctx.onServer(
          s -> {
-            ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+            ServerWorld lvl = (ServerWorld) ctx.serverLevel();
             if (lvl != null) {
                lvl.getServer().setDifficulty(Difficulty.NORMAL, true);
                int half = 24;
                Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, half, half);
                int by = (int)CENTER.y;
                BlockState[] workstations = new BlockState[]{
-                  Blocks.COMPOSTER.defaultBlockState(),
-                  Blocks.LECTERN.defaultBlockState(),
-                  Blocks.CARTOGRAPHY_TABLE.defaultBlockState(),
-                  Blocks.FLETCHING_TABLE.defaultBlockState()
+                  Blocks.COMPOSTER.getDefaultState(),
+                  Blocks.LECTERN.getDefaultState(),
+                  Blocks.CARTOGRAPHY_TABLE.getDefaultState(),
+                  Blocks.FLETCHING_TABLE.getDefaultState()
                };
                int wsTotal = 40;
 
@@ -110,18 +107,18 @@ public final class VillagerAiVillageBenchmark implements Benchmark {
                   double angle = i * (Math.PI * 2) / wsTotal;
                   int wx = (int)(CENTER.x + Math.cos(angle) * 22.0);
                   int wz = (int)(CENTER.z + Math.sin(angle) * 22.0);
-                  lvl.setBlock(new BlockPos(wx, by, wz), workstations[i % workstations.length], 3);
+                  lvl.setBlockState(new BlockPos(wx, by, wz), workstations[i % workstations.length], 3);
                   this.workstationsPlaced++;
                }
 
                BlockState bedRedFoot = Blocks.RED_BED
-                     .defaultBlockState()
-                     .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
-                     .setValue(BlockStateProperties.BED_PART, BedPart.FOOT);
+                     .getDefaultState()
+                     .with(Properties.HORIZONTAL_FACING, Direction.EAST)
+                     .with(Properties.BED_PART, BedPart.FOOT);
                BlockState bedRedHead = Blocks.RED_BED
-                     .defaultBlockState()
-                     .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
-                     .setValue(BlockStateProperties.BED_PART, BedPart.HEAD);
+                     .getDefaultState()
+                     .with(Properties.HORIZONTAL_FACING, Direction.EAST)
+                     .with(Properties.BED_PART, BedPart.HEAD);
                int bedRows = 8;
                int bedsPerRow = 5;
                int bedXStart = (int)CENTER.x - 8;
@@ -131,55 +128,51 @@ public final class VillagerAiVillageBenchmark implements Benchmark {
                   for (int c = 0; c < bedsPerRow; c++) {
                      int bx = bedXStart + c * 3;
                      int bz = bedZStart + r * 2;
-                     lvl.setBlock(new BlockPos(bx, by, bz), bedRedFoot, 3);
-                     lvl.setBlock(new BlockPos(bx + 1, by, bz), bedRedHead, 3);
+                     lvl.setBlockState(new BlockPos(bx, by, bz), bedRedFoot, 3);
+                     lvl.setBlockState(new BlockPos(bx + 1, by, bz), bedRedHead, 3);
                      this.bedsPlaced++;
                   }
                }
 
-               BlockState doorLower = Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
-               BlockState doorUpper = Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
+               BlockState doorLower = Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER);
+               BlockState doorUpper = Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER);
 
                for (int d = 0; d < 16; d++) {
                   int dx = bedXStart + d % 4 * 4;
                   int dz = bedZStart + d / 4 * 4 - 1;
-                  lvl.setBlock(new BlockPos(dx, by, dz), doorLower, 3);
-                  lvl.setBlock(new BlockPos(dx, by + 1, dz), doorUpper, 3);
+                  lvl.setBlockState(new BlockPos(dx, by, dz), doorLower, 3);
+                  lvl.setBlockState(new BlockPos(dx, by + 1, dz), doorUpper, 3);
                   this.doorsPlaced++;
                }
 
-               Holder<VillagerType> plainsType = lvl.registryAccess().lookupOrThrow(Registries.VILLAGER_TYPE).getOrThrow(VillagerType.PLAINS);
-               Holder<VillagerProfession>[] profs = new Holder[]{
-                  prof(lvl, VillagerProfession.FARMER),
-                  prof(lvl, VillagerProfession.LIBRARIAN),
-                  prof(lvl, VillagerProfession.CARTOGRAPHER),
-                  prof(lvl, VillagerProfession.FLETCHER)
+               VillagerType plainsType = VillagerType.PLAINS;
+               VillagerProfession[] profs = new VillagerProfession[]{
+                  VillagerProfession.FARMER,
+                  VillagerProfession.LIBRARIAN,
+                  VillagerProfession.CARTOGRAPHER,
+                  VillagerProfession.FLETCHER
                };
                Random rng = new Random(this.seed());
 
                for (int i = 0; i < 80; i++) {
                   double dx = (rng.nextDouble() - 0.5) * 2.0 * 20.0;
                   double dz = (rng.nextDouble() - 0.5) * 2.0 * 20.0;
-                  Villager v = new Villager(EntityType.VILLAGER, lvl, plainsType);
-                  v.snapTo(CENTER.x + dx, CENTER.y, CENTER.z + dz, rng.nextFloat() * 360.0F, 0.0F);
+                  VillagerEntity v = new VillagerEntity(EntityType.VILLAGER, lvl, plainsType);
+                  v.refreshPositionAndAngles(CENTER.x + dx, CENTER.y, CENTER.z + dz, rng.nextFloat() * 360.0F, 0.0F);
                   v.setVillagerData(new VillagerData(plainsType, profs[i % profs.length], 1));
-                  v.setNoAi(false);
-                  v.setPersistenceRequired();
+                  v.setAiDisabled(false);
+                  v.setPersistent();
                   ctx.spawnTracked(v, lvl);
                   this.villagersSpawned++;
                }
 
-               lvl.setDayTime(0L);
+               lvl.setTimeOfDay(0L);
             }
          }
       );
       ctx.setArenaOrigin(CENTER);
       ctx.setCameraPath(new OrbitPath(CENTER.add(0.0, 6.0, 0.0), 28.0, 12.0, 0.4));
       Arena.teleport(ctx, CENTER.add(0.0, 14.0, 30.0), 180.0F, 30.0F);
-   }
-
-   private static Holder<VillagerProfession> prof(ServerLevel lvl, ResourceKey<VillagerProfession> key) {
-      return lvl.registryAccess().lookupOrThrow(Registries.VILLAGER_PROFESSION).getOrThrow(key);
    }
 
    @Override

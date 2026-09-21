@@ -1,4 +1,9 @@
-# DEPENDENCY GRAPH: fpstest 1.0 → Fabric 1.21.11
+# DEPENDENCY GRAPH: fpstest 1.0 → Fabric 1.21.4
+
+> **CURRENT STATUS: PORT COMPLETE ✅** (branch `port-1.21.4`, base `aaaaf14`).
+> The dependency diagrams below document the original `fpstest-1.0.jar` architecture, which the 1.21.4
+> port preserves. All subsystems listed as "NOT PORTED" in the old notes are now ported and runtime-verified
+> — see `PORT_STATUS.md`.
 
 ## Overview
 

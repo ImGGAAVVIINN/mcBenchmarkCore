@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
 
-    protected TitleScreenMixin(Component title) {
+    protected TitleScreenMixin(Text title) {
         super(title);
     }
 
@@ -32,14 +32,14 @@ public abstract class TitleScreenMixin extends Screen {
     )
     private void fpstest$addBenchmarkButton(CallbackInfo ci) {
         this.fpstest$removeVanillaButtons();
-        Button btn = Button.builder(
-                Component.literal(I18n.tr("fpstest.button.run_benchmark")),
+        ButtonWidget btn = ButtonWidget.builder(
+                Text.literal(I18n.tr("fpstest.button.run_benchmark")),
                 b -> BenchmarkHub.startFullBenchmark()
         )
-        .bounds(this.width - 110, 4, 100, 20)
+        .dimensions(this.width - 110, 4, 100, 20)
         .build();
 
-        this.addRenderableWidget(btn);
+        this.addDrawableChild(btn);
     }
 
     /**
@@ -48,11 +48,11 @@ public abstract class TitleScreenMixin extends Screen {
      * Language, Options, Quit, copyright) is left untouched.
      */
     private void fpstest$removeVanillaButtons() {
-        List<GuiEventListener> toRemove = new ArrayList<>();
-        for (GuiEventListener child : this.children()) {
-            if (child instanceof AbstractWidget widget) {
-                Component message = widget.getMessage();
-                if (message != null && message.getContents() instanceof TranslatableContents contents) {
+        List<Element> toRemove = new ArrayList<>();
+        for (Element child : this.children()) {
+            if (child instanceof ClickableWidget widget) {
+                Text message = widget.getMessage();
+                if (message != null && message.getContent() instanceof TranslatableTextContent contents) {
                     String key = contents.getKey();
                     if ("menu.singleplayer".equals(key)
                             || "menu.multiplayer".equals(key)
@@ -64,8 +64,8 @@ public abstract class TitleScreenMixin extends Screen {
                 }
             }
         }
-        for (GuiEventListener child : toRemove) {
-            this.removeWidget(child);
+        for (Element child : toRemove) {
+            this.remove(child);
         }
     }
 }

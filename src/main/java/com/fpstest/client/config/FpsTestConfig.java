@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ public final class FpsTestConfig {
     }
 
     private static Path path() {
-        return Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve("fpstest.json");
+        return MinecraftClient.getInstance().runDirectory.toPath().resolve("config").resolve("fpstest.json");
     }
 
     private static FpsTestConfig load() {
@@ -61,11 +61,11 @@ public final class FpsTestConfig {
                 if (isKnownLocale(loc)) {
                     c.locale = loc;
                 } else {
-                    LOG.warn("[Minecraft Benchmark Core] config: unknown locale '{}', falling back to vanilla", loc);
+                    LOG.warn("[MinecraftClient Benchmark Core] config: unknown locale '{}', falling back to vanilla", loc);
                 }
             }
         } catch (Throwable var8) {
-            LOG.warn("[Minecraft Benchmark Core] config load failed, using defaults", var8);
+            LOG.warn("[MinecraftClient Benchmark Core] config load failed, using defaults", var8);
         }
         return c;
     }
@@ -82,7 +82,7 @@ public final class FpsTestConfig {
             sb.append("}\n");
             Files.writeString(p, sb.toString());
         } catch (IOException var3) {
-            LOG.warn("[Minecraft Benchmark Core] config save failed", var3);
+            LOG.warn("[MinecraftClient Benchmark Core] config save failed", var3);
         }
     }
 

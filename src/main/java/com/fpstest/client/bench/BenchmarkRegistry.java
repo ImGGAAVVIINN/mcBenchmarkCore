@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.entity.EntityType;
+import net.minecraft.world.biome.BiomeKeys;
 
 @Environment(EnvType.CLIENT)
 public final class BenchmarkRegistry {
@@ -71,18 +71,18 @@ public final class BenchmarkRegistry {
             register(new ComparatorStorageBenchmark());
             register(new VillagerAiVillageBenchmark());
             register(new StaticDenseForestBenchmark());
-            register(new ChunkFlybyBenchmark("chunk_plains", "Plains flyby (single-biome world)", Biomes.PLAINS, 7411L));
-            register(new ChunkFlybyBenchmark("chunk_jungle", "Jungle flyby (single-biome world)", Biomes.JUNGLE, 7417L));
-            register(new ChunkFlybyBenchmark("chunk_desert", "Desert flyby (single-biome world)", Biomes.DESERT, 7433L));
-            register(new ChunkFlybyBenchmark("chunk_taiga", "Taiga flyby (single-biome world)", Biomes.TAIGA, 7451L));
-            register(new ChunkFlybyBenchmark("chunk_snowy", "Snowy plains flyby", Biomes.SNOWY_PLAINS, 7457L));
-            register(new ChunkFlybyBenchmark("chunk_forest", "Forest flyby", Biomes.FOREST, 7477L));
-            register(new ChunkFlybyBenchmark("chunk_savanna", "Savanna flyby", Biomes.SAVANNA, 7481L));
-            register(new ChunkFlybyBenchmark("chunk_swamp", "Swamp flyby", Biomes.SWAMP, 7487L));
-            register(new ChunkFlybyBenchmark("chunk_cherry", "Cherry grove flyby", Biomes.CHERRY_GROVE, 7499L));
-            register(new ChunkFlybyBenchmark("chunk_badlands", "Badlands flyby", Biomes.BADLANDS, 7507L));
-            register(new ChunkFlybyBenchmark("chunk_dark_forest", "Dark forest flyby (dense canopy)", Biomes.DARK_FOREST, 7517L));
-            register(new ChunkFlybyBenchmark("chunk_mountain", "Windswept hills flyby", Biomes.WINDSWEPT_HILLS, 7523L));
+            register(new ChunkFlybyBenchmark("chunk_plains", "Plains flyby (single-biome world)", BiomeKeys.PLAINS, 7411L));
+            register(new ChunkFlybyBenchmark("chunk_jungle", "Jungle flyby (single-biome world)", BiomeKeys.JUNGLE, 7417L));
+            register(new ChunkFlybyBenchmark("chunk_desert", "Desert flyby (single-biome world)", BiomeKeys.DESERT, 7433L));
+            register(new ChunkFlybyBenchmark("chunk_taiga", "Taiga flyby (single-biome world)", BiomeKeys.TAIGA, 7451L));
+            register(new ChunkFlybyBenchmark("chunk_snowy", "Snowy plains flyby", BiomeKeys.SNOWY_PLAINS, 7457L));
+            register(new ChunkFlybyBenchmark("chunk_forest", "Forest flyby", BiomeKeys.FOREST, 7477L));
+            register(new ChunkFlybyBenchmark("chunk_savanna", "Savanna flyby", BiomeKeys.SAVANNA, 7481L));
+            register(new ChunkFlybyBenchmark("chunk_swamp", "Swamp flyby", BiomeKeys.SWAMP, 7487L));
+            register(new ChunkFlybyBenchmark("chunk_cherry", "Cherry grove flyby", BiomeKeys.CHERRY_GROVE, 7499L));
+            register(new ChunkFlybyBenchmark("chunk_badlands", "Badlands flyby", BiomeKeys.BADLANDS, 7507L));
+            register(new ChunkFlybyBenchmark("chunk_dark_forest", "Dark forest flyby (dense canopy)", BiomeKeys.DARK_FOREST, 7517L));
+            register(new ChunkFlybyBenchmark("chunk_mountain", "Windswept hills flyby", BiomeKeys.WINDSWEPT_HILLS, 7523L));
         }
     }
 

@@ -1,29 +1,29 @@
 package com.fpstest.client.bench;
 
 import com.fpstest.client.bench.camera.CameraPath;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class BenchContext {
-    public final Minecraft client;
+    public final MinecraftClient client;
     private final List<UUID> spawned = new ArrayList<>();
-    private Vec3 arenaOrigin = Vec3.ZERO;
+    private Vec3d arenaOrigin = Vec3d.ZERO;
     private CameraPath cameraPath;
     private RunPlan plan;
 
-    public BenchContext(Minecraft client) {
+    public BenchContext(MinecraftClient client) {
         this.client = client;
     }
 
@@ -35,33 +35,33 @@ public final class BenchContext {
         this.plan = plan;
     }
 
-    public LocalPlayer player() {
+    public ClientPlayerEntity player() {
         return client.player;
     }
 
-    public ClientLevel clientLevel() {
-        return client.level;
+    public ClientWorld clientLevel() {
+        return client.world;
     }
 
     public MinecraftServer server() {
-        return client.getSingleplayerServer();
+        return client.getServer();
     }
 
-    public net.minecraft.server.level.ServerPlayer serverPlayer() {
+    public net.minecraft.server.network.ServerPlayerEntity serverPlayer() {
         MinecraftServer server = server();
         if (server == null) return null;
         if (client.player == null) return null;
-        return server.getPlayerList().getPlayer(client.player.getUUID());
+        return server.getPlayerManager().getPlayer(client.player.getUuid());
     }
 
-    public net.minecraft.server.level.ServerLevel serverLevel() {
-        net.minecraft.server.level.ServerPlayer serverPlayer = serverPlayer();
+    public net.minecraft.server.world.ServerWorld serverLevel() {
+        net.minecraft.server.network.ServerPlayerEntity serverPlayer = serverPlayer();
         if (serverPlayer != null) {
-            return (net.minecraft.server.level.ServerLevel) serverPlayer.level();
+            return (net.minecraft.server.world.ServerWorld) serverPlayer.getWorld();
         }
         MinecraftServer server = server();
         if (server != null) {
-            return server.overworld();
+            return server.getOverworld();
         }
         return null;
     }
@@ -70,16 +70,16 @@ public final class BenchContext {
         MinecraftServer server = server();
         if (server == null) return;
 
-        if (Thread.currentThread() == server.getRunningThread()) {
+        if (Thread.currentThread() == server.getThread()) {
             consumer.accept(server);
         } else {
             server.execute(() -> consumer.accept(server));
         }
     }
 
-    public void spawnTracked(net.minecraft.world.entity.Entity entity, net.minecraft.world.level.Level world) {
-        world.addFreshEntity(entity);
-        spawned.add(entity.getUUID());
+    public void spawnTracked(net.minecraft.entity.Entity entity, net.minecraft.server.world.ServerWorld world) {
+        world.spawnEntity(entity);
+        spawned.add(entity.getUuid());
     }
 
     public int trackedCount() {
@@ -99,7 +99,7 @@ public final class BenchContext {
     }
 
     private void drainBatch(MinecraftServer server, List<UUID> uuids, int start) {
-        net.minecraft.server.level.ServerLevel world = server.overworld();
+        net.minecraft.server.world.ServerWorld world = server.getOverworld();
         if (world == null) {
             return;
         }
@@ -108,7 +108,7 @@ public final class BenchContext {
 
         for (int i = start; i < end; i++) {
             try {
-                net.minecraft.world.entity.Entity entity = world.getEntity(uuids.get(i));
+                net.minecraft.entity.Entity entity = world.getEntity(uuids.get(i));
                 if (entity != null) {
                     entity.discard();
                 }
@@ -121,15 +121,15 @@ public final class BenchContext {
         }
     }
 
-    public void setBlock(net.minecraft.world.level.Level world, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
-        world.setBlock(pos, state, 2);
+    public void setBlock(net.minecraft.world.World world, net.minecraft.util.math.BlockPos pos, net.minecraft.block.BlockState state) {
+        world.setBlockState(pos, state, 2);
     }
 
-    public void setArenaOrigin(Vec3 origin) {
+    public void setArenaOrigin(Vec3d origin) {
         this.arenaOrigin = origin;
     }
 
-    public Vec3 arenaOrigin() {
+    public Vec3d arenaOrigin() {
         return arenaOrigin;
     }
 

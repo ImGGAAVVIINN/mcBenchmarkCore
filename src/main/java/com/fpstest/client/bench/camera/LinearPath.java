@@ -2,16 +2,16 @@ package com.fpstest.client.bench.camera;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class LinearPath implements CameraPath {
-    private final Vec3 start;
-    private final Vec3 velocityPerTick;
+    private final Vec3d start;
+    private final Vec3d velocityPerTick;
     private final float yaw;
     private final float pitch;
 
-    public LinearPath(Vec3 start, Vec3 velocityPerTick, float yaw, float pitch) {
+    public LinearPath(Vec3d start, Vec3d velocityPerTick, float yaw, float pitch) {
         this.start = start;
         this.velocityPerTick = velocityPerTick;
         this.yaw = yaw;
@@ -21,7 +21,7 @@ public final class LinearPath implements CameraPath {
     @Override
     public Pose poseAt(int tick, float partial) {
         double t = tick + partial;
-        Vec3 pos = new Vec3(
+        Vec3d pos = new Vec3d(
             this.start.x + this.velocityPerTick.x * t,
             this.start.y + this.velocityPerTick.y * t,
             this.start.z + this.velocityPerTick.z * t

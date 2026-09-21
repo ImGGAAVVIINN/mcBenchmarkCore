@@ -13,16 +13,16 @@ import com.fpstest.client.bench.scene.Arena;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class ItemsMergeStormBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final double SPAWN_RADIUS = 6.0;
    private static final int INITIAL_BURST = 600;
    private static final int WAVE_SIZE = 80;
@@ -83,7 +83,7 @@ public final class ItemsMergeStormBenchmark implements Benchmark {
       this.aliveSeries.clear();
       this.instrStart = null;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, 12, 12);
             this.spawnBurst(ctx, lvl, 600);
@@ -110,7 +110,7 @@ public final class ItemsMergeStormBenchmark implements Benchmark {
          int sampleEndApprox = ctx.plan() != null ? ctx.plan().warmupTicks + ctx.plan().sampleTicks : this.warmupTicks() + this.sampleTicks();
          if (this.phaseTicks <= sampleEndApprox - 80) {
             ctx.onServer(s -> {
-               ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+               ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                if (lvl != null) {
                   this.spawnBurst(ctx, lvl, 80);
                }
@@ -121,7 +121,7 @@ public final class ItemsMergeStormBenchmark implements Benchmark {
       }
    }
 
-   private void spawnBurst(BenchContext ctx, ServerLevel lvl, int n) {
+   private void spawnBurst(BenchContext ctx, ServerWorld lvl, int n) {
       Random rng = new Random(this.itemsSpawned * 31L + this.seed());
 
       for (int i = 0; i < n; i++) {
@@ -130,8 +130,8 @@ public final class ItemsMergeStormBenchmark implements Benchmark {
          double x = CENTER.x + Math.cos(angle) * r;
          double z = CENTER.z + Math.sin(angle) * r;
          ItemEntity ie = new ItemEntity(lvl, x, CENTER.y + 1.0, z, new ItemStack(Items.COBBLESTONE, 1));
-         ie.setNeverPickUp();
-         ie.setUnlimitedLifetime();
+         ie.setPickupDelayInfinite();
+         ie.setNeverDespawn();
          ie.setInvulnerable(true);
          ctx.spawnTracked(ie, lvl);
          this.itemsSpawned++;
@@ -140,11 +140,11 @@ public final class ItemsMergeStormBenchmark implements Benchmark {
 
    private void sampleAlive(BenchContext ctx) {
       if (FpsTestClient.RUNNER.state() == CinematicRunner.State.SAMPLING) {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int alive = 0;
 
-            for (Entity e : lvl.getAllEntities()) {
+            for (Entity e : lvl.iterateEntities()) {
                if (e instanceof ItemEntity) {
                   alive++;
                }

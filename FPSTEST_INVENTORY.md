@@ -1,4 +1,17 @@
-# FPS TEST - fpstest 1.0 → Fabric 1.21.11 Porting Inventory
+# FPS TEST - fpstest 1.0 → Fabric 1.21.4 Porting Inventory
+
+> **CURRENT STATUS: PORT COMPLETE ✅** (branch `port-1.21.4`, base `aaaaf14`).
+> This inventory documents the original `fpstest-1.0.jar` specification (authoritative reference for
+> what was preserved). The port to 1.21.4 is complete and launch-verified — see `PORT_STATUS.md`.
+
+## Final Result — What Was Preserved (1.21.4 runtime)
+
+- **43 benchmark scenes** registered + auto-started full suite (quick → default presets)
+- **16 client mixins + 2 accessors** — all apply with `defaultRequire: 1` (0 failures at runtime)
+- **GUI systems**: BenchmarkHub, BenchmarkResultsScreen, ReportsScreen, SettingsScreen
+- **Shader handling**: `PackShaderBenchmark` (4-phase: LowEnd/HighEnd × pack on/off), Iris optional (`iris_present=0`)
+- **Resource-pack management**: enabled-profile switching + hot reload verified live (`file/pbr.zip`)
+- **Reports**: JSON/Markdown/CSV export verified per session
 
 ## Phase 1: Original JAR Inventory (Authoritative Specification)
 

@@ -2,7 +2,7 @@ package com.fpstest.client.mixin;
 
 import com.fpstest.client.bench.camera.CinematicState;
 import com.fpstest.client.bench.camera.Pose;
-import net.minecraft.client.Camera;
+import net.minecraft.client.render.Camera;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,12 +12,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class CameraMixin {
 
     @Inject(
-        method = "setup",
+        method = "update",
         at = @At("TAIL")
     )
     private void fpstest$cameraSetup(
-        net.minecraft.world.level.Level level,
-        net.minecraft.world.entity.Entity entity,
+        net.minecraft.world.BlockView level,
+        net.minecraft.entity.Entity entity,
         boolean detached,
         boolean thirdPerson,
         float partialTick,
@@ -30,9 +30,9 @@ public abstract class CameraMixin {
                 CameraAccessor self = (CameraAccessor) (Object) this;
 
                 self.fpstest$setPosition(
-                    pose.pos().x(),
-                    pose.pos().y(),
-                    pose.pos().z()
+                    pose.pos().getX(),
+                    pose.pos().getY(),
+                    pose.pos().getZ()
                 );
 
                 self.fpstest$setRotation(

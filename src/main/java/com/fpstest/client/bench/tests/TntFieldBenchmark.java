@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.PrimedTnt;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.TntEntity;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public class TntFieldBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int SIDE = 14;
    private static final int SPACING = 3;
    private static final int WAVE_SIZE = 18;
@@ -104,7 +104,7 @@ public class TntFieldBenchmark implements Benchmark {
       this.instrStart = null;
       this.rng.setSeed(this.seed());
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int half = 52;
             if (this.destructible) {
@@ -122,7 +122,7 @@ public class TntFieldBenchmark implements Benchmark {
                   double x = CENTER.x + (i - 7.0) * 3.0;
                   double z = CENTER.z + (j - 7.0) * 3.0;
                   double tntY = CENTER.y + (this.destructible ? 11 : 3);
-                  PrimedTnt tnt = new PrimedTnt(lvl, x, tntY, z, null);
+                  TntEntity tnt = new TntEntity(lvl, x, tntY, z, null);
                   tnt.setFuse(40 + (i + j) * 4);
                   ctx.spawnTracked(tnt, lvl);
                   this.tntSpawned++;
@@ -130,9 +130,9 @@ public class TntFieldBenchmark implements Benchmark {
             }
          }
       });
-      Vec3 high = CENTER.add(0.0, 24.0, 0.0);
-      Vec3 side = CENTER.add(35.0, 8.0, 0.0);
-      Vec3 wide = CENTER.add(0.0, 12.0, -40.0);
+      Vec3d high = CENTER.add(0.0, 24.0, 0.0);
+      Vec3d side = CENTER.add(35.0, 8.0, 0.0);
+      Vec3d wide = CENTER.add(0.0, 12.0, -40.0);
       ctx.setCameraPath(
          new MultiAnglePath(
             List.of(
@@ -154,7 +154,7 @@ public class TntFieldBenchmark implements Benchmark {
          if (this.phaseTicks <= sampleEndApprox - 60) {
             if (this.phaseTicks % 30 == 0) {
                ctx.onServer(s -> {
-                  ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+                  ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                   if (lvl != null) {
                      for (int n = 0; n < 18; n++) {
                         int i = this.rng.nextInt(14);
@@ -162,7 +162,7 @@ public class TntFieldBenchmark implements Benchmark {
                         double x = CENTER.x + (i - 7.0) * 3.0 + (this.rng.nextDouble() - 0.5) * 0.4;
                         double z = CENTER.z + (j - 7.0) * 3.0 + (this.rng.nextDouble() - 0.5) * 0.4;
                         double tntY = CENTER.y + (this.destructible ? 11 : 3);
-                        PrimedTnt tnt = new PrimedTnt(lvl, x, tntY, z, null);
+                        TntEntity tnt = new TntEntity(lvl, x, tntY, z, null);
                         tnt.setFuse(20 + this.rng.nextInt(40));
                         ctx.spawnTracked(tnt, lvl);
                         this.tntSpawned++;
@@ -183,12 +183,12 @@ public class TntFieldBenchmark implements Benchmark {
             this.instrStart = Instr.snapshot();
          }
 
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int alive = 0;
 
-            for (Entity e : lvl.getAllEntities()) {
-               if (e instanceof PrimedTnt) {
+            for (Entity e : lvl.iterateEntities()) {
+               if (e instanceof TntEntity) {
                   alive++;
                }
             }

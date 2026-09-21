@@ -12,20 +12,20 @@ import com.fpstest.client.bench.scene.Arena;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.zombie.Zombie;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.block.Blocks;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class ZombieMazeBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int ZOMBIE_COUNT = 150;
    private static final double SPAWN_RADIUS = 18.0;
    private static final int PILLAR_GRID = 7;
@@ -85,7 +85,7 @@ public final class ZombieMazeBenchmark implements Benchmark {
       this.instrStart = null;
       this.phaseTicks = 0;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, 22, 22);
             int by = (int)CENTER.y;
@@ -99,7 +99,7 @@ public final class ZombieMazeBenchmark implements Benchmark {
                      for (int dy = 0; dy < 3; dy++) {
                         for (int dx = 0; dx < 2; dx++) {
                            for (int dz = 0; dz < 2; dz++) {
-                              lvl.setBlock(new BlockPos(bx + dx, by + dy, bz + dz), Blocks.STONE.defaultBlockState(), 3);
+                              lvl.setBlockState(new BlockPos(bx + dx, by + dy, bz + dz), Blocks.STONE.getDefaultState(), 3);
                            }
                         }
                      }
@@ -115,11 +115,11 @@ public final class ZombieMazeBenchmark implements Benchmark {
                double angle = i * (Math.PI * 2) / 150.0 + (rng.nextDouble() - 0.5) * 0.05;
                double x = CENTER.x + Math.cos(angle) * 18.0;
                double z = CENTER.z + Math.sin(angle) * 18.0;
-               Zombie z2 = (Zombie) EntityType.ZOMBIE.create(lvl, EntitySpawnReason.COMMAND);
+               ZombieEntity z2 = (ZombieEntity) EntityType.ZOMBIE.create(lvl, SpawnReason.COMMAND);
                if (z2 != null) {
                   z2.setPos(x, CENTER.y, z);
-                  z2.finalizeSpawn(lvl, lvl.getCurrentDifficultyAt(z2.blockPosition()), EntitySpawnReason.COMMAND, null);
-                  z2.setPersistenceRequired();
+                  z2.initialize(lvl, lvl.getLocalDifficulty(z2.getBlockPos()), SpawnReason.COMMAND, null);
+                  z2.setPersistent();
                   z2.setInvulnerable(true);
                   ctx.spawnTracked(z2, lvl);
                   this.zombiesSpawned++;
@@ -142,13 +142,13 @@ public final class ZombieMazeBenchmark implements Benchmark {
       this.phaseTicks++;
       if (this.phaseTicks % 20 == 0) {
          ctx.onServer(s -> {
-            ServerLevel lvl = (ServerLevel) ctx.serverLevel();
-            ServerPlayer sp = ctx.serverPlayer();
+            ServerWorld lvl = (ServerWorld) ctx.serverLevel();
+            ServerPlayerEntity sp = ctx.serverPlayer();
             if (lvl != null && sp != null) {
                LivingEntity target = sp;
 
-               for (Entity e : lvl.getAllEntities()) {
-                  if (e instanceof Zombie z && z.isAlive() && z.getTarget() != target) {
+               for (Entity e : lvl.iterateEntities()) {
+                  if (e instanceof ZombieEntity z && z.isAlive() && z.getTarget() != target) {
                      z.setTarget(target);
                   }
                }

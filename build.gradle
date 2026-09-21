@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -36,7 +36,7 @@ task printConfigurations {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
@@ -44,12 +44,12 @@ dependencies {
 
 	// Iris (compile-only, optional at runtime).
 	// Published Modrinth maven artifact matching the installed
-	// `run/mods/iris-fabric-1.10.7+mc1.21.11.jar` (mod id "iris", 1.10.7+mc1.21.11).
+	// `run/mods/iris-fabric-1.8.8+mc1.21.4.jar` (mod id "iris", 1.8.8+mc1.21.4).
 	// Used ONLY by the optional "PBR + Shader" benchmark mode to select and
 	// enable a specific shader pack via Iris's internal API.
 	// `modCompileOnly` = compile against Iris classes, but do NOT bundle Iris
 	// into the mod jar and do NOT make it a runtime requirement.
-	modCompileOnly "maven.modrinth:YL57xq9U:1.10.7+1.21.11-fabric"
+	modCompileOnly "maven.modrinth:YL57xq9U:1.8.8+1.21.4-fabric"
 }
 
 processResources {

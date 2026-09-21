@@ -1,4 +1,9 @@
-# ORIGINAL CLASS AUDIT: fpstest 1.0 → Fabric 1.21.11
+# ORIGINAL CLASS AUDIT: fpstest 1.0 → Fabric 1.21.4
+
+> **CURRENT STATUS: PORT COMPLETE ✅** (branch `port-1.21.4`, base `aaaaf14`).
+> This audit classifies the original classes from `fpstest-1.0.jar`. Every class documented here has
+> since been ported and verified against 1.21.4 (compile + runtime). See `PORT_STATUS.md` for the
+> authoritative completion record.
 
 ## Audit Methodology
 

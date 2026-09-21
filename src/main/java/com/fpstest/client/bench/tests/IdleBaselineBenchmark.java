@@ -7,11 +7,11 @@ import com.fpstest.client.bench.camera.OrbitPath;
 import com.fpstest.client.bench.scene.Arena;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class IdleBaselineBenchmark implements Benchmark {
-    private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+    private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
 
     @Override
     public String id() {

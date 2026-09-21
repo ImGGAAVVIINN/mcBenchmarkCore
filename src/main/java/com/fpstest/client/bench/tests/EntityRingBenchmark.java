@@ -9,16 +9,16 @@ import com.fpstest.client.bench.scene.Arena;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class EntityRingBenchmark implements Benchmark {
@@ -30,7 +30,7 @@ public final class EntityRingBenchmark implements Benchmark {
    private final long seed;
    private final boolean withAi;
    private int spawned = 0;
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final List<Item> ITEM_PALETTE = List.of(
       Items.DIAMOND,
       Items.EMERALD,
@@ -87,7 +87,7 @@ public final class EntityRingBenchmark implements Benchmark {
 
    @Override
    public String description() {
-      return "Ring of " + this.count + " " + this.type.getDescriptionId() + " around the camera; camera orbits 360°.";
+      return "Ring of " + this.count + " " + this.type.getTranslationKey() + " around the camera; camera orbits 360°.";
    }
 
    @Override
@@ -95,7 +95,7 @@ public final class EntityRingBenchmark implements Benchmark {
       Arena.freezeDaytime(ctx);
       this.spawned = 0;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 2, 0, (int)this.ringRadius + 6, (int)this.ringRadius + 6);
 
@@ -103,23 +103,23 @@ public final class EntityRingBenchmark implements Benchmark {
                double angle = (Math.PI * 2) * i / this.count;
                double x = CENTER.x + Math.cos(angle) * this.ringRadius;
                double z = CENTER.z + Math.sin(angle) * this.ringRadius;
-               Entity e = this.type.create(lvl, EntitySpawnReason.COMMAND);
+               Entity e = this.type.create(lvl, SpawnReason.COMMAND);
                if (e != null) {
                   e.setPos(x, CENTER.y - 1.0, z);
-                  if (e instanceof Mob m) {
-                     m.finalizeSpawn(lvl, lvl.getCurrentDifficultyAt(e.blockPosition()), EntitySpawnReason.COMMAND, null);
+                  if (e instanceof MobEntity m) {
+                     m.initialize(lvl, lvl.getLocalDifficulty(e.getBlockPos()), SpawnReason.COMMAND, null);
                      if (!this.withAi) {
-                        m.setNoAi(true);
+                        m.setAiDisabled(true);
                      }
 
-                     m.setPersistenceRequired();
+                     m.setPersistent();
                   }
 
                   if (e instanceof ItemEntity ie) {
                      Item it = ITEM_PALETTE.get(i % ITEM_PALETTE.size());
-                     ie.setItem(new ItemStack(it));
-                     ie.setNeverPickUp();
-                     ie.setUnlimitedLifetime();
+                     ie.setStack(new ItemStack(it));
+                     ie.setPickupDelayInfinite();
+                     ie.setNeverDespawn();
                   }
 
                   e.setInvulnerable(true);

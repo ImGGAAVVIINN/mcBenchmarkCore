@@ -15,18 +15,18 @@ import java.util.List;
 import java.util.Random;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
-import net.minecraft.world.entity.projectile.arrow.Arrow;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.thrown.SnowballEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class ProjectileStormBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final double SPAWN_RADIUS = 30.0;
    private static final int WAVE_SIZE = 25;
    private static final int WAVE_INTERVAL = 10;
@@ -90,7 +90,7 @@ public final class ProjectileStormBenchmark implements Benchmark {
       this.sweepMaxObserved = 0;
       this.instrStart = null;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 2, 0, 36, 36);
          }
@@ -116,7 +116,7 @@ public final class ProjectileStormBenchmark implements Benchmark {
          int sampleEndApprox = ctx.plan() != null ? ctx.plan().warmupTicks + ctx.plan().sampleTicks : this.warmupTicks() + this.sampleTicks();
          if (this.phaseTicks <= sampleEndApprox - 60) {
             ctx.onServer(s -> {
-               ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+               ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                if (lvl != null) {
                   Random rng = new Random(this.phaseTicks * 31L + this.seed());
 
@@ -125,15 +125,15 @@ public final class ProjectileStormBenchmark implements Benchmark {
                      double sx = CENTER.x + Math.cos(angle) * 30.0;
                      double sz = CENTER.z + Math.sin(angle) * 30.0;
                      double sy = CENTER.y + 8.0 + rng.nextDouble() * 4.0;
-                     Vec3 toCenter = CENTER.subtract(sx, sy, sz).normalize().scale(1.6);
+                     Vec3d toCenter = CENTER.subtract(sx, sy, sz).normalize().multiply(1.6);
                      if (i % 2 == 0) {
-                        Arrow arrow = new Arrow(lvl, sx, sy, sz, new ItemStack(Items.ARROW), null);
-                        arrow.setDeltaMovement(toCenter);
+                        ArrowEntity arrow = new ArrowEntity(lvl, sx, sy, sz, new ItemStack(Items.ARROW), null);
+                        arrow.setVelocity(toCenter);
                         arrow.setNoGravity(false);
                         ctx.spawnTracked(arrow, lvl);
                      } else {
-                        Snowball ball = new Snowball(lvl, sx, sy, sz, new ItemStack(Items.SNOWBALL));
-                        ball.setDeltaMovement(toCenter);
+                        SnowballEntity ball = new SnowballEntity(lvl, sx, sy, sz, new ItemStack(Items.SNOWBALL));
+                        ball.setVelocity(toCenter);
                         ctx.spawnTracked(ball, lvl);
                      }
 
@@ -149,16 +149,16 @@ public final class ProjectileStormBenchmark implements Benchmark {
 
    private void sweepLandedProjectiles(BenchContext ctx) {
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int inFlight = 0;
             int landed = 0;
             List<Entity> live = new ArrayList<>();
 
-            for (Entity e : lvl.getAllEntities()) {
-               boolean isProjectile = e instanceof AbstractArrow || e instanceof Snowball;
+            for (Entity e : lvl.iterateEntities()) {
+               boolean isProjectile = e instanceof PersistentProjectileEntity || e instanceof SnowballEntity;
                if (isProjectile) {
-                  if (e.onGround()) {
+                  if (e.isOnGround()) {
                      e.discard();
                      landed++;
                   } else {

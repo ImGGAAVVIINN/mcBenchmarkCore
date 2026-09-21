@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.resource.ResourcePackManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public final class PackShaderBenchmark implements Benchmark {
     private static final Logger LOG = LoggerFactory.getLogger(PackShaderBenchmark.class);
 
     /**
-     * Resource pack ID as used by {@link PackRepository}. Minecraft derives the
+     * Resource pack ID as used by {@link ResourcePackManager}. MinecraftClient derives the
      * ID of a zip pack in the resourcepacks directory as {@code "file/" + filename},
      * so {@code pbr.zip} has the ID {@code "file/pbr.zip"}.
      */
@@ -170,7 +170,7 @@ public final class PackShaderBenchmark implements Benchmark {
 
     @Override
     public void prepare(BenchContext ctx) {
-        Minecraft mc = ctx.client;
+        MinecraftClient mc = ctx.client;
         setupStarted = true;
         phaseReady = false;
         cleanedUp = false;
@@ -180,14 +180,14 @@ public final class PackShaderBenchmark implements Benchmark {
         shaderInUseDuringSample = false;
         shaderWaitTicks = 0;
         LOG.info(
-            "[Minecraft Benchmark Core] Pack + Shader Benchmark starting ({} phases: {})",
+            "[MinecraftClient Benchmark Core] Pack + Shader Benchmark starting ({} phases: {})",
             phaseCount(),
             String.join(", ", java.util.Arrays.stream(PHASES).map(Phase::label).toList())
         );
 
         // 1. Save the user's exact current resource-pack selection.
-        PackRepository repo = mc.getResourcePackRepository();
-        originalPackIds = List.copyOf(repo.getSelectedIds());
+        ResourcePackManager repo = mc.getResourcePackManager();
+        originalPackIds = List.copyOf(repo.getEnabledIds());
 
         // 2. Save the user's exact current Iris state (only if Iris is present).
         irisPresent = IrisShaderControl.isPresent();
@@ -196,12 +196,12 @@ public final class PackShaderBenchmark implements Benchmark {
                 originalShadersEnabled = IrisShaderControl.areShadersEnabled();
                 originalShaderPackName = IrisShaderControl.getShaderPackName().orElse(null);
                 LOG.info(
-                    "[Minecraft Benchmark Core] saved Iris state: enabled={}, pack={}",
+                    "[MinecraftClient Benchmark Core] saved Iris state: enabled={}, pack={}",
                     originalShadersEnabled,
                     originalShaderPackName == null ? "(internal)" : originalShaderPackName
                 );
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] could not read Iris state; treating Iris as absent", t);
+                LOG.warn("[MinecraftClient Benchmark Core] could not read Iris state; treating Iris as absent", t);
                 irisPresent = false;
             }
         }
@@ -232,9 +232,9 @@ public final class PackShaderBenchmark implements Benchmark {
             try {
                 IrisShaderControl.enableShaderPack(phase.shaderPack());
                 shaderEnabled = true;
-                LOG.info("[Minecraft Benchmark Core] Phase {}/{}: {} — shader enabled", phaseIndex + 1, phaseCount(), phase.label());
+                LOG.info("[MinecraftClient Benchmark Core] Phase {}/{}: {} — shader enabled", phaseIndex + 1, phaseCount(), phase.label());
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] shader enable failed for '{}'; continuing without shader", phase.shaderPack(), t);
+                LOG.warn("[MinecraftClient Benchmark Core] shader enable failed for '{}'; continuing without shader", phase.shaderPack(), t);
                 shaderFailed = true;
             }
         }
@@ -247,13 +247,13 @@ public final class PackShaderBenchmark implements Benchmark {
             if (isShaderActive(phase.shaderPack())) {
                 shaderInUseDuringSample = true;
                 phaseReady = true;
-                LOG.info("[Minecraft Benchmark Core] Shader active: {}", phase.shaderPack());
+                LOG.info("[MinecraftClient Benchmark Core] Shader active: {}", phase.shaderPack());
                 return true;
             }
             shaderWaitTicks++;
             if (shaderWaitTicks >= SHADER_READY_TIMEOUT_TICKS) {
                 LOG.warn(
-                    "[Minecraft Benchmark Core] shader pack '{}' did not become active within {} ticks; continuing without it",
+                    "[MinecraftClient Benchmark Core] shader pack '{}' did not become active within {} ticks; continuing without it",
                     phase.shaderPack(),
                     SHADER_READY_TIMEOUT_TICKS
                 );
@@ -283,7 +283,7 @@ public final class PackShaderBenchmark implements Benchmark {
         // redstone animation, particles) so every phase measures an identical scene.
         CinematicState.pathTick = 0;
         delegate.resetAnimation();
-        LOG.info("[Minecraft Benchmark Core] Phase {}/{}: {} — switching", phaseIndex + 1, phaseCount(), phase.label());
+        LOG.info("[MinecraftClient Benchmark Core] Phase {}/{}: {} — switching", phaseIndex + 1, phaseCount(), phase.label());
     }
 
     @Override
@@ -309,19 +309,19 @@ public final class PackShaderBenchmark implements Benchmark {
             return;
         }
         cleanedUp = true;
-        Minecraft mc = ctx.client;
+        MinecraftClient mc = ctx.client;
 
         // 1. Restore the user's exact Iris state (shader pack name + enabled flag).
         if (irisPresent) {
             try {
                 IrisShaderControl.restore(originalShaderPackName, originalShadersEnabled);
                 LOG.info(
-                    "[Minecraft Benchmark Core] restored Iris state: enabled={}, pack={}",
+                    "[MinecraftClient Benchmark Core] restored Iris state: enabled={}, pack={}",
                     originalShadersEnabled,
                     originalShaderPackName == null ? "(internal)" : originalShaderPackName
                 );
             } catch (Throwable t) {
-                LOG.warn("[Minecraft Benchmark Core] Iris state restore failed", t);
+                LOG.warn("[MinecraftClient Benchmark Core] Iris state restore failed", t);
             }
         }
 
@@ -332,18 +332,18 @@ public final class PackShaderBenchmark implements Benchmark {
         // Mojang screen and blocking the Benchmark Results screen. The selection is
         // persisted and is loaded by the normal vanilla flow on the next world entry.
         try {
-            PackRepository repo = mc.getResourcePackRepository();
-            repo.setSelected(originalPackIds);
-            LOG.info("[Minecraft Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
+            ResourcePackManager repo = mc.getResourcePackManager();
+            repo.setEnabledProfiles(originalPackIds);
+            LOG.info("[MinecraftClient Benchmark Core] restored resource pack selection (hot reload deferred to next world load)");
         } catch (Throwable t) {
-            LOG.warn("[Minecraft Benchmark Core] resource pack restore failed", t);
+            LOG.warn("[MinecraftClient Benchmark Core] resource pack restore failed", t);
         }
 
         // 3. Delegate cleanup (removes spawned entities, resets camera, etc.).
         try {
             delegate.cleanup(ctx);
         } catch (Throwable t) {
-            LOG.warn("[Minecraft Benchmark Core] delegate cleanup failed", t);
+            LOG.warn("[MinecraftClient Benchmark Core] delegate cleanup failed", t);
         }
     }
 
@@ -373,20 +373,20 @@ public final class PackShaderBenchmark implements Benchmark {
      * resource pack" (i.e. just the user's original selection).
      */
     private CompletableFuture<Void> applyResourcePack(String resourcePackId) {
-        Minecraft mc = Minecraft.getInstance();
-        PackRepository repo = mc.getResourcePackRepository();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        ResourcePackManager repo = mc.getResourcePackManager();
         List<String> selection = new ArrayList<>(originalPackIds);
         if (resourcePackId != null && !selection.contains(resourcePackId)) {
             selection.add(resourcePackId);
         }
         try {
-            if (resourcePackId != null && !repo.getAvailableIds().contains(resourcePackId)) {
-                LOG.warn("[Minecraft Benchmark Core] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, resourcePackId);
+            if (resourcePackId != null && !repo.getIds().contains(resourcePackId)) {
+                LOG.warn("[MinecraftClient Benchmark Core] resource pack '{}' (id '{}') not found in resourcepacks directory", RESOURCE_PACK_NAME, resourcePackId);
             }
-            repo.setSelected(selection);
-            return mc.reloadResourcePacks();
+            repo.setEnabledProfiles(selection);
+            return mc.reloadResources();
         } catch (Throwable t) {
-            LOG.warn("[Minecraft Benchmark Core] resource pack apply failed for '{}'", resourcePackId, t);
+            LOG.warn("[MinecraftClient Benchmark Core] resource pack apply failed for '{}'", resourcePackId, t);
             return CompletableFuture.completedFuture(null);
         }
     }

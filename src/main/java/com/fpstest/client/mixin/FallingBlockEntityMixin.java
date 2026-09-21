@@ -3,7 +3,7 @@ package com.fpstest.client.mixin;
 import com.fpstest.client.bench.instrumentation.Instr;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.entity.FallingBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,7 +18,7 @@ public abstract class FallingBlockEntityMixin {
    )
    private void fpstest$onTickEnd(CallbackInfo ci) {
       FallingBlockEntity self = (FallingBlockEntity)(Object)this;
-      if (self.onGround()) {
+      if (self.isOnGround()) {
          Instr.fallingBlockLandings.incrementAndGet();
       }
    }

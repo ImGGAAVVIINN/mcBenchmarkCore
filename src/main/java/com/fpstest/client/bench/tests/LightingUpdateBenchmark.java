@@ -11,15 +11,15 @@ import com.fpstest.client.bench.instrumentation.Instr;
 import com.fpstest.client.bench.scene.Arena;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class LightingUpdateBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int GRID = 16;
    private static final int PULSE_PERIOD = 20;
    private static final int LATE_CUTOFF = 10;
@@ -76,7 +76,7 @@ public final class LightingUpdateBenchmark implements Benchmark {
       this.glowing = false;
       this.instrStart = null;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int half = 20;
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, half, half);
@@ -84,7 +84,7 @@ public final class LightingUpdateBenchmark implements Benchmark {
 
             for (int dx = -8; dx < 8; dx++) {
                for (int dz = -8; dz < 8; dz++) {
-                  lvl.setBlock(new BlockPos((int)CENTER.x + dx, by, (int)CENTER.z + dz), Blocks.GLOWSTONE.defaultBlockState(), 3);
+                  lvl.setBlockState(new BlockPos((int)CENTER.x + dx, by, (int)CENTER.z + dz), Blocks.GLOWSTONE.getDefaultState(), 3);
                }
             }
 
@@ -108,14 +108,14 @@ public final class LightingUpdateBenchmark implements Benchmark {
          int sampleEndApprox = ctx.plan() != null ? ctx.plan().warmupTicks + ctx.plan().sampleTicks : this.warmupTicks() + this.sampleTicks();
          if (this.phaseTicks <= sampleEndApprox - 10) {
             ctx.onServer(s -> {
-               ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+               ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                if (lvl != null) {
-                  BlockState newState = this.glowing ? Blocks.STONE.defaultBlockState() : Blocks.GLOWSTONE.defaultBlockState();
+                  BlockState newState = this.glowing ? Blocks.STONE.getDefaultState() : Blocks.GLOWSTONE.getDefaultState();
                   int by = (int)CENTER.y;
 
                   for (int dx = -8; dx < 8; dx++) {
                      for (int dz = -8; dz < 8; dz++) {
-                        lvl.setBlock(new BlockPos((int)CENTER.x + dx, by, (int)CENTER.z + dz), newState, 3);
+                        lvl.setBlockState(new BlockPos((int)CENTER.x + dx, by, (int)CENTER.z + dz), newState, 3);
                      }
                   }
 

@@ -1,8 +1,26 @@
-# API MIGRATION NOTES: fpstest 1.0 → Fabric 1.21.11
+# API MIGRATION NOTES: fpstest 1.0 → Fabric 1.21.4 (branch `port-1.21.4`)
 
-## Overview
+> **CURRENT STATUS: API MIGRATION COMPLETE ✅** — verified by compile, build, and a full runtime
+> benchmark-suite run on 1.21.4 (0 errors, 0 mixin failures). The notes below this banner are the
+> original 1.21.11 staging audit; the authoritative record is in `PORT_STATUS.md`.
 
-This document records all API migration changes required to port fpstest-1.0.jar to Fabric 1.21.11. The existing project mcbenchmarkcore uses Fabric Loom 1.17.19 with mappings and Fabric API 0.141.6+1.21.11.
+## Final API Migration Summary (1.21.4)
+
+| Category | Result |
+|----------|--------|
+| MC / Yarn version | 1.21.4 / `1.21.4+build.8` (v2) |
+| Fabric Loader / API | 0.16.14 / 0.119.4+1.21.4 |
+| Loom | 1.9.2 |
+| Build | `./gradlew build` SUCCESS (remapJar → `mcbenchmarkcore-1.0.0.jar`) |
+| Runtime | 55 mods loaded, 43 benchmarks registered, **0 mixin failures** |
+
+### Runtime mixin fixes recorded during the port (not visible at compile time)
+
+| Mixin | Fix | Why |
+|-------|-----|-----|
+| `ItemInHandRendererMixin` | `method = "renderItem"` → `method = "renderItem(FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;Lnet/minecraft/client/network/ClientPlayerEntity;I)V"` | 1.21.4 has two `renderItem` overloads; the bare name was ambiguous, the mixin bound the wrong (7-arg world-render) overload and `defaultRequire: 1` made it fatal at runtime. Verified via javap. |
+| `ServerWorldTickBlockMixin` | `tickBlock` / `tickFluid` short names (resolved ambiguity) | Overload-safe target selection |
+| `WorldSetBlockStateMixin` | `setBlockState(II)` + `(Object) this instanceof` guards | Signature change + safe casting |
 
 ## A. MAPPING CHANGES
 

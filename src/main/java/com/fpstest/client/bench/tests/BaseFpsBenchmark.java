@@ -18,39 +18,34 @@ import java.util.Random;
 import java.util.Set;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.particles.PowerParticleOption;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.entity.npc.villager.VillagerData;
-import net.minecraft.world.entity.npc.villager.VillagerProfession;
-import net.minecraft.world.entity.npc.villager.VillagerType;
-import net.minecraft.world.entity.projectile.arrow.Arrow;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.level.block.state.properties.PistonType;
-import net.minecraft.world.level.entity.EntityTypeTest;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.village.VillagerData;
+import net.minecraft.village.VillagerProfession;
+import net.minecraft.village.VillagerType;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.BedPart;
+import net.minecraft.state.property.Properties;
+import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.block.enums.PistonType;
+import net.minecraft.util.TypeFilter;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class BaseFpsBenchmark implements Benchmark {
@@ -154,10 +149,10 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.lastLoggedSegment = -1;
       CameraPath path = this.buildCinematicPath();
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             lvl.getServer().setDifficulty(Difficulty.NORMAL, true);
-            lvl.setDayTime(6000L);
+            lvl.setTimeOfDay(6000L);
             this.buildTerrain(lvl);
             this.buildPath(lvl);
             this.decorateGround(lvl);
@@ -176,9 +171,9 @@ public final class BaseFpsBenchmark implements Benchmark {
             this.spawnAmbientAnimals(ctx, lvl);
          }
       });
-      ctx.setArenaOrigin(new Vec3(C_SPAWN.getX() + 0.5, 70.0, C_SPAWN.getZ() + 0.5));
+      ctx.setArenaOrigin(new Vec3d(C_SPAWN.getX() + 0.5, 70.0, C_SPAWN.getZ() + 0.5));
       ctx.setCameraPath(path);
-      Arena.teleport(ctx, new Vec3(C_SPAWN.getX() + 0.5, 74.0, C_SPAWN.getZ() + 0.5), 90.0F, 10.0F);
+      Arena.teleport(ctx, new Vec3d(C_SPAWN.getX() + 0.5, 74.0, C_SPAWN.getZ() + 0.5), 90.0F, 10.0F);
    }
 
    /**
@@ -257,10 +252,10 @@ public final class BaseFpsBenchmark implements Benchmark {
       return dx * dx + dz * dz <= r * r;
    }
 
-   private void buildTerrain(ServerLevel lvl) {
-      BlockState dirt = Blocks.DIRT.defaultBlockState();
-      BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
-      BlockState stone = Blocks.STONE.defaultBlockState();
+   private void buildTerrain(ServerWorld lvl) {
+      BlockState dirt = Blocks.DIRT.getDefaultState();
+      BlockState grass = Blocks.GRASS_BLOCK.getDefaultState();
+      BlockState stone = Blocks.STONE.getDefaultState();
 
       for (int x = -16; x <= 320; x++) {
          for (int z = -64; z <= 64; z++) {
@@ -284,9 +279,9 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void buildPath(ServerLevel lvl) {
-      BlockState path = Blocks.DIRT_PATH.defaultBlockState();
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
+   private void buildPath(ServerWorld lvl) {
+      BlockState path = Blocks.DIRT_PATH.getDefaultState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
       List<BlockPos> wp = List.of(C_SPAWN, C_FOREST, C_BASE, C_VILLAGE, C_COMBAT, C_REDSTONE, C_CAVE, C_NETHER, C_END);
 
       for (int i = 0; i < wp.size() - 1; i++) {
@@ -294,7 +289,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void drawPath(ServerLevel lvl, BlockPos a, BlockPos b, BlockState path, BlockState edge) {
+   private void drawPath(ServerWorld lvl, BlockPos a, BlockPos b, BlockState path, BlockState edge) {
       int x1 = a.getX();
       int z1 = a.getZ();
       int x2 = b.getX();
@@ -333,23 +328,23 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void decorateGround(ServerLevel lvl) {
+   private void decorateGround(ServerWorld lvl) {
       Random rng = new Random(47598L);
       BlockState[] flowers = new BlockState[]{
-         Blocks.POPPY.defaultBlockState(),
-         Blocks.DANDELION.defaultBlockState(),
-         Blocks.CORNFLOWER.defaultBlockState(),
-         Blocks.OXEYE_DAISY.defaultBlockState(),
-         Blocks.AZURE_BLUET.defaultBlockState(),
-         Blocks.ALLIUM.defaultBlockState(),
-         Blocks.BLUE_ORCHID.defaultBlockState()
+         Blocks.POPPY.getDefaultState(),
+         Blocks.DANDELION.getDefaultState(),
+         Blocks.CORNFLOWER.getDefaultState(),
+         Blocks.OXEYE_DAISY.getDefaultState(),
+         Blocks.AZURE_BLUET.getDefaultState(),
+         Blocks.ALLIUM.getDefaultState(),
+         Blocks.BLUE_ORCHID.getDefaultState()
       };
-      BlockState shortGrass = Blocks.SHORT_GRASS.defaultBlockState();
-      BlockState fern = Blocks.FERN.defaultBlockState();
-      BlockState bush = Blocks.SWEET_BERRY_BUSH.defaultBlockState();
-      BlockState mossCarpet = Blocks.MOSS_CARPET.defaultBlockState();
-      BlockState redMush = Blocks.RED_MUSHROOM.defaultBlockState();
-      BlockState brownMush = Blocks.BROWN_MUSHROOM.defaultBlockState();
+      BlockState shortGrass = Blocks.SHORT_GRASS.getDefaultState();
+      BlockState fern = Blocks.FERN.getDefaultState();
+      BlockState bush = Blocks.SWEET_BERRY_BUSH.getDefaultState();
+      BlockState mossCarpet = Blocks.MOSS_CARPET.getDefaultState();
+      BlockState redMush = Blocks.RED_MUSHROOM.getDefaultState();
+      BlockState brownMush = Blocks.BROWN_MUSHROOM.getDefaultState();
 
       for (int x = -15; x < 320; x++) {
          for (int z = -63; z < 64; z++) {
@@ -364,7 +359,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                && !within(x, z, C_CAVE, 9)) {
                BlockPos here = new BlockPos(x, y, z);
                BlockState below = lvl.getBlockState(here);
-               if (!below.is(Blocks.DIRT_PATH) && !below.is(Blocks.COBBLESTONE) && below.is(Blocks.GRASS_BLOCK)) {
+               if (!below.isOf(Blocks.DIRT_PATH) && !below.isOf(Blocks.COBBLESTONE) && below.isOf(Blocks.GRASS_BLOCK)) {
                   double density = 1.0;
                   if (within(x, z, C_FOREST, 18)) {
                      density = 1.55;
@@ -409,7 +404,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private boolean isNearPath(ServerLevel lvl, int x, int z, int radius) {
+   private boolean isNearPath(ServerWorld lvl, int x, int z, int radius) {
       int r = Math.min(2, radius);
 
       for (int dx = -r; dx <= r; dx++) {
@@ -418,7 +413,7 @@ public final class BaseFpsBenchmark implements Benchmark {
             int zz = z + dz;
             if (xx >= -16 && xx <= 320 && zz >= -64 && zz <= 64) {
                BlockState s = lvl.getBlockState(new BlockPos(xx, this.surfaceY(xx, zz), zz));
-               if (s.is(Blocks.DIRT_PATH) || s.is(Blocks.COBBLESTONE)) {
+               if (s.isOf(Blocks.DIRT_PATH) || s.isOf(Blocks.COBBLESTONE)) {
                   return true;
                }
             }
@@ -428,10 +423,10 @@ public final class BaseFpsBenchmark implements Benchmark {
       return false;
    }
 
-   private void scatterRocksAndStumps(ServerLevel lvl) {
+   private void scatterRocksAndStumps(ServerWorld lvl) {
       Random rng = new Random(6882L);
-      BlockState mossy = Blocks.MOSSY_COBBLESTONE.defaultBlockState();
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
+      BlockState mossy = Blocks.MOSSY_COBBLESTONE.getDefaultState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
 
       for (int i = 0; i < 32; i++) {
          int x = -12 + rng.nextInt(329);
@@ -460,8 +455,8 @@ public final class BaseFpsBenchmark implements Benchmark {
          }
       }
 
-      BlockState log = Blocks.OAK_LOG.defaultBlockState();
-      BlockState slab = Blocks.OAK_SLAB.defaultBlockState();
+      BlockState log = Blocks.OAK_LOG.getDefaultState();
+      BlockState slab = Blocks.OAK_SLAB.getDefaultState();
 
       for (int ix = 0; ix < 14; ix++) {
          int x = -12 + rng.nextInt(329);
@@ -481,7 +476,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void scatterTrees(ServerLevel lvl) {
+   private void scatterTrees(ServerWorld lvl) {
       Random rng = new Random(5233L);
 
       for (int attempt = 0; attempt < 240 && this.treesBuilt < 55; attempt++) {
@@ -489,7 +484,7 @@ public final class BaseFpsBenchmark implements Benchmark {
          int dz = rng.nextInt(30) - 15;
          int x = C_FOREST.getX() + dx;
          int z = C_FOREST.getZ() + dz;
-         if (Math.abs(dx) + Math.abs(dz) >= 3 && !lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).is(Blocks.DIRT_PATH)) {
+         if (Math.abs(dx) + Math.abs(dz) >= 3 && !lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).isOf(Blocks.DIRT_PATH)) {
             this.placeTree(lvl, x, z, rng, 0);
          }
       }
@@ -514,7 +509,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                z = 63 - rng.nextInt(8);
          }
 
-         if (!within(x, z, C_END, 17) && !lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).is(Blocks.DIRT_PATH)) {
+         if (!within(x, z, C_END, 17) && !lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).isOf(Blocks.DIRT_PATH)) {
             int variant = rng.nextInt(3);
             this.placeTree(lvl, x, z, rng, variant);
          }
@@ -532,32 +527,32 @@ public final class BaseFpsBenchmark implements Benchmark {
             && !within(x, z, C_END, 17)
             && !within(x, z, C_CAVE, 12)) {
             int variant = rng.nextInt(3);
-            if (!lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).is(Blocks.DIRT_PATH)) {
+            if (!lvl.getBlockState(new BlockPos(x, this.surfaceY(x, z), z)).isOf(Blocks.DIRT_PATH)) {
                this.placeTree(lvl, x, z, rng, variant);
             }
          }
       }
    }
 
-   private void placeTree(ServerLevel lvl, int x, int z, Random rng, int variant) {
+   private void placeTree(ServerWorld lvl, int x, int z, Random rng, int variant) {
       int baseY = this.surfaceY(x, z) + 1;
       BlockState log;
       BlockState leaves;
       int trunkH;
       switch (variant) {
          case 1:
-            log = Blocks.BIRCH_LOG.defaultBlockState();
-            leaves = Blocks.BIRCH_LEAVES.defaultBlockState();
+            log = Blocks.BIRCH_LOG.getDefaultState();
+            leaves = Blocks.BIRCH_LEAVES.getDefaultState();
             trunkH = 5 + rng.nextInt(2);
             break;
          case 2:
-            log = Blocks.DARK_OAK_LOG.defaultBlockState();
-            leaves = Blocks.DARK_OAK_LEAVES.defaultBlockState();
+            log = Blocks.DARK_OAK_LOG.getDefaultState();
+            leaves = Blocks.DARK_OAK_LEAVES.getDefaultState();
             trunkH = 6 + rng.nextInt(2);
             break;
          default:
-            log = Blocks.OAK_LOG.defaultBlockState();
-            leaves = Blocks.OAK_LEAVES.defaultBlockState();
+            log = Blocks.OAK_LOG.getDefaultState();
+            leaves = Blocks.OAK_LEAVES.getDefaultState();
             trunkH = 4 + rng.nextInt(3);
       }
 
@@ -574,8 +569,8 @@ public final class BaseFpsBenchmark implements Benchmark {
                int d2 = lx * lx + ly * ly + lz * lz;
                if (d2 <= rad * rad + 2) {
                   BlockPos lp = new BlockPos(x + lx, top + ly, z + lz);
-                  if (!lvl.getBlockState(lp).is(log.getBlock()) && lvl.getBlockState(lp).isAir()) {
-                     lvl.setBlock(lp, leaves, 2);
+                  if (!lvl.getBlockState(lp).isOf(log.getBlock()) && lvl.getBlockState(lp).isAir()) {
+                     lvl.setBlockState(lp, leaves, 2);
                      this.blocksPlaced++;
                   }
                }
@@ -586,11 +581,11 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.treesBuilt++;
    }
 
-   private void buildSpawnPlaza(ServerLevel lvl) {
+   private void buildSpawnPlaza(ServerWorld lvl) {
       int cx = C_SPAWN.getX();
       int cz = C_SPAWN.getZ();
-      BlockState bricks = Blocks.STONE_BRICKS.defaultBlockState();
-      BlockState chiseled = Blocks.CHISELED_STONE_BRICKS.defaultBlockState();
+      BlockState bricks = Blocks.STONE_BRICKS.getDefaultState();
+      BlockState chiseled = Blocks.CHISELED_STONE_BRICKS.getDefaultState();
 
       for (int dx = -7; dx <= 7; dx++) {
          for (int dz = -7; dz <= 7; dz++) {
@@ -602,20 +597,20 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int[] p : new int[][]{{-5, -5}, {5, -5}, {-5, 5}, {5, 5}}) {
          for (int dy = 1; dy <= 3; dy++) {
-            this.set(lvl, cx + p[0], 70 + dy, cz + p[1], Blocks.POLISHED_BLACKSTONE_WALL.defaultBlockState());
+            this.set(lvl, cx + p[0], 70 + dy, cz + p[1], Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());
          }
 
-         this.set(lvl, cx + p[0], 74, cz + p[1], (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
+         this.set(lvl, cx + p[0], 74, cz + p[1], (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
       }
 
-      this.set(lvl, cx, 71, cz, Blocks.IRON_BLOCK.defaultBlockState());
-      this.set(lvl, cx, 72, cz, Blocks.DIAMOND_BLOCK.defaultBlockState());
-      this.set(lvl, cx, 73, cz, Blocks.SEA_LANTERN.defaultBlockState());
-      this.set(lvl, cx - 6, 71, cz, Blocks.CAMPFIRE.defaultBlockState());
-      this.set(lvl, cx + 6, 71, cz, Blocks.CAMPFIRE.defaultBlockState());
+      this.set(lvl, cx, 71, cz, Blocks.IRON_BLOCK.getDefaultState());
+      this.set(lvl, cx, 72, cz, Blocks.DIAMOND_BLOCK.getDefaultState());
+      this.set(lvl, cx, 73, cz, Blocks.SEA_LANTERN.getDefaultState());
+      this.set(lvl, cx - 6, 71, cz, Blocks.CAMPFIRE.getDefaultState());
+      this.set(lvl, cx + 6, 71, cz, Blocks.CAMPFIRE.getDefaultState());
    }
 
-   private void buildForestZone(ServerLevel lvl) {
+   private void buildForestZone(ServerWorld lvl) {
       int cx = C_FOREST.getX();
       int cz = C_FOREST.getZ();
 
@@ -625,8 +620,8 @@ public final class BaseFpsBenchmark implements Benchmark {
                int px = cx + 10 + dx;
                int pz = cz + 4 + dz;
                int y = this.surfaceY(px, pz);
-               this.setFast(lvl, px, y, pz, Blocks.WATER.defaultBlockState());
-               this.setFast(lvl, px, y - 1, pz, Blocks.STONE.defaultBlockState());
+               this.setFast(lvl, px, y, pz, Blocks.WATER.getDefaultState());
+               this.setFast(lvl, px, y - 1, pz, Blocks.STONE.getDefaultState());
             }
          }
       }
@@ -637,19 +632,19 @@ public final class BaseFpsBenchmark implements Benchmark {
          int x = cx + 4 + rng.nextInt(14);
          int z = cz - 6 + rng.nextInt(20);
          int y = this.surfaceY(x, z);
-         if (lvl.getBlockState(new BlockPos(x, y, z)).is(Blocks.GRASS_BLOCK)) {
-            this.setFast(lvl, x, y + 1, z, rng.nextBoolean() ? Blocks.LARGE_FERN.defaultBlockState() : Blocks.AZALEA_LEAVES.defaultBlockState());
+         if (lvl.getBlockState(new BlockPos(x, y, z)).isOf(Blocks.GRASS_BLOCK)) {
+            this.setFast(lvl, x, y + 1, z, rng.nextBoolean() ? Blocks.LARGE_FERN.getDefaultState() : Blocks.AZALEA_LEAVES.getDefaultState());
          }
       }
    }
 
-   private void buildPlayerBase(ServerLevel lvl) {
+   private void buildPlayerBase(ServerWorld lvl) {
       int cx = C_BASE.getX();
       int cz = C_BASE.getZ();
-      BlockState planks = Blocks.OAK_PLANKS.defaultBlockState();
-      BlockState log = Blocks.OAK_LOG.defaultBlockState();
-      BlockState glass = Blocks.GLASS.defaultBlockState();
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
+      BlockState planks = Blocks.OAK_PLANKS.getDefaultState();
+      BlockState log = Blocks.OAK_LOG.getDefaultState();
+      BlockState glass = Blocks.GLASS.getDefaultState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
 
       for (int dx = -7; dx <= 7; dx++) {
          for (int dz = -6; dz <= 6; dz++) {
@@ -679,8 +674,8 @@ public final class BaseFpsBenchmark implements Benchmark {
          }
       }
 
-      BlockState stairsN = (BlockState)Blocks.OAK_STAIRS.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
-      BlockState stairsS = (BlockState)Blocks.OAK_STAIRS.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+      BlockState stairsN = (BlockState)Blocks.OAK_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+      BlockState stairsS = (BlockState)Blocks.OAK_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
 
       for (int x = hxMin; x <= hxMax; x++) {
          this.set(lvl, x, 75, hzMin, stairsS);
@@ -697,81 +692,81 @@ public final class BaseFpsBenchmark implements Benchmark {
             this.set(lvl, x, 76, dz, planks);
          }
 
-         this.set(lvl, x, 77, cz, (BlockState)Blocks.OAK_LOG.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.X));
+         this.set(lvl, x, 77, cz, (BlockState)Blocks.OAK_LOG.getDefaultState().with(Properties.AXIS, Direction.Axis.X));
       }
 
       int chimneyX = hxMin + 1;
       int chimneyZ = hzMax;
 
       for (int dy = 5; dy <= 8; dy++) {
-         this.set(lvl, chimneyX, 70 + dy, chimneyZ, Blocks.COBBLESTONE.defaultBlockState());
+         this.set(lvl, chimneyX, 70 + dy, chimneyZ, Blocks.COBBLESTONE.getDefaultState());
       }
 
-      this.set(lvl, chimneyX, 79, chimneyZ, Blocks.CAMPFIRE.defaultBlockState());
+      this.set(lvl, chimneyX, 79, chimneyZ, Blocks.CAMPFIRE.getDefaultState());
       this.set(
          lvl,
          cx,
          71,
          hzMin,
-         (BlockState)((BlockState)Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER))
-            .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
+         (BlockState)((BlockState)Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER))
+            .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
       );
       this.set(
          lvl,
          cx,
          72,
          hzMin,
-         (BlockState)((BlockState)Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER))
-            .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
+         (BlockState)((BlockState)Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER))
+            .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
       );
-      this.set(lvl, hxMin + 1, 71, hzMin + 1, Blocks.CHEST.defaultBlockState());
-      this.set(lvl, hxMin + 1, 71, hzMin + 2, Blocks.CHEST.defaultBlockState());
-      this.set(lvl, hxMin + 1, 71, hzMin + 3, Blocks.BARREL.defaultBlockState());
-      this.set(lvl, hxMax - 1, 71, hzMin + 1, Blocks.FURNACE.defaultBlockState());
-      this.set(lvl, hxMax - 1, 71, hzMin + 2, Blocks.SMOKER.defaultBlockState());
-      this.set(lvl, hxMax - 1, 71, hzMin + 3, Blocks.BLAST_FURNACE.defaultBlockState());
-      this.set(lvl, hxMax - 1, 71, hzMin + 5, Blocks.ENCHANTING_TABLE.defaultBlockState());
-      this.set(lvl, hxMin + 1, 71, hzMin + 5, Blocks.CRAFTING_TABLE.defaultBlockState());
-      this.set(lvl, cx, 71, cz + 2, Blocks.ANVIL.defaultBlockState());
-      this.set(lvl, cx - 2, 74, cz, (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
-      this.set(lvl, cx + 2, 74, cz, (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
+      this.set(lvl, hxMin + 1, 71, hzMin + 1, Blocks.CHEST.getDefaultState());
+      this.set(lvl, hxMin + 1, 71, hzMin + 2, Blocks.CHEST.getDefaultState());
+      this.set(lvl, hxMin + 1, 71, hzMin + 3, Blocks.BARREL.getDefaultState());
+      this.set(lvl, hxMax - 1, 71, hzMin + 1, Blocks.FURNACE.getDefaultState());
+      this.set(lvl, hxMax - 1, 71, hzMin + 2, Blocks.SMOKER.getDefaultState());
+      this.set(lvl, hxMax - 1, 71, hzMin + 3, Blocks.BLAST_FURNACE.getDefaultState());
+      this.set(lvl, hxMax - 1, 71, hzMin + 5, Blocks.ENCHANTING_TABLE.getDefaultState());
+      this.set(lvl, hxMin + 1, 71, hzMin + 5, Blocks.CRAFTING_TABLE.getDefaultState());
+      this.set(lvl, cx, 71, cz + 2, Blocks.ANVIL.getDefaultState());
+      this.set(lvl, cx - 2, 74, cz, (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+      this.set(lvl, cx + 2, 74, cz, (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
 
       for (int dx = -7; dx <= 7; dx++) {
-         this.set(lvl, cx + dx, 71, cz - 6, Blocks.OAK_FENCE.defaultBlockState());
-         this.set(lvl, cx + dx, 71, cz + 6, Blocks.OAK_FENCE.defaultBlockState());
+         this.set(lvl, cx + dx, 71, cz - 6, Blocks.OAK_FENCE.getDefaultState());
+         this.set(lvl, cx + dx, 71, cz + 6, Blocks.OAK_FENCE.getDefaultState());
       }
 
       for (int dz = -6; dz <= 6; dz++) {
-         this.set(lvl, cx - 7, 71, cz + dz, Blocks.OAK_FENCE.defaultBlockState());
-         this.set(lvl, cx + 7, 71, cz + dz, Blocks.OAK_FENCE.defaultBlockState());
+         this.set(lvl, cx - 7, 71, cz + dz, Blocks.OAK_FENCE.getDefaultState());
+         this.set(lvl, cx + 7, 71, cz + dz, Blocks.OAK_FENCE.getDefaultState());
       }
 
-      this.set(lvl, cx, 71, cz + 6, (BlockState)Blocks.OAK_FENCE_GATE.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+      this.set(lvl, cx, 71, cz + 6, (BlockState)Blocks.OAK_FENCE_GATE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
 
       for (int dx = -3; dx <= 0; dx++) {
          for (int dz = 4; dz <= 5; dz++) {
-            this.set(lvl, cx + dx, 70, cz + dz, (BlockState)Blocks.FARMLAND.defaultBlockState().setValue(BlockStateProperties.MOISTURE, 7));
-            this.set(lvl, cx + dx, 71, cz + dz, (BlockState)Blocks.WHEAT.defaultBlockState().setValue(BlockStateProperties.AGE_7, 7));
+            this.set(lvl, cx + dx, 70, cz + dz, (BlockState)Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+            this.set(lvl, cx + dx, 71, cz + dz, (BlockState)Blocks.WHEAT.getDefaultState().with(Properties.AGE_7, 7));
          }
       }
 
-      this.set(lvl, cx + 1, 70, cz + 5, Blocks.WATER.defaultBlockState());
-      this.set(lvl, cx + 2, 71, cz - 5, Blocks.CAMPFIRE.defaultBlockState());
-      this.set(lvl, cx - 2, 71, cz - 5, Blocks.HAY_BLOCK.defaultBlockState());
-      this.set(lvl, cx + 3, 71, cz + 4, Blocks.OAK_FENCE.defaultBlockState());
-      this.set(lvl, cx + 3, 72, cz + 4, Blocks.HAY_BLOCK.defaultBlockState());
-      this.set(lvl, cx + 3, 73, cz + 4, (BlockState)Blocks.JACK_O_LANTERN.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+      this.set(lvl, cx + 1, 70, cz + 5, Blocks.WATER.getDefaultState());
+      this.set(lvl, cx + 2, 71, cz - 5, Blocks.CAMPFIRE.getDefaultState());
+      this.set(lvl, cx - 2, 71, cz - 5, Blocks.HAY_BLOCK.getDefaultState());
+      this.set(lvl, cx + 3, 71, cz + 4, Blocks.OAK_FENCE.getDefaultState());
+      this.set(lvl, cx + 3, 72, cz + 4, Blocks.HAY_BLOCK.getDefaultState());
+      this.set(lvl, cx + 3, 73, cz + 4, (BlockState)Blocks.JACK_O_LANTERN.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
 
       for (int[] p : new int[][]{{-7, -3}, {-7, 3}, {7, -3}, {7, 3}}) {
-         this.set(lvl, cx + p[0], 72, cz + p[1], Blocks.LANTERN.defaultBlockState());
+         this.set(lvl, cx + p[0], 72, cz + p[1], Blocks.LANTERN.getDefaultState());
       }
    }
 
-   private void buildVillage(BenchContext ctx, ServerLevel lvl) {
+   private void buildVillage(BenchContext ctx, ServerWorld lvl) {
       int cx = C_VILLAGE.getX();
       int cz = C_VILLAGE.getZ();
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
-      BlockState mossy = Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
+      BlockState mossy = Blocks.MOSSY_COBBLESTONE.getDefaultState();
 
       for (int dx = -4; dx <= 4; dx++) {
          for (int dz = -4; dz <= 4; dz++) {
@@ -779,9 +774,9 @@ public final class BaseFpsBenchmark implements Benchmark {
          }
       }
 
-      this.set(lvl, cx, 71, cz, Blocks.POLISHED_BLACKSTONE.defaultBlockState());
-      this.set(lvl, cx, 72, cz, Blocks.POLISHED_BLACKSTONE_WALL.defaultBlockState());
-      this.set(lvl, cx, 73, cz, Blocks.BELL.defaultBlockState());
+      this.set(lvl, cx, 71, cz, Blocks.POLISHED_BLACKSTONE.getDefaultState());
+      this.set(lvl, cx, 72, cz, Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());
+      this.set(lvl, cx, 73, cz, Blocks.BELL.getDefaultState());
       int[][] homes = new int[][]{{-10, -7}, {10, -7}, {-10, 7}, {10, 7}, {0, 11}};
 
       for (int i = 0; i < homes.length; i++) {
@@ -790,65 +785,61 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int dx = -3; dx <= 4; dx++) {
          for (int dz = -10; dz <= -7; dz++) {
-            this.set(lvl, cx + dx, 70, cz + dz, (BlockState)Blocks.FARMLAND.defaultBlockState().setValue(BlockStateProperties.MOISTURE, 7));
-            this.set(lvl, cx + dx, 71, cz + dz, (BlockState)Blocks.WHEAT.defaultBlockState().setValue(BlockStateProperties.AGE_7, 5 + (dx + dz) % 3));
+            this.set(lvl, cx + dx, 70, cz + dz, (BlockState)Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
+            this.set(lvl, cx + dx, 71, cz + dz, (BlockState)Blocks.WHEAT.getDefaultState().with(Properties.AGE_7, 5 + (dx + dz) % 3));
          }
       }
 
-      this.set(lvl, cx - 4, 71, cz - 8, Blocks.COMPOSTER.defaultBlockState());
-      this.set(lvl, cx + 5, 71, cz - 8, Blocks.COMPOSTER.defaultBlockState());
-      this.set(lvl, cx - 3, 71, cz + 4, Blocks.BARREL.defaultBlockState());
-      this.set(lvl, cx - 2, 71, cz + 4, Blocks.HAY_BLOCK.defaultBlockState());
-      this.set(lvl, cx - 2, 72, cz + 4, Blocks.HAY_BLOCK.defaultBlockState());
-      this.set(lvl, cx + 2, 71, cz + 4, Blocks.BARREL.defaultBlockState());
-      this.set(lvl, cx + 3, 71, cz + 4, Blocks.HAY_BLOCK.defaultBlockState());
+      this.set(lvl, cx - 4, 71, cz - 8, Blocks.COMPOSTER.getDefaultState());
+      this.set(lvl, cx + 5, 71, cz - 8, Blocks.COMPOSTER.getDefaultState());
+      this.set(lvl, cx - 3, 71, cz + 4, Blocks.BARREL.getDefaultState());
+      this.set(lvl, cx - 2, 71, cz + 4, Blocks.HAY_BLOCK.getDefaultState());
+      this.set(lvl, cx - 2, 72, cz + 4, Blocks.HAY_BLOCK.getDefaultState());
+      this.set(lvl, cx + 2, 71, cz + 4, Blocks.BARREL.getDefaultState());
+      this.set(lvl, cx + 3, 71, cz + 4, Blocks.HAY_BLOCK.getDefaultState());
 
       for (int[] p : new int[][]{{-12, 0}, {12, 0}, {0, -12}, {0, 12}}) {
-         this.set(lvl, cx + p[0], 71, cz + p[1], Blocks.OAK_FENCE.defaultBlockState());
-         this.set(lvl, cx + p[0], 72, cz + p[1], Blocks.OAK_FENCE.defaultBlockState());
-         this.set(lvl, cx + p[0], 73, cz + p[1], (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
+         this.set(lvl, cx + p[0], 71, cz + p[1], Blocks.OAK_FENCE.getDefaultState());
+         this.set(lvl, cx + p[0], 72, cz + p[1], Blocks.OAK_FENCE.getDefaultState());
+         this.set(lvl, cx + p[0], 73, cz + p[1], (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
       }
 
-      Holder<VillagerType> plainsType = lvl.registryAccess().lookupOrThrow(Registries.VILLAGER_TYPE).getOrThrow(VillagerType.PLAINS);
-      Holder<VillagerProfession>[] profs = new Holder[]{
-         prof(lvl, VillagerProfession.FARMER),
-         prof(lvl, VillagerProfession.LIBRARIAN),
-         prof(lvl, VillagerProfession.CARTOGRAPHER),
-         prof(lvl, VillagerProfession.FLETCHER),
-         prof(lvl, VillagerProfession.ARMORER),
-         prof(lvl, VillagerProfession.WEAPONSMITH),
-         prof(lvl, VillagerProfession.TOOLSMITH),
-         prof(lvl, VillagerProfession.LEATHERWORKER),
-         prof(lvl, VillagerProfession.MASON),
-         prof(lvl, VillagerProfession.NITWIT),
-         prof(lvl, VillagerProfession.BUTCHER),
-         prof(lvl, VillagerProfession.CLERIC)
+      VillagerType plainsType = VillagerType.PLAINS;
+      VillagerProfession[] profs = new VillagerProfession[]{
+         VillagerProfession.FARMER,
+         VillagerProfession.LIBRARIAN,
+         VillagerProfession.CARTOGRAPHER,
+         VillagerProfession.FLETCHER,
+         VillagerProfession.ARMORER,
+         VillagerProfession.WEAPONSMITH,
+         VillagerProfession.TOOLSMITH,
+         VillagerProfession.LEATHERWORKER,
+         VillagerProfession.MASON,
+         VillagerProfession.NITWIT,
+         VillagerProfession.BUTCHER,
+         VillagerProfession.CLERIC
       };
       Random rng = new Random(2863L);
 
       for (int i = 0; i < 36; i++) {
-         Villager v = new Villager(EntityType.VILLAGER, lvl, plainsType);
+         VillagerEntity v = new VillagerEntity(EntityType.VILLAGER, lvl, plainsType);
          double dx = (rng.nextDouble() - 0.5) * 22.0;
          double dz = (rng.nextDouble() - 0.5) * 22.0;
-         v.snapTo(cx + dx, 71.0, cz + dz, rng.nextFloat() * 360.0F, 0.0F);
+         v.refreshPositionAndAngles(cx + dx, 71.0, cz + dz, rng.nextFloat() * 360.0F, 0.0F);
          v.setVillagerData(new VillagerData(plainsType, profs[i % profs.length], 1));
-         v.setNoAi(false);
-         v.setPersistenceRequired();
+         v.setAiDisabled(false);
+         v.setPersistent();
          v.setInvulnerable(true);
          ctx.spawnTracked(v, lvl);
          this.villagersSpawned++;
       }
    }
 
-   private static Holder<VillagerProfession> prof(ServerLevel lvl, ResourceKey<VillagerProfession> key) {
-      return lvl.registryAccess().lookupOrThrow(Registries.VILLAGER_PROFESSION).getOrThrow(key);
-   }
-
-   private void buildSmallHouse(ServerLevel lvl, int cx, int cz, int variant) {
-      BlockState planks = Blocks.OAK_PLANKS.defaultBlockState();
-      BlockState log = Blocks.OAK_LOG.defaultBlockState();
-      BlockState glass = Blocks.GLASS.defaultBlockState();
-      BlockState slab = Blocks.OAK_SLAB.defaultBlockState();
+   private void buildSmallHouse(ServerWorld lvl, int cx, int cz, int variant) {
+      BlockState planks = Blocks.OAK_PLANKS.getDefaultState();
+      BlockState log = Blocks.OAK_LOG.getDefaultState();
+      BlockState glass = Blocks.GLASS.getDefaultState();
+      BlockState slab = Blocks.OAK_SLAB.getDefaultState();
       int xMin = cx - 3;
       int xMax = cx + 3;
       int zMin = cz - 2;
@@ -885,43 +876,43 @@ public final class BaseFpsBenchmark implements Benchmark {
          cx + dxDoor,
          71,
          cz + dzDoor,
-         (BlockState)((BlockState)Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER))
-            .setValue(BlockStateProperties.HORIZONTAL_FACING, door)
+         (BlockState)((BlockState)Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER))
+            .with(Properties.HORIZONTAL_FACING, door)
       );
       this.set(
          lvl,
          cx + dxDoor,
          72,
          cz + dzDoor,
-         (BlockState)((BlockState)Blocks.OAK_DOOR.defaultBlockState().setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER))
-            .setValue(BlockStateProperties.HORIZONTAL_FACING, door)
+         (BlockState)((BlockState)Blocks.OAK_DOOR.getDefaultState().with(Properties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER))
+            .with(Properties.HORIZONTAL_FACING, door)
       );
-      BlockState bedFoot = (BlockState)((BlockState)Blocks.RED_BED.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST))
-         .setValue(BlockStateProperties.BED_PART, BedPart.FOOT);
-      BlockState bedHead = (BlockState)((BlockState)Blocks.RED_BED.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST))
-         .setValue(BlockStateProperties.BED_PART, BedPart.HEAD);
+      BlockState bedFoot = (BlockState)((BlockState)Blocks.RED_BED.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST))
+         .with(Properties.BED_PART, BedPart.FOOT);
+      BlockState bedHead = (BlockState)((BlockState)Blocks.RED_BED.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.EAST))
+         .with(Properties.BED_PART, BedPart.HEAD);
       this.set(lvl, xMin + 1, 71, zMin + 1, bedFoot);
       this.set(lvl, xMin + 2, 71, zMin + 1, bedHead);
 
       BlockState ws = switch (variant) {
-         case 0 -> Blocks.LECTERN.defaultBlockState();
-         case 1 -> Blocks.CARTOGRAPHY_TABLE.defaultBlockState();
-         case 2 -> Blocks.FLETCHING_TABLE.defaultBlockState();
-         case 3 -> Blocks.SMITHING_TABLE.defaultBlockState();
-         default -> Blocks.GRINDSTONE.defaultBlockState();
+         case 0 -> Blocks.LECTERN.getDefaultState();
+         case 1 -> Blocks.CARTOGRAPHY_TABLE.getDefaultState();
+         case 2 -> Blocks.FLETCHING_TABLE.getDefaultState();
+         case 3 -> Blocks.SMITHING_TABLE.getDefaultState();
+         default -> Blocks.GRINDSTONE.getDefaultState();
       };
       this.set(lvl, xMax - 1, 71, zMax - 1, ws);
-      this.set(lvl, cx, 73, cz, (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
+      this.set(lvl, cx, 73, cz, (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
    }
 
-   private void buildCombatArena(BenchContext ctx, ServerLevel lvl) {
+   private void buildCombatArena(BenchContext ctx, ServerWorld lvl) {
       int cx = C_COMBAT.getX();
       int cz = C_COMBAT.getZ();
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
-      BlockState mossy = Blocks.MOSSY_COBBLESTONE.defaultBlockState();
-      BlockState bricks = Blocks.STONE_BRICKS.defaultBlockState();
-      BlockState chiseled = Blocks.CHISELED_STONE_BRICKS.defaultBlockState();
-      BlockState wall = Blocks.COBBLESTONE_WALL.defaultBlockState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
+      BlockState mossy = Blocks.MOSSY_COBBLESTONE.getDefaultState();
+      BlockState bricks = Blocks.STONE_BRICKS.getDefaultState();
+      BlockState chiseled = Blocks.CHISELED_STONE_BRICKS.getDefaultState();
+      BlockState wall = Blocks.COBBLESTONE_WALL.getDefaultState();
 
       for (int dx = -9; dx <= 9; dx++) {
          for (int dz = -8; dz <= 8; dz++) {
@@ -939,8 +930,8 @@ public final class BaseFpsBenchmark implements Benchmark {
          this.set(lvl, cx + 9, 71, cz + dz, wall);
       }
 
-      this.set(lvl, cx - 9, 71, cz, Blocks.AIR.defaultBlockState());
-      this.set(lvl, cx - 9, 71, cz + 1, Blocks.AIR.defaultBlockState());
+      this.set(lvl, cx - 9, 71, cz, Blocks.AIR.getDefaultState());
+      this.set(lvl, cx - 9, 71, cz + 1, Blocks.AIR.getDefaultState());
 
       for (int[] t : COMBAT_TOWERS) {
          int tx = cx + t[0];
@@ -959,16 +950,16 @@ public final class BaseFpsBenchmark implements Benchmark {
             face = ddz > 0 ? Direction.SOUTH : Direction.NORTH;
          }
 
-         this.set(lvl, tx, 75, tz, (BlockState)Blocks.DISPENSER.defaultBlockState().setValue(BlockStateProperties.FACING, face));
-         this.set(lvl, tx, 76, tz, Blocks.OAK_FENCE.defaultBlockState());
-         this.set(lvl, tx, 77, tz, (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
+         this.set(lvl, tx, 75, tz, (BlockState)Blocks.DISPENSER.getDefaultState().with(Properties.FACING, face));
+         this.set(lvl, tx, 76, tz, Blocks.OAK_FENCE.getDefaultState());
+         this.set(lvl, tx, 77, tz, (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
       }
 
-      this.setFast(lvl, cx, 71, cz, Blocks.HAY_BLOCK.defaultBlockState());
-      this.setFast(lvl, cx, 72, cz, Blocks.HAY_BLOCK.defaultBlockState());
-      this.setFast(lvl, cx, 73, cz, (BlockState)Blocks.CARVED_PUMPKIN.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
-      this.setFast(lvl, cx - 1, 72, cz, Blocks.HAY_BLOCK.defaultBlockState());
-      this.setFast(lvl, cx + 1, 72, cz, Blocks.HAY_BLOCK.defaultBlockState());
+      this.setFast(lvl, cx, 71, cz, Blocks.HAY_BLOCK.getDefaultState());
+      this.setFast(lvl, cx, 72, cz, Blocks.HAY_BLOCK.getDefaultState());
+      this.setFast(lvl, cx, 73, cz, (BlockState)Blocks.CARVED_PUMPKIN.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH));
+      this.setFast(lvl, cx - 1, 72, cz, Blocks.HAY_BLOCK.getDefaultState());
+      this.setFast(lvl, cx + 1, 72, cz, Blocks.HAY_BLOCK.getDefaultState());
       this.setFast(lvl, cx - 3, 71, cz, chiseled);
       this.setFast(lvl, cx - 3, 72, cz, chiseled);
       this.setFast(lvl, cx + 3, 71, cz, chiseled);
@@ -981,11 +972,11 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.spawnPassiveSafe(ctx, lvl, EntityType.PILLAGER, cx + 6, cz - 2, false);
    }
 
-   private void buildRedstoneScene(ServerLevel lvl) {
+   private void buildRedstoneScene(ServerWorld lvl) {
       int cx = C_REDSTONE.getX();
       int cz = C_REDSTONE.getZ();
-      BlockState quartz = Blocks.QUARTZ_BLOCK.defaultBlockState();
-      BlockState floor = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+      BlockState quartz = Blocks.QUARTZ_BLOCK.getDefaultState();
+      BlockState floor = Blocks.POLISHED_BLACKSTONE.getDefaultState();
 
       for (int dx = -4; dx <= 4; dx++) {
          for (int dz = -4; dz <= 4; dz++) {
@@ -994,44 +985,44 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
 
       this.set(lvl, cx, 71, cz - 2, quartz);
-      this.set(lvl, cx, 71, cz - 3, (BlockState)Blocks.OBSERVER.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.NORTH));
-      this.set(lvl, cx, 71, cz - 1, (BlockState)Blocks.OBSERVER.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+      this.set(lvl, cx, 71, cz - 3, (BlockState)Blocks.OBSERVER.getDefaultState().with(Properties.FACING, Direction.NORTH));
+      this.set(lvl, cx, 71, cz - 1, (BlockState)Blocks.OBSERVER.getDefaultState().with(Properties.FACING, Direction.SOUTH));
 
       for (int dx = 2; dx <= 4; dx++) {
          for (int dy = 1; dy <= 3; dy++) {
-            this.set(lvl, cx + dx, 70 + dy, cz, (BlockState)Blocks.REDSTONE_LAMP.defaultBlockState().setValue(BlockStateProperties.LIT, false));
+            this.set(lvl, cx + dx, 70 + dy, cz, (BlockState)Blocks.REDSTONE_LAMP.getDefaultState().with(Properties.LIT, false));
          }
       }
 
       for (int dy = 0; dy <= 4; dy++) {
-         this.set(lvl, cx + 5, 70 + dy, cz - 1, (BlockState)Blocks.QUARTZ_PILLAR.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y));
-         this.set(lvl, cx + 5, 70 + dy, cz + 1, (BlockState)Blocks.QUARTZ_PILLAR.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y));
+         this.set(lvl, cx + 5, 70 + dy, cz - 1, (BlockState)Blocks.QUARTZ_PILLAR.getDefaultState().with(Properties.AXIS, Direction.Axis.Y));
+         this.set(lvl, cx + 5, 70 + dy, cz + 1, (BlockState)Blocks.QUARTZ_PILLAR.getDefaultState().with(Properties.AXIS, Direction.Axis.Y));
       }
 
       for (int dy = 1; dy <= 3; dy++) {
-         this.set(lvl, cx + 5, 70 + dy, cz, Blocks.IRON_BARS.defaultBlockState());
+         this.set(lvl, cx + 5, 70 + dy, cz, Blocks.IRON_BARS.getDefaultState());
       }
 
-      this.set(lvl, cx + 5, 74, cz, Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
+      this.set(lvl, cx + 5, 74, cz, Blocks.CHISELED_QUARTZ_BLOCK.getDefaultState());
       this.set(
          lvl,
          cx - 2,
          71,
          cz + 2,
-         (BlockState)((BlockState)Blocks.STICKY_PISTON.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP))
-            .setValue(BlockStateProperties.EXTENDED, false)
+         (BlockState)((BlockState)Blocks.STICKY_PISTON.getDefaultState().with(Properties.FACING, Direction.UP))
+            .with(Properties.EXTENDED, false)
       );
-      this.set(lvl, cx - 2, 72, cz + 2, Blocks.IRON_BLOCK.defaultBlockState());
-      this.set(lvl, cx - 2, 73, cz + 2, Blocks.AIR.defaultBlockState());
-      this.set(lvl, cx - 3, 71, cz + 2, Blocks.RED_CONCRETE.defaultBlockState());
-      this.set(lvl, cx + 1, 71, cz + 2, (BlockState)Blocks.REPEATER.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+      this.set(lvl, cx - 2, 72, cz + 2, Blocks.IRON_BLOCK.getDefaultState());
+      this.set(lvl, cx - 2, 73, cz + 2, Blocks.AIR.getDefaultState());
+      this.set(lvl, cx - 3, 71, cz + 2, Blocks.RED_CONCRETE.getDefaultState());
+      this.set(lvl, cx + 1, 71, cz + 2, (BlockState)Blocks.REPEATER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH));
 
       for (int dz = 3; dz <= 4; dz++) {
-         this.set(lvl, cx + 1, 71, cz + dz, Blocks.REDSTONE_WIRE.defaultBlockState());
+         this.set(lvl, cx + 1, 71, cz + dz, Blocks.REDSTONE_WIRE.getDefaultState());
       }
 
       for (int[] p : new int[][]{{-4, -4}, {4, -4}, {-4, 4}, {4, 4}}) {
-         this.set(lvl, cx + p[0], 71, cz + p[1], (BlockState)Blocks.END_ROD.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP));
+         this.set(lvl, cx + p[0], 71, cz + p[1], (BlockState)Blocks.END_ROD.getDefaultState().with(Properties.FACING, Direction.UP));
       }
    }
 
@@ -1049,16 +1040,16 @@ public final class BaseFpsBenchmark implements Benchmark {
       Pose camPose = CinematicState.currentPose(0.0F);
       ctx.onServer(
          server -> {
-            ServerLevel lvl = (ServerLevel) ctx.serverLevel();
-            ServerPlayer p = ctx.serverPlayer();
+            ServerWorld lvl = (ServerWorld) ctx.serverLevel();
+            ServerPlayerEntity p = ctx.serverPlayer();
             if (lvl != null && p != null) {
                if (camPose != null) {
-                  p.teleportTo(lvl, camPose.pos().x, camPose.pos().y, camPose.pos().z, Set.of(), camPose.yaw(), camPose.pitch(), true);
+                  p.teleportTo(new net.minecraft.world.TeleportTarget(lvl, new Vec3d(camPose.pos().x, camPose.pos().y, camPose.pos().z), Vec3d.ZERO, camPose.yaw(), camPose.pitch(), net.minecraft.world.TeleportTarget.NO_OP));
                   p.setOnGround(false);
                   p.setInvulnerable(true);
                   p.setInvisible(true);
                   p.setNoGravity(true);
-                  p.noPhysics = true;
+                  p.noClip = true;
                }
 
                int cx = C_REDSTONE.getX();
@@ -1066,13 +1057,13 @@ public final class BaseFpsBenchmark implements Benchmark {
                this.tickCombatArena(lvl);
                this.tickZoneParticles(lvl);
                if (this.animTick % 40 == 0) {
-                  AABB hugeBox = new AABB(-1024.0, -64.0, -1024.0, 1024.0, 320.0, 1024.0);
+                  Box hugeBox = new Box(-1024.0, -64.0, -1024.0, 1024.0, 320.0, 1024.0);
 
-                  for (ItemEntity it : lvl.getEntities(EntityTypeTest.forClass(ItemEntity.class), hugeBox, e -> true)) {
+                  for (ItemEntity it : lvl.getEntitiesByType(TypeFilter.instanceOf(ItemEntity.class), hugeBox, e -> true)) {
                      it.discard();
                   }
 
-                  for (net.minecraft.world.entity.ExperienceOrb orb : lvl.getEntities(EntityTypeTest.forClass(net.minecraft.world.entity.ExperienceOrb.class), hugeBox, e -> true)) {
+                  for (net.minecraft.entity.ExperienceOrbEntity orb : lvl.getEntitiesByType(TypeFilter.instanceOf(net.minecraft.entity.ExperienceOrbEntity.class), hugeBox, e -> true)) {
                      orb.discard();
                   }
                }
@@ -1082,10 +1073,10 @@ public final class BaseFpsBenchmark implements Benchmark {
 
                   for (int col = 0; col < 3; col++) {
                      boolean lit = col == phase;
-                     BlockState lamp = (BlockState)Blocks.REDSTONE_LAMP.defaultBlockState().setValue(BlockStateProperties.LIT, lit);
+                     BlockState lamp = (BlockState)Blocks.REDSTONE_LAMP.getDefaultState().with(Properties.LIT, lit);
 
                      for (int dy = 1; dy <= 3; dy++) {
-                        lvl.setBlock(new BlockPos(cx + 2 + col, 70 + dy, cz), lamp, 2);
+                        lvl.setBlockState(new BlockPos(cx + 2 + col, 70 + dy, cz), lamp, 2);
                      }
                   }
                }
@@ -1095,28 +1086,28 @@ public final class BaseFpsBenchmark implements Benchmark {
                   int z = cz + 2;
                   boolean extended = this.animTick / 20 % 2 == 1;
                   if (extended) {
-                     lvl.setBlock(
+                     lvl.setBlockState(
                         new BlockPos(x, 71, z),
-                        (BlockState)((BlockState)Blocks.STICKY_PISTON.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP))
-                           .setValue(BlockStateProperties.EXTENDED, true),
+                        (BlockState)((BlockState)Blocks.STICKY_PISTON.getDefaultState().with(Properties.FACING, Direction.UP))
+                           .with(Properties.EXTENDED, true),
                         2
                      );
-                     lvl.setBlock(
+                     lvl.setBlockState(
                         new BlockPos(x, 72, z),
-                        (BlockState)((BlockState)Blocks.PISTON_HEAD.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP))
-                           .setValue(BlockStateProperties.PISTON_TYPE, PistonType.STICKY),
+                        (BlockState)((BlockState)Blocks.PISTON_HEAD.getDefaultState().with(Properties.FACING, Direction.UP))
+                           .with(Properties.PISTON_TYPE, PistonType.STICKY),
                         2
                      );
-                     lvl.setBlock(new BlockPos(x, 73, z), Blocks.IRON_BLOCK.defaultBlockState(), 2);
+                     lvl.setBlockState(new BlockPos(x, 73, z), Blocks.IRON_BLOCK.getDefaultState(), 2);
                   } else {
-                     lvl.setBlock(
+                     lvl.setBlockState(
                         new BlockPos(x, 71, z),
-                        (BlockState)((BlockState)Blocks.STICKY_PISTON.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP))
-                           .setValue(BlockStateProperties.EXTENDED, false),
+                        (BlockState)((BlockState)Blocks.STICKY_PISTON.getDefaultState().with(Properties.FACING, Direction.UP))
+                           .with(Properties.EXTENDED, false),
                         2
                      );
-                     lvl.setBlock(new BlockPos(x, 72, z), Blocks.IRON_BLOCK.defaultBlockState(), 2);
-                     lvl.setBlock(new BlockPos(x, 73, z), Blocks.AIR.defaultBlockState(), 2);
+                     lvl.setBlockState(new BlockPos(x, 72, z), Blocks.IRON_BLOCK.getDefaultState(), 2);
+                     lvl.setBlockState(new BlockPos(x, 73, z), Blocks.AIR.getDefaultState(), 2);
                   }
                }
             }
@@ -1124,7 +1115,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       );
    }
 
-   private void tickCombatArena(ServerLevel lvl) {
+   private void tickCombatArena(ServerWorld lvl) {
       int cx = C_COMBAT.getX();
       int cz = C_COMBAT.getZ();
       if (this.animTick >= 1380 && this.animTick <= 1810) {
@@ -1148,16 +1139,16 @@ public final class BaseFpsBenchmark implements Benchmark {
          for (double[] s : spawn) {
             for (int i = 1; i <= 5; i++) {
                double f = i / 6.0;
-               lvl.sendParticles(
+               lvl.spawnParticles(
                   ParticleTypes.CRIT, s[0] + (dummyX - s[0]) * f, s[1] + (dummyY - s[1]) * f, s[2] + (dummyZ - s[2]) * f, 1, 0.06, 0.06, 0.06, 0.0
                );
             }
          }
 
          if (this.animTick % 15 == 0) {
-            AABB arenaBox = new AABB(cx - 25, 50.0, cz - 25, cx + 25, 100.0, cz + 25);
+            Box arenaBox = new Box(cx - 25, 50.0, cz - 25, cx + 25, 100.0, cz + 25);
 
-            for (Arrow old : lvl.getEntities(EntityTypeTest.forClass(Arrow.class), arenaBox, e -> true)) {
+            for (ArrowEntity old : lvl.getEntitiesByType(TypeFilter.instanceOf(ArrowEntity.class), arenaBox, e -> true)) {
                old.discard();
             }
 
@@ -1168,38 +1159,38 @@ public final class BaseFpsBenchmark implements Benchmark {
                double dx = dummyX - s[0];
                double dy = dummyY - s[1];
                double dz = dummyZ - s[2];
-               Arrow arrow = new Arrow(lvl, s[0], s[1], s[2], arrowStack, bowStack);
-               arrow.shoot(dx, dy, dz, 0.9F, 0.0F);
+               ArrowEntity arrow = new ArrowEntity(lvl, s[0], s[1], s[2], arrowStack, bowStack);
+               arrow.setVelocity(dx, dy, dz, 0.9F, 0.0F);
                arrow.setNoGravity(true);
                arrow.setInvulnerable(true);
-               lvl.addFreshEntity(arrow);
-               lvl.sendParticles(ParticleTypes.FLAME, s[0], s[1], s[2], 6, 0.2, 0.2, 0.2, 0.02);
-               lvl.sendParticles(ParticleTypes.POOF, s[0], s[1], s[2], 3, 0.15, 0.1, 0.15, 0.02);
+               lvl.spawnEntity(arrow);
+               lvl.spawnParticles(ParticleTypes.FLAME, s[0], s[1], s[2], 6, 0.2, 0.2, 0.2, 0.02);
+               lvl.spawnParticles(ParticleTypes.POOF, s[0], s[1], s[2], 3, 0.15, 0.1, 0.15, 0.02);
             }
          }
 
          if (this.animTick % 3 == 0) {
-            lvl.sendParticles(ParticleTypes.CRIT, dummyX, dummyY, dummyZ, 8, 0.8, 0.6, 0.8, 0.06);
+            lvl.spawnParticles(ParticleTypes.CRIT, dummyX, dummyY, dummyZ, 8, 0.8, 0.6, 0.8, 0.06);
          }
 
          if (this.animTick % 5 == 0) {
             for (double[] s : spawn) {
-               lvl.sendParticles(ParticleTypes.FLAME, s[0], s[1], s[2], 2, 0.1, 0.15, 0.1, 0.01);
-               lvl.sendParticles(ParticleTypes.SMOKE, s[0], s[1] + 0.3, s[2], 1, 0.1, 0.1, 0.1, 0.01);
+               lvl.spawnParticles(ParticleTypes.FLAME, s[0], s[1], s[2], 2, 0.1, 0.15, 0.1, 0.01);
+               lvl.spawnParticles(ParticleTypes.SMOKE, s[0], s[1] + 0.3, s[2], 1, 0.1, 0.1, 0.1, 0.01);
             }
          }
       } else {
          if (this.animTick == 1811 || this.animTick == 1812) {
-            AABB bigBox = new AABB(cx - 30, 40.0, cz - 30, cx + 30, 110.0, cz + 30);
+            Box bigBox = new Box(cx - 30, 40.0, cz - 30, cx + 30, 110.0, cz + 30);
 
-            for (Arrow old : lvl.getEntities(EntityTypeTest.forClass(Arrow.class), bigBox, e -> true)) {
+            for (ArrowEntity old : lvl.getEntitiesByType(TypeFilter.instanceOf(ArrowEntity.class), bigBox, e -> true)) {
                old.discard();
             }
          }
       }
    }
 
-   private void tickZoneParticles(ServerLevel lvl) {
+   private void tickZoneParticles(ServerWorld lvl) {
       int caveX = C_CAVE.getX() + 9;
       int caveZ = C_CAVE.getZ();
       int nx = C_NETHER.getX();
@@ -1207,53 +1198,53 @@ public final class BaseFpsBenchmark implements Benchmark {
       int ex = C_END.getX();
       int ez = C_END.getZ();
       if (this.animTick % 8 == 0) {
-         lvl.sendParticles(ParticleTypes.DRIPPING_WATER, caveX + 2.5, 73.5, caveZ + 1.0, 2, 0.3, 0.0, 0.3, 0.0);
-         lvl.sendParticles(ParticleTypes.DRIPPING_WATER, caveX + 5.5, 73.5, caveZ - 1.5, 2, 0.3, 0.0, 0.3, 0.0);
+         lvl.spawnParticles(ParticleTypes.DRIPPING_WATER, caveX + 2.5, 73.5, caveZ + 1.0, 2, 0.3, 0.0, 0.3, 0.0);
+         lvl.spawnParticles(ParticleTypes.DRIPPING_WATER, caveX + 5.5, 73.5, caveZ - 1.5, 2, 0.3, 0.0, 0.3, 0.0);
       }
 
       if (this.animTick % 12 == 0) {
-         lvl.sendParticles(ParticleTypes.SPLASH, caveX + 5.5, 71.2, caveZ + 2.5, 4, 0.2, 0.05, 0.2, 0.05);
+         lvl.spawnParticles(ParticleTypes.SPLASH, caveX + 5.5, 71.2, caveZ + 2.5, 4, 0.2, 0.05, 0.2, 0.05);
       }
 
       if (this.animTick % 20 == 0) {
-         lvl.sendParticles(ParticleTypes.BUBBLE_POP, caveX + 2.5, 71.2, caveZ + 2.5, 3, 0.3, 0.05, 0.3, 0.02);
+         lvl.spawnParticles(ParticleTypes.BUBBLE_POP, caveX + 2.5, 71.2, caveZ + 2.5, 3, 0.3, 0.05, 0.3, 0.02);
       }
 
       if (this.animTick % 6 == 0) {
          for (int[] cascade : new int[][]{{8, 4}, {-11, -5}, {-3, 12}}) {
-            lvl.sendParticles(ParticleTypes.LAVA, nx + cascade[0] + 0.5, 72.0, nz + cascade[1] + 0.5, 1, 0.2, 0.2, 0.2, 0.0);
-            lvl.sendParticles(ParticleTypes.FLAME, nx + cascade[0] + 0.5, 74.0, nz + cascade[1] + 0.5, 2, 0.2, 0.4, 0.2, 0.01);
+            lvl.spawnParticles(ParticleTypes.LAVA, nx + cascade[0] + 0.5, 72.0, nz + cascade[1] + 0.5, 1, 0.2, 0.2, 0.2, 0.0);
+            lvl.spawnParticles(ParticleTypes.FLAME, nx + cascade[0] + 0.5, 74.0, nz + cascade[1] + 0.5, 2, 0.2, 0.4, 0.2, 0.01);
          }
       }
 
       if (this.animTick % 15 == 0) {
          for (int dx = -3; dx <= 3; dx += 2) {
-            lvl.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, nx + dx + 0.5, 70.5, nz + 10.5, 1, 0.05, 0.1, 0.05, 0.01);
+            lvl.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, nx + dx + 0.5, 70.5, nz + 10.5, 1, 0.05, 0.1, 0.05, 0.01);
          }
       }
 
       if (this.animTick % 24 == 0) {
-         lvl.sendParticles(ParticleTypes.PORTAL, nx + 0.5, 71.5, nz + 11.5, 6, 0.6, 0.6, 0.4, 0.05);
+         lvl.spawnParticles(ParticleTypes.PORTAL, nx + 0.5, 71.5, nz + 11.5, 6, 0.6, 0.6, 0.4, 0.05);
       }
 
       if (this.animTick % 8 == 0) {
-         lvl.sendParticles(ParticleTypes.PORTAL, ex + 0.5, 77.5, ez + 0.5, 5, 1.2, 0.8, 1.2, 0.05);
+         lvl.spawnParticles(ParticleTypes.PORTAL, ex + 0.5, 77.5, ez + 0.5, 5, 1.2, 0.8, 1.2, 0.05);
       }
 
       if (this.animTick % 14 == 0) {
          int[][] tops = new int[][]{{-12, 0, 18}, {12, 0, 22}, {0, -12, 16}, {0, 12, 14}, {-9, -9, 20}, {9, 9, 22}, {-9, 9, 16}, {9, -9, 18}};
 
          for (int[] p : tops) {
-            lvl.sendParticles(ParticleTypes.REVERSE_PORTAL, ex + p[0] + 0.5, 78 + p[2] + 0.5, ez + p[1] + 0.5, 1, 0.3, 0.1, 0.3, 0.02);
+            lvl.spawnParticles(ParticleTypes.REVERSE_PORTAL, ex + p[0] + 0.5, 78 + p[2] + 0.5, ez + p[1] + 0.5, 1, 0.3, 0.1, 0.3, 0.02);
          }
       }
 
       if (this.animTick % 30 == 0) {
-         lvl.sendParticles(PowerParticleOption.create(ParticleTypes.DRAGON_BREATH, 1.0F), ex + 0.5, 87.5, ez + 0.5, 3, 0.6, 0.2, 0.6, 0.05);
+         lvl.spawnParticles(ParticleTypes.DRAGON_BREATH, ex + 0.5, 87.5, ez + 0.5, 3, 0.6, 0.2, 0.6, 0.05);
       }
    }
 
-   private void buildWaterCave(BenchContext ctx, ServerLevel lvl) {
+   private void buildWaterCave(BenchContext ctx, ServerWorld lvl) {
       int cx = C_CAVE.getX();
       int cz = C_CAVE.getZ();
       int gy = 70;
@@ -1266,18 +1257,18 @@ public final class BaseFpsBenchmark implements Benchmark {
                int z = cz + dz;
                int y = this.surfaceY(x, z);
                if (r2 <= 64) {
-                  this.setFast(lvl, x, y, z, Blocks.WATER.defaultBlockState());
-                  this.setFast(lvl, x, y - 1, z, Blocks.STONE.defaultBlockState());
+                  this.setFast(lvl, x, y, z, Blocks.WATER.getDefaultState());
+                  this.setFast(lvl, x, y - 1, z, Blocks.STONE.getDefaultState());
                } else {
-                  this.setFast(lvl, x, y, z, Blocks.SAND.defaultBlockState());
+                  this.setFast(lvl, x, y, z, Blocks.SAND.getDefaultState());
                }
             }
          }
       }
 
       int gx = cx + 9;
-      BlockState cobble = Blocks.COBBLESTONE.defaultBlockState();
-      BlockState mossy = Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+      BlockState cobble = Blocks.COBBLESTONE.getDefaultState();
+      BlockState mossy = Blocks.MOSSY_COBBLESTONE.getDefaultState();
 
       for (int dx = 0; dx <= 13; dx++) {
          for (int dzx = -5; dzx <= 5; dzx++) {
@@ -1295,13 +1286,13 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int dyx = 1; dyx <= 7; dyx++) {
          for (int dzx = -4; dzx <= 4; dzx++) {
-            this.setFast(lvl, gx, gy + dyx, cz + dzx, Blocks.AIR.defaultBlockState());
+            this.setFast(lvl, gx, gy + dyx, cz + dzx, Blocks.AIR.getDefaultState());
          }
       }
 
       for (int dx = 1; dx <= 12; dx++) {
          for (int dzx = -4; dzx <= 4; dzx++) {
-            BlockState floor = (dx + dzx) % 4 == 0 ? Blocks.MOSS_BLOCK.defaultBlockState() : Blocks.STONE.defaultBlockState();
+            BlockState floor = (dx + dzx) % 4 == 0 ? Blocks.MOSS_BLOCK.getDefaultState() : Blocks.STONE.getDefaultState();
             this.setFast(lvl, gx + dx, gy, cz + dzx, floor);
          }
       }
@@ -1314,7 +1305,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                   gx + dx,
                   gy + dyx,
                   cz + dzx,
-                  dyx == 2 && (dx + dzx) % 2 == 0 ? Blocks.BUDDING_AMETHYST.defaultBlockState() : Blocks.AMETHYST_BLOCK.defaultBlockState()
+                  dyx == 2 && (dx + dzx) % 2 == 0 ? Blocks.BUDDING_AMETHYST.getDefaultState() : Blocks.AMETHYST_BLOCK.getDefaultState()
                );
             }
          }
@@ -1323,7 +1314,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int[] c : new int[][]{{8, -3}, {9, -1}, {10, -2}, {11, -3}, {12, -1}, {9, -4}, {11, -4}, {8, -2}, {10, -4}}) {
          BlockPos p = new BlockPos(gx + c[0], gy + 1, cz + c[1]);
          if (lvl.getBlockState(p).isAir()) {
-            lvl.setBlock(p, (BlockState)Blocks.AMETHYST_CLUSTER.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP), 2);
+            lvl.setBlockState(p, (BlockState)Blocks.AMETHYST_CLUSTER.getDefaultState().with(Properties.FACING, Direction.UP), 2);
             this.blocksPlaced++;
          }
       }
@@ -1333,7 +1324,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int[] s : stalac) {
          BlockPos p = new BlockPos(gx + s[0], gy + 7, cz + s[1]);
          if (lvl.getBlockState(p).isAir()) {
-            lvl.setBlock(p, (BlockState)Blocks.POINTED_DRIPSTONE.defaultBlockState().setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.DOWN), 2);
+            lvl.setBlockState(p, (BlockState)Blocks.POINTED_DRIPSTONE.getDefaultState().with(Properties.VERTICAL_DIRECTION, Direction.DOWN), 2);
             this.blocksPlaced++;
          }
       }
@@ -1343,7 +1334,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int[] sx : stalag) {
          BlockPos p = new BlockPos(gx + sx[0], gy + 1, cz + sx[1]);
          if (lvl.getBlockState(p).isAir()) {
-            lvl.setBlock(p, (BlockState)Blocks.POINTED_DRIPSTONE.defaultBlockState().setValue(BlockStateProperties.VERTICAL_DIRECTION, Direction.UP), 2);
+            lvl.setBlockState(p, (BlockState)Blocks.POINTED_DRIPSTONE.getDefaultState().with(Properties.VERTICAL_DIRECTION, Direction.UP), 2);
             this.blocksPlaced++;
          }
       }
@@ -1354,7 +1345,7 @@ public final class BaseFpsBenchmark implements Benchmark {
             if ((dx + dzx) % 3 == 0 && lvl.getBlockState(p).isAir()) {
                BlockPos above = new BlockPos(gx + dx, gy + 8, cz + dzx);
                if (!lvl.getBlockState(above).isAir()) {
-                  lvl.setBlock(p, (BlockState)Blocks.GLOW_LICHEN.defaultBlockState().setValue(BlockStateProperties.DOWN, true), 2);
+                  lvl.setBlockState(p, (BlockState)Blocks.GLOW_LICHEN.getDefaultState().with(Properties.DOWN, true), 2);
                   this.blocksPlaced++;
                }
             }
@@ -1364,31 +1355,31 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int dx : new int[]{3, 7, 11}) {
          BlockPos p = new BlockPos(gx + dx, gy + 6, cz);
          if (lvl.getBlockState(p).isAir()) {
-            lvl.setBlock(p, (BlockState)Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true), 2);
+            lvl.setBlockState(p, (BlockState)Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true), 2);
             this.blocksPlaced++;
          }
       }
 
       for (int dyx = 1; dyx <= 5; dyx++) {
-         this.setFast(lvl, gx + 13, gy + dyx, cz + 3, Blocks.LAVA.defaultBlockState());
+         this.setFast(lvl, gx + 13, gy + dyx, cz + 3, Blocks.LAVA.getDefaultState());
       }
 
-      this.setFast(lvl, gx + 12, gy, cz + 3, Blocks.MAGMA_BLOCK.defaultBlockState());
-      this.setFast(lvl, gx + 13, gy, cz + 3, Blocks.MAGMA_BLOCK.defaultBlockState());
-      this.setFast(lvl, gx + 13, gy, cz + 4, Blocks.MAGMA_BLOCK.defaultBlockState());
+      this.setFast(lvl, gx + 12, gy, cz + 3, Blocks.MAGMA_BLOCK.getDefaultState());
+      this.setFast(lvl, gx + 13, gy, cz + 3, Blocks.MAGMA_BLOCK.getDefaultState());
+      this.setFast(lvl, gx + 13, gy, cz + 4, Blocks.MAGMA_BLOCK.getDefaultState());
 
       for (int dyx = 1; dyx <= 4; dyx++) {
          this.setFast(
-            lvl, gx + 12, gy + dyx, cz + 4, (BlockState)Blocks.BASALT.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y)
+            lvl, gx + 12, gy + dyx, cz + 4, (BlockState)Blocks.BASALT.getDefaultState().with(Properties.AXIS, Direction.Axis.Y)
          );
          this.setFast(
-            lvl, gx + 13, gy + dyx, cz + 4, (BlockState)Blocks.BASALT.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y)
+            lvl, gx + 13, gy + dyx, cz + 4, (BlockState)Blocks.BASALT.getDefaultState().with(Properties.AXIS, Direction.Axis.Y)
          );
       }
 
       for (int dxx = 1; dxx <= 12; dxx++) {
-         this.setFast(lvl, gx + dxx, gy, cz + 4, Blocks.PACKED_ICE.defaultBlockState());
-         this.setFast(lvl, gx + dxx, gy + 1, cz + 4, Blocks.WATER.defaultBlockState());
+         this.setFast(lvl, gx + dxx, gy, cz + 4, Blocks.PACKED_ICE.getDefaultState());
+         this.setFast(lvl, gx + dxx, gy + 1, cz + 4, Blocks.WATER.getDefaultState());
       }
 
       for (int dxx = 4; dxx <= 7; dxx++) {
@@ -1400,7 +1391,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                if (shell) {
                   this.setFast(lvl, x, gy + dyx, z, mossy);
                } else {
-                  this.setFast(lvl, x, gy + dyx, z, Blocks.AIR.defaultBlockState());
+                  this.setFast(lvl, x, gy + dyx, z, Blocks.AIR.getDefaultState());
                }
             }
          }
@@ -1408,17 +1399,17 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int dxx = 5; dxx <= 6; dxx++) {
          for (int dyxx = 1; dyxx <= 2; dyxx++) {
-            this.setFast(lvl, gx + dxx, gy + dyxx, cz - 5, Blocks.AIR.defaultBlockState());
+            this.setFast(lvl, gx + dxx, gy + dyxx, cz - 5, Blocks.AIR.getDefaultState());
          }
       }
 
       for (int[] m : new int[][]{{5, -7}, {6, -6}, {7, -7}, {4, -7}}) {
-         this.setFast(lvl, gx + m[0], gy + 1, cz + m[1], (m[0] + m[1]) % 2 == 0 ? Blocks.RED_MUSHROOM.defaultBlockState() : Blocks.BROWN_MUSHROOM.defaultBlockState());
+         this.setFast(lvl, gx + m[0], gy + 1, cz + m[1], (m[0] + m[1]) % 2 == 0 ? Blocks.RED_MUSHROOM.getDefaultState() : Blocks.BROWN_MUSHROOM.getDefaultState());
       }
 
       for (int dxx = -3; dxx <= 3; dxx++) {
-         this.setFast(lvl, cx + dxx, 70, cz - 7, Blocks.COBBLESTONE.defaultBlockState());
-         this.setFast(lvl, cx + dxx, 71, cz - 7, Blocks.COBBLESTONE_WALL.defaultBlockState());
+         this.setFast(lvl, cx + dxx, 70, cz - 7, Blocks.COBBLESTONE.getDefaultState());
+         this.setFast(lvl, cx + dxx, 71, cz - 7, Blocks.COBBLESTONE_WALL.getDefaultState());
       }
 
       this.spawnPassiveSafe(ctx, lvl, EntityType.DROWNED, cx + 2, cz, true);
@@ -1427,7 +1418,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.spawnPassiveSafe(ctx, lvl, EntityType.AXOLOTL, cx + 1, cz + 2, true);
    }
 
-   private void buildNetherAlcove(BenchContext ctx, ServerLevel lvl) {
+   private void buildNetherAlcove(BenchContext ctx, ServerWorld lvl) {
       int cx = C_NETHER.getX();
       int cz = C_NETHER.getZ();
       int floorY = 66;
@@ -1441,14 +1432,14 @@ public final class BaseFpsBenchmark implements Benchmark {
                int z = cz + dz;
 
                for (int y = floorY + 1; y < ceilY; y++) {
-                  this.setFast(lvl, x, y, z, Blocks.AIR.defaultBlockState());
+                  this.setFast(lvl, x, y, z, Blocks.AIR.getDefaultState());
                }
 
-               this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.defaultBlockState());
-               this.setFast(lvl, x, ceilY, z, Blocks.BLACKSTONE.defaultBlockState());
+               this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.getDefaultState());
+               this.setFast(lvl, x, ceilY, z, Blocks.BLACKSTONE.getDefaultState());
                if (r2 > 225) {
                   for (int y = floorY + 1; y < ceilY; y++) {
-                     this.setFast(lvl, x, y, z, (y + dx + dz) % 4 == 0 ? Blocks.NETHERRACK.defaultBlockState() : Blocks.BLACKSTONE.defaultBlockState());
+                     this.setFast(lvl, x, y, z, (y + dx + dz) % 4 == 0 ? Blocks.NETHERRACK.getDefaultState() : Blocks.BLACKSTONE.getDefaultState());
                   }
                }
             }
@@ -1461,20 +1452,20 @@ public final class BaseFpsBenchmark implements Benchmark {
             int z = cz + dzx;
 
             for (int y = floorY + 1; y < ceilY; y++) {
-               this.setFast(lvl, x, y, z, Blocks.AIR.defaultBlockState());
+               this.setFast(lvl, x, y, z, Blocks.AIR.getDefaultState());
             }
 
-            this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.defaultBlockState());
-            this.setFast(lvl, x, floorY - 1, z, Blocks.BLACKSTONE.defaultBlockState());
-            this.setFast(lvl, x, ceilY, z, Blocks.BLACKSTONE.defaultBlockState());
-            this.setFast(lvl, x, ceilY + 1, z, Blocks.BLACKSTONE.defaultBlockState());
+            this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.getDefaultState());
+            this.setFast(lvl, x, floorY - 1, z, Blocks.BLACKSTONE.getDefaultState());
+            this.setFast(lvl, x, ceilY, z, Blocks.BLACKSTONE.getDefaultState());
+            this.setFast(lvl, x, ceilY + 1, z, Blocks.BLACKSTONE.getDefaultState());
          }
       }
 
       for (int dx = -25; dx <= -8; dx++) {
          for (int y = floorY - 1; y <= ceilY + 1; y++) {
-            this.setFast(lvl, cx + dx, y, cz - 6, Blocks.BLACKSTONE.defaultBlockState());
-            this.setFast(lvl, cx + dx, y, cz + 6, Blocks.BLACKSTONE.defaultBlockState());
+            this.setFast(lvl, cx + dx, y, cz - 6, Blocks.BLACKSTONE.getDefaultState());
+            this.setFast(lvl, cx + dx, y, cz + 6, Blocks.BLACKSTONE.getDefaultState());
          }
       }
 
@@ -1484,7 +1475,7 @@ public final class BaseFpsBenchmark implements Benchmark {
             if (r2 <= 324) {
                int x = cx + dx;
                int z = cz + dzx;
-               this.setFast(lvl, x, ceilY + 1, z, Blocks.BLACKSTONE.defaultBlockState());
+               this.setFast(lvl, x, ceilY + 1, z, Blocks.BLACKSTONE.getDefaultState());
             }
          }
       }
@@ -1497,7 +1488,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                int z = cz + dzxx;
                if (dx < -25 || dx > -8 || dzxx < -5 || dzxx > 5) {
                   for (int y = floorY - 1; y <= ceilY + 1; y++) {
-                     this.setFast(lvl, x, y, z, Blocks.BLACKSTONE.defaultBlockState());
+                     this.setFast(lvl, x, y, z, Blocks.BLACKSTONE.getDefaultState());
                   }
                }
             }
@@ -1508,9 +1499,9 @@ public final class BaseFpsBenchmark implements Benchmark {
          for (int dzxxx = -6; dzxxx <= 6; dzxxx++) {
             int x = cx + dx;
             int z = cz + dzxxx;
-            this.setFast(lvl, x, floorY - 1, z, Blocks.BLACKSTONE.defaultBlockState());
+            this.setFast(lvl, x, floorY - 1, z, Blocks.BLACKSTONE.getDefaultState());
             if (dzxxx == 6 || dzxxx == -6) {
-               this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.defaultBlockState());
+               this.setFast(lvl, x, floorY, z, Blocks.NETHERRACK.getDefaultState());
             }
          }
       }
@@ -1524,9 +1515,9 @@ public final class BaseFpsBenchmark implements Benchmark {
          for (int dx = -1; dx <= 1; dx++) {
             for (int dzxxxx = -1; dzxxxx <= 1; dzxxxx++) {
                if (dx * dx + dzxxxx * dzxxxx <= 2) {
-                  this.setFast(lvl, lx + dx, floorY, lz + dzxxxx, Blocks.MAGMA_BLOCK.defaultBlockState());
+                  this.setFast(lvl, lx + dx, floorY, lz + dzxxxx, Blocks.MAGMA_BLOCK.getDefaultState());
                   if (dx == 0 && dzxxxx == 0) {
-                     this.setFast(lvl, lx, floorY + 1, lz, Blocks.LAVA.defaultBlockState());
+                     this.setFast(lvl, lx, floorY + 1, lz, Blocks.LAVA.getDefaultState());
                   }
                }
             }
@@ -1539,15 +1530,15 @@ public final class BaseFpsBenchmark implements Benchmark {
          int dx = lx - cx;
          int dzxxxxx = lz - cz;
          if (dx * dx + dzxxxxx * dzxxxxx <= 196) {
-            this.setFast(lvl, lx, ceilY - 1, lz, Blocks.GLOWSTONE.defaultBlockState());
+            this.setFast(lvl, lx, ceilY - 1, lz, Blocks.GLOWSTONE.getDefaultState());
          }
       }
 
       for (int[] p : new int[][]{{-6, -6}, {6, -6}, {-6, 6}, {6, 6}, {0, 8}, {0, -8}}) {
          int x = cx + p[0];
          int z = cz + p[1];
-         this.setFast(lvl, x, floorY + 1, z, Blocks.SOUL_SAND.defaultBlockState());
-         this.setFast(lvl, x, floorY + 2, z, Blocks.SOUL_FIRE.defaultBlockState());
+         this.setFast(lvl, x, floorY + 1, z, Blocks.SOUL_SAND.getDefaultState());
+         this.setFast(lvl, x, floorY + 2, z, Blocks.SOUL_FIRE.getDefaultState());
       }
 
       for (int ix = 0; ix < 12; ix++) {
@@ -1555,10 +1546,10 @@ public final class BaseFpsBenchmark implements Benchmark {
          int lz = cz + rng.nextInt(18) - 9;
          if ((lx - cx) * (lx - cx) + (lz - cz) * (lz - cz) <= 81) {
             BlockPos floor = new BlockPos(lx, floorY, lz);
-            if (lvl.getBlockState(floor).is(Blocks.NETHERRACK)) {
-               this.setFast(lvl, lx, floorY, lz, Blocks.CRIMSON_NYLIUM.defaultBlockState());
+            if (lvl.getBlockState(floor).isOf(Blocks.NETHERRACK)) {
+               this.setFast(lvl, lx, floorY, lz, Blocks.CRIMSON_NYLIUM.getDefaultState());
                if (rng.nextBoolean()) {
-                  this.setFast(lvl, lx, floorY + 1, lz, Blocks.CRIMSON_ROOTS.defaultBlockState());
+                  this.setFast(lvl, lx, floorY + 1, lz, Blocks.CRIMSON_ROOTS.getDefaultState());
                }
             }
          }
@@ -1566,16 +1557,16 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int dx = -4; dx <= 4; dx++) {
          for (int dy = 0; dy < 4; dy++) {
-            this.setFast(lvl, cx + dx, floorY + 1 + dy, cz + 9, Blocks.NETHER_BRICKS.defaultBlockState());
+            this.setFast(lvl, cx + dx, floorY + 1 + dy, cz + 9, Blocks.NETHER_BRICKS.getDefaultState());
          }
       }
 
       for (int dx = -4; dx <= 4; dx += 2) {
-         this.setFast(lvl, cx + dx, floorY + 5, cz + 9, Blocks.RED_NETHER_BRICKS.defaultBlockState());
+         this.setFast(lvl, cx + dx, floorY + 5, cz + 9, Blocks.RED_NETHER_BRICKS.getDefaultState());
       }
 
       for (int[] p : new int[][]{{-4, 6}, {4, 6}, {0, 8}, {-2, 4}, {2, 4}}) {
-         this.setFast(lvl, cx + p[0], floorY + 3, cz + p[1], Blocks.SHROOMLIGHT.defaultBlockState());
+         this.setFast(lvl, cx + p[0], floorY + 3, cz + p[1], Blocks.SHROOMLIGHT.getDefaultState());
       }
 
       int[][] columns = new int[][]{{-9, -4}, {9, -4}, {-4, 9}, {4, 9}, {-10, 3}, {10, 3}};
@@ -1586,8 +1577,8 @@ public final class BaseFpsBenchmark implements Benchmark {
 
          for (int dy = 1; dy <= 5; dy++) {
             BlockState b = dy % 2 == 0
-               ? (BlockState)Blocks.POLISHED_BASALT.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y)
-               : (BlockState)Blocks.BASALT.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y);
+               ? (BlockState)Blocks.POLISHED_BASALT.getDefaultState().with(Properties.AXIS, Direction.Axis.Y)
+               : (BlockState)Blocks.BASALT.getDefaultState().with(Properties.AXIS, Direction.Axis.Y);
             this.setFast(lvl, x, floorY + dy, z, b);
          }
       }
@@ -1595,24 +1586,24 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int[] p : new int[][]{{-9, -4}, {9, -4}}) {
          int x = cx + p[0];
          int z = cz + p[1];
-         this.setFast(lvl, x, 75, z + 1, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
-         this.setFast(lvl, x, 75, z - 1, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+         this.setFast(lvl, x, 75, z + 1, Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+         this.setFast(lvl, x, 75, z - 1, Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
       }
 
       for (int[] cascade : new int[][]{{8, 4}, {-11, -5}, {-3, 12}}) {
          int x = cx + cascade[0];
          int z = cz + cascade[1];
-         this.setFast(lvl, x, ceilY - 1, z, Blocks.MAGMA_BLOCK.defaultBlockState());
+         this.setFast(lvl, x, ceilY - 1, z, Blocks.MAGMA_BLOCK.getDefaultState());
 
          for (int dy = floorY + 1; dy < ceilY - 1; dy++) {
-            this.setFast(lvl, x, dy, z, Blocks.LAVA.defaultBlockState());
+            this.setFast(lvl, x, dy, z, Blocks.LAVA.getDefaultState());
          }
 
-         this.setFast(lvl, x, floorY, z, Blocks.MAGMA_BLOCK.defaultBlockState());
+         this.setFast(lvl, x, floorY, z, Blocks.MAGMA_BLOCK.getDefaultState());
       }
 
-      BlockState nb = Blocks.NETHER_BRICKS.defaultBlockState();
-      BlockState rnb = Blocks.RED_NETHER_BRICKS.defaultBlockState();
+      BlockState nb = Blocks.NETHER_BRICKS.getDefaultState();
+      BlockState rnb = Blocks.RED_NETHER_BRICKS.getDefaultState();
 
       for (int dx = -4; dx <= 4; dx++) {
          for (int dy = 0; dy < 5; dy++) {
@@ -1629,12 +1620,12 @@ public final class BaseFpsBenchmark implements Benchmark {
       for (int dx = -3; dx <= 3; dx += 2) {
          BlockPos p = new BlockPos(cx + dx, floorY + 4, cz + 10);
          if (lvl.getBlockState(p).isAir()) {
-            lvl.setBlock(p, (BlockState)Blocks.SOUL_WALL_TORCH.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+            lvl.setBlockState(p, (BlockState)Blocks.SOUL_WALL_TORCH.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.SOUTH), 2);
             this.blocksPlaced++;
          }
       }
 
-      BlockState bsStairs = (BlockState)Blocks.BLACKSTONE_STAIRS.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+      BlockState bsStairs = (BlockState)Blocks.BLACKSTONE_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
 
       for (int dxx = -1; dxx <= 1; dxx++) {
          this.setFast(lvl, cx + dxx, floorY + 1, cz + 9, bsStairs);
@@ -1656,8 +1647,8 @@ public final class BaseFpsBenchmark implements Benchmark {
 
          for (int dxx = -1; dxx <= 1; dxx++) {
             for (int dzxxxxxx = -1; dzxxxxxx <= 1; dzxxxxxx++) {
-               this.setFast(lvl, sx + dxx, floorY, sz + dzxxxxxx, Blocks.MAGMA_BLOCK.defaultBlockState());
-               this.setFast(lvl, sx + dxx, floorY + 1, sz + dzxxxxxx, Blocks.LAVA.defaultBlockState());
+               this.setFast(lvl, sx + dxx, floorY, sz + dzxxxxxx, Blocks.MAGMA_BLOCK.getDefaultState());
+               this.setFast(lvl, sx + dxx, floorY + 1, sz + dzxxxxxx, Blocks.LAVA.getDefaultState());
             }
          }
 
@@ -1665,7 +1656,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void buildEndIsland(BenchContext ctx, ServerLevel lvl) {
+   private void buildEndIsland(BenchContext ctx, ServerWorld lvl) {
       int cx = C_END.getX();
       int cz = C_END.getZ();
       int islandTop = 80;
@@ -1681,11 +1672,11 @@ public final class BaseFpsBenchmark implements Benchmark {
                if (x >= -16 && x <= 320 && z >= -64 && z <= 64) {
                   int surf = this.surfaceY(x, z);
                   if (r2 > moatInner * moatInner) {
-                     this.setFast(lvl, x, 70, z, Blocks.WATER.defaultBlockState());
-                     this.setFast(lvl, x, 69, z, Blocks.STONE.defaultBlockState());
+                     this.setFast(lvl, x, 70, z, Blocks.WATER.getDefaultState());
+                     this.setFast(lvl, x, 69, z, Blocks.STONE.getDefaultState());
                   } else {
                      for (int y = surf; y <= islandTop; y++) {
-                        this.setFast(lvl, x, y, z, Blocks.END_STONE.defaultBlockState());
+                        this.setFast(lvl, x, y, z, Blocks.END_STONE.getDefaultState());
                      }
                   }
                }
@@ -1710,7 +1701,7 @@ public final class BaseFpsBenchmark implements Benchmark {
                   int z = ocz + dzx;
                   if (x >= -16 && x <= 320 && z >= -64 && z <= 64) {
                      for (int y = 70; y <= oTop; y++) {
-                        this.setFast(lvl, x, y, z, Blocks.END_STONE.defaultBlockState());
+                        this.setFast(lvl, x, y, z, Blocks.END_STONE.getDefaultState());
                      }
                   }
                }
@@ -1718,21 +1709,21 @@ public final class BaseFpsBenchmark implements Benchmark {
          }
 
          if (ocx >= -16 && ocx <= 320 && ocz >= -64 && ocz <= 64) {
-            this.setFast(lvl, ocx, oTop + 1, ocz, Blocks.PURPUR_BLOCK.defaultBlockState());
+            this.setFast(lvl, ocx, oTop + 1, ocz, Blocks.PURPUR_BLOCK.getDefaultState());
             int hClu = 4 + orng.nextInt(3);
 
             for (int dy = 1; dy <= hClu; dy++) {
-               this.setFast(lvl, ocx + 2, oTop + dy, ocz, Blocks.CHORUS_PLANT.defaultBlockState());
+               this.setFast(lvl, ocx + 2, oTop + dy, ocz, Blocks.CHORUS_PLANT.getDefaultState());
             }
 
-            this.setFast(lvl, ocx + 2, oTop + hClu + 1, ocz, Blocks.CHORUS_FLOWER.defaultBlockState());
+            this.setFast(lvl, ocx + 2, oTop + hClu + 1, ocz, Blocks.CHORUS_FLOWER.getDefaultState());
             int hClu2 = 3 + orng.nextInt(3);
 
             for (int dy = 1; dy <= hClu2; dy++) {
-               this.setFast(lvl, ocx - 2, oTop + dy, ocz + 1, Blocks.CHORUS_PLANT.defaultBlockState());
+               this.setFast(lvl, ocx - 2, oTop + dy, ocz + 1, Blocks.CHORUS_PLANT.getDefaultState());
             }
 
-            this.setFast(lvl, ocx - 2, oTop + hClu2 + 1, ocz + 1, Blocks.CHORUS_FLOWER.defaultBlockState());
+            this.setFast(lvl, ocx - 2, oTop + hClu2 + 1, ocz + 1, Blocks.CHORUS_FLOWER.getDefaultState());
          }
       }
 
@@ -1744,18 +1735,18 @@ public final class BaseFpsBenchmark implements Benchmark {
          int h = p[2];
 
          for (int dy = 1; dy <= h; dy++) {
-            this.setFast(lvl, px, islandTop + dy, pz, Blocks.OBSIDIAN.defaultBlockState());
+            this.setFast(lvl, px, islandTop + dy, pz, Blocks.OBSIDIAN.getDefaultState());
          }
 
          for (int dx = -1; dx <= 1; dx++) {
             for (int dzxx = -1; dzxx <= 1; dzxx++) {
                if (dx != 0 || dzxx != 0) {
-                  this.setFast(lvl, px + dx, islandTop + h + 1, pz + dzxx, Blocks.IRON_BARS.defaultBlockState());
+                  this.setFast(lvl, px + dx, islandTop + h + 1, pz + dzxx, Blocks.IRON_BARS.getDefaultState());
                }
             }
          }
 
-         EndCrystal crystal = new EndCrystal(lvl, px + 0.5, islandTop + h + 2, pz + 0.5);
+         EndCrystalEntity crystal = new EndCrystalEntity(lvl, px + 0.5, islandTop + h + 2, pz + 0.5);
          crystal.setShowBottom(false);
          crystal.setInvulnerable(true);
          ctx.spawnTracked(crystal, lvl);
@@ -1764,18 +1755,18 @@ public final class BaseFpsBenchmark implements Benchmark {
 
       for (int dy = 1; dy <= 12; dy++) {
          this.setFast(
-            lvl, cx, islandTop + dy, cz, (BlockState)Blocks.PURPUR_PILLAR.defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y)
+            lvl, cx, islandTop + dy, cz, (BlockState)Blocks.PURPUR_PILLAR.getDefaultState().with(Properties.AXIS, Direction.Axis.Y)
          );
       }
 
-      this.setFast(lvl, cx, islandTop + 13, cz, Blocks.DRAGON_HEAD.defaultBlockState());
+      this.setFast(lvl, cx, islandTop + 13, cz, Blocks.DRAGON_HEAD.getDefaultState());
 
       for (int[] p : new int[][]{{-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -2}, {2, 2}, {-2, 2}, {2, -2}}) {
-         this.setFast(lvl, cx + p[0], islandTop + 1, cz + p[1], Blocks.PURPUR_BLOCK.defaultBlockState());
+         this.setFast(lvl, cx + p[0], islandTop + 1, cz + p[1], Blocks.PURPUR_BLOCK.getDefaultState());
       }
 
       for (int[] p : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
-         this.setFast(lvl, cx + p[0], islandTop + 2, cz + p[1], Blocks.PURPUR_BLOCK.defaultBlockState());
+         this.setFast(lvl, cx + p[0], islandTop + 2, cz + p[1], Blocks.PURPUR_BLOCK.getDefaultState());
       }
 
       for (int[] p : new int[][]{{-3, 0}, {3, 0}, {0, -3}, {0, 3}, {-3, 3}, {3, -3}, {-3, -3}, {3, 3}}) {
@@ -1784,7 +1775,7 @@ public final class BaseFpsBenchmark implements Benchmark {
             cx + p[0],
             islandTop + 1,
             cz + p[1],
-            (BlockState)Blocks.END_ROD.defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP)
+            (BlockState)Blocks.END_ROD.getDefaultState().with(Properties.FACING, Direction.UP)
          );
       }
 
@@ -1801,10 +1792,10 @@ public final class BaseFpsBenchmark implements Benchmark {
                int h = 3 + rng.nextInt(4);
 
                for (int dy = 1; dy <= h; dy++) {
-                  this.setFast(lvl, x, islandTop + dy, z, Blocks.CHORUS_PLANT.defaultBlockState());
+                  this.setFast(lvl, x, islandTop + dy, z, Blocks.CHORUS_PLANT.getDefaultState());
                }
 
-               this.setFast(lvl, x, islandTop + h + 1, z, Blocks.CHORUS_FLOWER.defaultBlockState());
+               this.setFast(lvl, x, islandTop + h + 1, z, Blocks.CHORUS_FLOWER.getDefaultState());
             }
          }
       }
@@ -1828,7 +1819,7 @@ public final class BaseFpsBenchmark implements Benchmark {
          );
    }
 
-   private void spawnAmbientAnimals(BenchContext ctx, ServerLevel lvl) {
+   private void spawnAmbientAnimals(BenchContext ctx, ServerWorld lvl) {
       int bx = C_BASE.getX();
       int bz = C_BASE.getZ();
       this.spawnPassiveSafe(ctx, lvl, EntityType.COW, bx - 4, bz - 2, true);
@@ -1841,8 +1832,8 @@ public final class BaseFpsBenchmark implements Benchmark {
       this.spawnPassiveSafe(ctx, lvl, EntityType.CHICKEN, bx + 5, bz - 1, true);
       int penCx = C_VILLAGE.getX() + 11;
       int penCz = C_VILLAGE.getZ() + 6;
-      BlockState fence = Blocks.OAK_FENCE.defaultBlockState();
-      BlockState gate = (BlockState)Blocks.OAK_FENCE_GATE.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST);
+      BlockState fence = Blocks.OAK_FENCE.getDefaultState();
+      BlockState gate = (BlockState)Blocks.OAK_FENCE_GATE.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST);
 
       for (int dx = -3; dx <= 3; dx++) {
          this.set(lvl, penCx + dx, 71, penCz - 3, fence);
@@ -1855,8 +1846,8 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
 
       this.set(lvl, penCx - 3, 71, penCz, gate);
-      this.set(lvl, penCx, 71, penCz - 1, Blocks.HAY_BLOCK.defaultBlockState());
-      this.set(lvl, penCx + 1, 70, penCz + 1, Blocks.WATER.defaultBlockState());
+      this.set(lvl, penCx, 71, penCz - 1, Blocks.HAY_BLOCK.getDefaultState());
+      this.set(lvl, penCx + 1, 70, penCz + 1, Blocks.WATER.getDefaultState());
       this.spawnPassiveSafe(ctx, lvl, EntityType.SHEEP, penCx - 1, penCz - 1, true);
       this.spawnPassiveSafe(ctx, lvl, EntityType.SHEEP, penCx + 1, penCz - 2, true);
       this.spawnPassiveSafe(ctx, lvl, EntityType.SHEEP, penCx - 2, penCz + 1, true);
@@ -1874,24 +1865,24 @@ public final class BaseFpsBenchmark implements Benchmark {
          new BaseFpsBenchmark.NamedSegment(
             "intro",
             160,
-            new LinearPath(new Vec3(C_SPAWN.getX() - 14, gy + 22, C_SPAWN.getZ() + 18), new Vec3(0.075, -0.04, -0.025), 250.0F, 18.0F)
+            new LinearPath(new Vec3d(C_SPAWN.getX() - 14, gy + 22, C_SPAWN.getZ() + 18), new Vec3d(0.075, -0.04, -0.025), 250.0F, 18.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "plaza_orbit", 120, new OrbitPath(new Vec3(C_SPAWN.getX() + 0.5, gy + 3, C_SPAWN.getZ() + 0.5), 10.0, 6.0, 0.6, 200.0F)
+            "plaza_orbit", 120, new OrbitPath(new Vec3d(C_SPAWN.getX() + 0.5, gy + 3, C_SPAWN.getZ() + 0.5), 10.0, 6.0, 0.6, 200.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "forest_fly",
             200,
-            new LinearPath(new Vec3(C_SPAWN.getX() + 6, gy + 14, C_SPAWN.getZ() + 1), new Vec3(0.12, 0.03, 0.105), 300.0F, 12.0F)
+            new LinearPath(new Vec3d(C_SPAWN.getX() + 6, gy + 14, C_SPAWN.getZ() + 1), new Vec3d(0.12, 0.03, 0.105), 300.0F, 12.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "forest_orbit", 200, new OrbitPath(new Vec3(C_FOREST.getX() + 0.5, gy + 5, C_FOREST.getZ() + 0.5), 20.0, 18.0, 0.55)
+            "forest_orbit", 200, new OrbitPath(new Vec3d(C_FOREST.getX() + 0.5, gy + 5, C_FOREST.getZ() + 0.5), 20.0, 18.0, 0.55)
          )
       );
       named.add(
@@ -1899,96 +1890,96 @@ public final class BaseFpsBenchmark implements Benchmark {
             "base_fly",
             180,
             new LinearPath(
-               new Vec3(C_FOREST.getX() + 0.5, gy + 20, C_FOREST.getZ() - 8), new Vec3(0.155, -0.044, -0.05), 200.0F, 20.0F
+               new Vec3d(C_FOREST.getX() + 0.5, gy + 20, C_FOREST.getZ() - 8), new Vec3d(0.155, -0.044, -0.05), 200.0F, 20.0F
             )
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "base_orbit", 220, new OrbitPath(new Vec3(C_BASE.getX() + 0.5, gy + 4, C_BASE.getZ() + 0.5), 14.0, 8.0, 0.55)
+            "base_orbit", 220, new OrbitPath(new Vec3d(C_BASE.getX() + 0.5, gy + 4, C_BASE.getZ() + 0.5), 14.0, 8.0, 0.55)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "village_fly",
             140,
-            new LinearPath(new Vec3(C_BASE.getX() + 8, gy + 10, C_BASE.getZ() - 2), new Vec3(0.18, 0.0, -0.06), 215.0F, 14.0F)
+            new LinearPath(new Vec3d(C_BASE.getX() + 8, gy + 10, C_BASE.getZ() - 2), new Vec3d(0.18, 0.0, -0.06), 215.0F, 14.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "village", 200, new OrbitPath(new Vec3(C_VILLAGE.getX() + 0.5, gy + 5, C_VILLAGE.getZ() + 0.5), 18.0, 10.0, 0.45)
+            "village", 200, new OrbitPath(new Vec3d(C_VILLAGE.getX() + 0.5, gy + 5, C_VILLAGE.getZ() + 0.5), 18.0, 10.0, 0.45)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "combat_in",
             100,
-            new LinearPath(new Vec3(C_COMBAT.getX() - 30, gy + 12, C_COMBAT.getZ() + 8), new Vec3(0.16, -0.06, -0.085), 245.0F, 18.0F)
+            new LinearPath(new Vec3d(C_COMBAT.getX() - 30, gy + 12, C_COMBAT.getZ() + 8), new Vec3d(0.16, -0.06, -0.085), 245.0F, 18.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "combat_orbit", 260, new OrbitPath(new Vec3(C_COMBAT.getX() + 0.5, gy + 4, C_COMBAT.getZ() + 0.5), 14.0, 6.0, 0.5, 180.0F)
+            "combat_orbit", 260, new OrbitPath(new Vec3d(C_COMBAT.getX() + 0.5, gy + 4, C_COMBAT.getZ() + 0.5), 14.0, 6.0, 0.5, 180.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "redstone",
             200,
-            new LinearPath(new Vec3(C_REDSTONE.getX() - 10, gy + 7, C_REDSTONE.getZ() - 3), new Vec3(0.13, 0.0, 0.04), 270.0F, 14.0F)
+            new LinearPath(new Vec3d(C_REDSTONE.getX() - 10, gy + 7, C_REDSTONE.getZ() - 3), new Vec3d(0.13, 0.0, 0.04), 270.0F, 14.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "cave_fly",
             110,
-            new LinearPath(new Vec3(C_CAVE.getX() - 12, gy + 12, C_CAVE.getZ() - 8), new Vec3(0.091, -0.082, 0.073), 280.0F, 10.0F)
+            new LinearPath(new Vec3d(C_CAVE.getX() - 12, gy + 12, C_CAVE.getZ() - 8), new Vec3d(0.091, -0.082, 0.073), 280.0F, 10.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "cave_inside",
             200,
-            new LinearPath(new Vec3(C_CAVE.getX() - 2, gy + 3, C_CAVE.getZ() + 0.5), new Vec3(0.1, 0.0, 0.0), 270.0F, 0.0F)
+            new LinearPath(new Vec3d(C_CAVE.getX() - 2, gy + 3, C_CAVE.getZ() + 0.5), new Vec3d(0.1, 0.0, 0.0), 270.0F, 0.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "cave_pull",
             150,
-            new LinearPath(new Vec3(C_CAVE.getX() + 18, gy + 3, C_CAVE.getZ() + 0.5), new Vec3(-0.18, 0.0, -0.05), 110.0F, 6.0F)
+            new LinearPath(new Vec3d(C_CAVE.getX() + 18, gy + 3, C_CAVE.getZ() + 0.5), new Vec3d(-0.18, 0.0, -0.05), 110.0F, 6.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "nether_fly",
             160,
-            new LinearPath(new Vec3(C_NETHER.getX() - 25, gy + 3, C_NETHER.getZ()), new Vec3(0.135, 0.0, 0.0), 270.0F, 0.0F)
+            new LinearPath(new Vec3d(C_NETHER.getX() - 25, gy + 3, C_NETHER.getZ()), new Vec3d(0.135, 0.0, 0.0), 270.0F, 0.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "nether_orbit", 240, new OrbitPath(new Vec3(C_NETHER.getX() + 0.5, gy + 3, C_NETHER.getZ() + 0.5), 4.0, 0.0, 0.6)
+            "nether_orbit", 240, new OrbitPath(new Vec3d(C_NETHER.getX() + 0.5, gy + 3, C_NETHER.getZ() + 0.5), 4.0, 0.0, 0.6)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "end_fly",
             160,
-            new LinearPath(new Vec3(C_END.getX() - 50, gy + 20, C_END.getZ() - 4), new Vec3(0.156, 0.0, 0.025), 270.0F, 6.0F)
+            new LinearPath(new Vec3d(C_END.getX() - 50, gy + 20, C_END.getZ() - 4), new Vec3d(0.156, 0.0, 0.025), 270.0F, 6.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
-            "end_orbit", 340, new OrbitPath(new Vec3(C_END.getX() + 0.5, gy + 10, C_END.getZ() + 0.5), 25.0, 10.0, 0.4, 180.0F)
+            "end_orbit", 340, new OrbitPath(new Vec3d(C_END.getX() + 0.5, gy + 10, C_END.getZ() + 0.5), 25.0, 10.0, 0.4, 180.0F)
          )
       );
       named.add(
          new BaseFpsBenchmark.NamedSegment(
             "final",
             260,
-            new LinearPath(new Vec3(C_END.getX() - 25, gy + 50, C_END.getZ() - 4), new Vec3(-0.45, 0.0, -0.07), 250.0F, 25.0F)
+            new LinearPath(new Vec3d(C_END.getX() - 25, gy + 50, C_END.getZ() - 4), new Vec3d(-0.45, 0.0, -0.07), 250.0F, 25.0F)
          )
       );
       this.segments = named;
@@ -2030,17 +2021,17 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void set(ServerLevel lvl, int x, int y, int z, BlockState state) {
-      lvl.setBlock(new BlockPos(x, y, z), state, 3);
+   private void set(ServerWorld lvl, int x, int y, int z, BlockState state) {
+      lvl.setBlockState(new BlockPos(x, y, z), state, 3);
       this.blocksPlaced++;
    }
 
-   private void setFast(ServerLevel lvl, int x, int y, int z, BlockState state) {
-      lvl.setBlock(new BlockPos(x, y, z), state, 2);
+   private void setFast(ServerWorld lvl, int x, int y, int z, BlockState state) {
+      lvl.setBlockState(new BlockPos(x, y, z), state, 2);
       this.blocksPlaced++;
    }
 
-   private void carveCameraCorridor(ServerLevel lvl, CameraPath path, int totalTicks) {
+   private void carveCameraCorridor(ServerWorld lvl, CameraPath path, int totalTicks) {
       if (path != null && totalTicks > 0) {
          int strippedTotal = 0;
          int coreHitTicks = 0;
@@ -2048,7 +2039,7 @@ public final class BaseFpsBenchmark implements Benchmark {
 
          for (int t = 0; t < totalTicks; t += 2) {
             Pose pose = path.poseAt(t, 0.0F);
-            Vec3 pos = pose.pos();
+            Vec3d pos = pose.pos();
             double r = this.carveRadiusForTick(t);
             int[] result = this.stripUnsafeAround(lvl, pos.x, pos.y, pos.z, r);
             strippedTotal += result[0];
@@ -2096,14 +2087,14 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private int[] stripUnsafeAround(ServerLevel lvl, double cx, double cy, double cz, double radius) {
+   private int[] stripUnsafeAround(ServerWorld lvl, double cx, double cy, double cz, double radius) {
       int stripped = 0;
       int structuralCoreHit = 0;
       int r = (int)Math.ceil(radius);
       int icx = (int)Math.floor(cx);
       int icy = (int)Math.floor(cy);
       int icz = (int)Math.floor(cz);
-      BlockState air = Blocks.AIR.defaultBlockState();
+      BlockState air = Blocks.AIR.getDefaultState();
       double r2 = radius * radius;
       double coreR2 = 2.5600000000000005;
 
@@ -2117,14 +2108,14 @@ public final class BaseFpsBenchmark implements Benchmark {
                   if (!s.isAir()) {
                      boolean inCore = d2 <= coreR2;
                      if (inCore) {
-                        if (!this.isStrippableForCamera(s) && s.isCollisionShapeFullBlock(lvl, p)) {
+                        if (!this.isStrippableForCamera(s) && s.isFullCube(lvl, p)) {
                            structuralCoreHit++;
                         }
 
-                        lvl.setBlock(p, air, 2);
+                        lvl.setBlockState(p, air, 2);
                         stripped++;
                      } else if (this.isStrippableForCamera(s)) {
-                        lvl.setBlock(p, air, 2);
+                        lvl.setBlockState(p, air, 2);
                         stripped++;
                      }
                   }
@@ -2137,51 +2128,51 @@ public final class BaseFpsBenchmark implements Benchmark {
    }
 
    private boolean isStrippableForCamera(BlockState s) {
-      return s.is(Blocks.OAK_LEAVES)
-         || s.is(Blocks.BIRCH_LEAVES)
-         || s.is(Blocks.DARK_OAK_LEAVES)
-         || s.is(Blocks.SPRUCE_LEAVES)
-         || s.is(Blocks.JUNGLE_LEAVES)
-         || s.is(Blocks.ACACIA_LEAVES)
-         || s.is(Blocks.AZALEA_LEAVES)
-         || s.is(Blocks.FLOWERING_AZALEA_LEAVES)
-         || s.is(Blocks.OAK_LOG)
-         || s.is(Blocks.BIRCH_LOG)
-         || s.is(Blocks.DARK_OAK_LOG)
-         || s.is(Blocks.VINE)
-         || s.is(Blocks.GLOW_LICHEN)
-         || s.is(Blocks.POINTED_DRIPSTONE)
-         || s.is(Blocks.AMETHYST_CLUSTER)
-         || s.is(Blocks.LARGE_AMETHYST_BUD)
-         || s.is(Blocks.MEDIUM_AMETHYST_BUD)
-         || s.is(Blocks.SMALL_AMETHYST_BUD)
-         || s.is(Blocks.BIG_DRIPLEAF)
-         || s.is(Blocks.SMALL_DRIPLEAF)
-         || s.is(Blocks.CHORUS_PLANT)
-         || s.is(Blocks.CHORUS_FLOWER)
-         || s.is(Blocks.IRON_BARS)
-         || s.is(Blocks.LANTERN)
-         || s.is(Blocks.SOUL_LANTERN)
-         || s.is(Blocks.WATER)
-         || s.is(Blocks.LAVA)
-         || s.is(Blocks.SHORT_GRASS)
-         || s.is(Blocks.FERN)
-         || s.is(Blocks.TALL_GRASS)
-         || s.is(Blocks.LARGE_FERN)
-         || s.is(Blocks.SWEET_BERRY_BUSH)
-         || s.is(Blocks.MOSS_CARPET)
-         || s.is(Blocks.RED_MUSHROOM)
-         || s.is(Blocks.BROWN_MUSHROOM);
+      return s.isOf(Blocks.OAK_LEAVES)
+         || s.isOf(Blocks.BIRCH_LEAVES)
+         || s.isOf(Blocks.DARK_OAK_LEAVES)
+         || s.isOf(Blocks.SPRUCE_LEAVES)
+         || s.isOf(Blocks.JUNGLE_LEAVES)
+         || s.isOf(Blocks.ACACIA_LEAVES)
+         || s.isOf(Blocks.AZALEA_LEAVES)
+         || s.isOf(Blocks.FLOWERING_AZALEA_LEAVES)
+         || s.isOf(Blocks.OAK_LOG)
+         || s.isOf(Blocks.BIRCH_LOG)
+         || s.isOf(Blocks.DARK_OAK_LOG)
+         || s.isOf(Blocks.VINE)
+         || s.isOf(Blocks.GLOW_LICHEN)
+         || s.isOf(Blocks.POINTED_DRIPSTONE)
+         || s.isOf(Blocks.AMETHYST_CLUSTER)
+         || s.isOf(Blocks.LARGE_AMETHYST_BUD)
+         || s.isOf(Blocks.MEDIUM_AMETHYST_BUD)
+         || s.isOf(Blocks.SMALL_AMETHYST_BUD)
+         || s.isOf(Blocks.BIG_DRIPLEAF)
+         || s.isOf(Blocks.SMALL_DRIPLEAF)
+         || s.isOf(Blocks.CHORUS_PLANT)
+         || s.isOf(Blocks.CHORUS_FLOWER)
+         || s.isOf(Blocks.IRON_BARS)
+         || s.isOf(Blocks.LANTERN)
+         || s.isOf(Blocks.SOUL_LANTERN)
+         || s.isOf(Blocks.WATER)
+         || s.isOf(Blocks.LAVA)
+         || s.isOf(Blocks.SHORT_GRASS)
+         || s.isOf(Blocks.FERN)
+         || s.isOf(Blocks.TALL_GRASS)
+         || s.isOf(Blocks.LARGE_FERN)
+         || s.isOf(Blocks.SWEET_BERRY_BUSH)
+         || s.isOf(Blocks.MOSS_CARPET)
+         || s.isOf(Blocks.RED_MUSHROOM)
+         || s.isOf(Blocks.BROWN_MUSHROOM);
    }
 
-   private void spawnPassive(BenchContext ctx, ServerLevel lvl, EntityType<? extends Entity> type, double x, double y, double z) {
-      Entity e = type.create(lvl, EntitySpawnReason.COMMAND);
+   private void spawnPassive(BenchContext ctx, ServerWorld lvl, EntityType<? extends Entity> type, double x, double y, double z) {
+      Entity e = type.create(lvl, SpawnReason.COMMAND);
       if (e != null) {
-         e.snapTo(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
-         if (e instanceof Mob m) {
-            m.finalizeSpawn(lvl, lvl.getCurrentDifficultyAt(e.blockPosition()), EntitySpawnReason.COMMAND, null);
-            m.setNoAi(false);
-            m.setPersistenceRequired();
+         e.refreshPositionAndAngles(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
+         if (e instanceof MobEntity m) {
+            m.initialize(lvl, lvl.getLocalDifficulty(e.getBlockPos()), SpawnReason.COMMAND, null);
+            m.setAiDisabled(false);
+            m.setPersistent();
             m.setInvulnerable(true);
             m.setSilent(true);
          }
@@ -2191,7 +2182,7 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private void spawnPassiveSafe(BenchContext ctx, ServerLevel lvl, EntityType<? extends Entity> type, int x, int z, boolean aiEnabled) {
+   private void spawnPassiveSafe(BenchContext ctx, ServerWorld lvl, EntityType<? extends Entity> type, int x, int z, boolean aiEnabled) {
       int[] safeXZ = this.findSafeSpawn(lvl, x, z);
       if (safeXZ == null) {
          FpsTestClient.LOG
@@ -2209,23 +2200,23 @@ public final class BaseFpsBenchmark implements Benchmark {
          sy = this.surfaceY(sx, sz);
       }
 
-      BlockState air = Blocks.AIR.defaultBlockState();
+      BlockState air = Blocks.AIR.getDefaultState();
 
       for (int dy = 1; dy <= 2; dy++) {
          BlockPos p = new BlockPos(sx, sy + dy, sz);
          BlockState s = lvl.getBlockState(p);
-         if (s.getFluidState().isEmpty() && !s.isAir() && s.canBeReplaced()) {
-            lvl.setBlock(p, air, 2);
+         if (s.getFluidState().isEmpty() && !s.isAir() && s.isReplaceable()) {
+            lvl.setBlockState(p, air, 2);
          }
       }
 
-      Entity e = type.create(lvl, EntitySpawnReason.COMMAND);
+      Entity e = type.create(lvl, SpawnReason.COMMAND);
       if (e != null) {
-         e.snapTo(sx + 0.5, sy + 1.01, sz + 0.5, 0.0F, 0.0F);
-         if (e instanceof Mob m) {
-            m.finalizeSpawn(lvl, lvl.getCurrentDifficultyAt(e.blockPosition()), EntitySpawnReason.COMMAND, null);
-            m.setNoAi(!aiEnabled);
-            m.setPersistenceRequired();
+         e.refreshPositionAndAngles(sx + 0.5, sy + 1.01, sz + 0.5, 0.0F, 0.0F);
+         if (e instanceof MobEntity m) {
+            m.initialize(lvl, lvl.getLocalDifficulty(e.getBlockPos()), SpawnReason.COMMAND, null);
+            m.setAiDisabled(!aiEnabled);
+            m.setPersistent();
             m.setInvulnerable(true);
          }
 
@@ -2234,25 +2225,25 @@ public final class BaseFpsBenchmark implements Benchmark {
       }
    }
 
-   private int topSolidY(ServerLevel lvl, int x, int z) {
+   private int topSolidY(ServerWorld lvl, int x, int z) {
       for (int y = 84; y >= 62; y--) {
          BlockState s = lvl.getBlockState(new BlockPos(x, y, z));
          if (!s.isAir()
-            && !s.canBeReplaced()
+            && !s.isReplaceable()
             && s.getFluidState().isEmpty()
-            && !s.is(Blocks.OAK_FENCE)
-            && !s.is(Blocks.OAK_FENCE_GATE)
-            && !s.is(Blocks.COBBLESTONE_WALL)
-            && !s.is(Blocks.MOSSY_COBBLESTONE_WALL)
-            && !s.is(Blocks.POLISHED_BLACKSTONE_WALL)
-            && !s.is(Blocks.OAK_LEAVES)
-            && !s.is(Blocks.BIRCH_LEAVES)
-            && !s.is(Blocks.DARK_OAK_LEAVES)
-            && !s.is(Blocks.IRON_BARS)
-            && !s.is(Blocks.DIRT_PATH)
-            && !s.is(Blocks.FARMLAND)
-            && !s.is(Blocks.OAK_SLAB)
-            && !s.is(Blocks.HAY_BLOCK)) {
+            && !s.isOf(Blocks.OAK_FENCE)
+            && !s.isOf(Blocks.OAK_FENCE_GATE)
+            && !s.isOf(Blocks.COBBLESTONE_WALL)
+            && !s.isOf(Blocks.MOSSY_COBBLESTONE_WALL)
+            && !s.isOf(Blocks.POLISHED_BLACKSTONE_WALL)
+            && !s.isOf(Blocks.OAK_LEAVES)
+            && !s.isOf(Blocks.BIRCH_LEAVES)
+            && !s.isOf(Blocks.DARK_OAK_LEAVES)
+            && !s.isOf(Blocks.IRON_BARS)
+            && !s.isOf(Blocks.DIRT_PATH)
+            && !s.isOf(Blocks.FARMLAND)
+            && !s.isOf(Blocks.OAK_SLAB)
+            && !s.isOf(Blocks.HAY_BLOCK)) {
             return y;
          }
       }
@@ -2260,18 +2251,18 @@ public final class BaseFpsBenchmark implements Benchmark {
       return 61;
    }
 
-   private boolean isSafeSpawn(ServerLevel lvl, int x, int z) {
+   private boolean isSafeSpawn(ServerWorld lvl, int x, int z) {
       int top = this.topSolidY(lvl, x, z);
       if (top < 62) {
          return false;
       } else {
          BlockState a1 = lvl.getBlockState(new BlockPos(x, top + 1, z));
          BlockState a2 = lvl.getBlockState(new BlockPos(x, top + 2, z));
-         return (a1.isAir() || a1.canBeReplaced()) && (a2.isAir() || a2.canBeReplaced());
+         return (a1.isAir() || a1.isReplaceable()) && (a2.isAir() || a2.isReplaceable());
       }
    }
 
-   private int[] findSafeSpawn(ServerLevel lvl, int x, int z) {
+   private int[] findSafeSpawn(ServerWorld lvl, int x, int z) {
       if (this.isSafeSpawn(lvl, x, z)) {
          return new int[]{x, z};
       } else {

@@ -11,14 +11,14 @@ import com.fpstest.client.gui.I18n;
 import com.fpstest.client.report.ReportWriter;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.GenericMessageScreen;
-import net.minecraft.client.tutorial.TutorialSteps;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.MessageScreen;
+import net.minecraft.client.tutorial.TutorialStep;
+import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.text.Text;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.Vec3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,14 +267,14 @@ public final class CinematicRunner {
             }
         }
         CinematicState.reset();
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world != null) {
             try {
-                mc.level.disconnect(Component.literal("MC Benchmark Core — aborted"));
+                mc.world.disconnect();
             } catch (Throwable ignored) {
             }
             try {
-                mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — aborted")));
+                mc.setScreen(new MessageScreen(Text.literal("MC Benchmark Core — aborted")));
             } catch (Throwable ignored) {
             }
         }
@@ -282,7 +282,7 @@ public final class CinematicRunner {
         waitTicks = 0;
     }
 
-    public void onClientTick(Minecraft mc) {
+    public void onClientTick(MinecraftClient mc) {
         try {
             tickInternal(mc);
         } catch (Throwable var5) {
@@ -294,21 +294,21 @@ public final class CinematicRunner {
         }
     }
 
-    private void tickInternal(Minecraft mc) {
+    private void tickInternal(MinecraftClient mc) {
         if (state != State.IDLE) {
             switch (state) {
                 case WORLD_LOADING:
-                    if (mc.level != null && mc.player != null) {
+                    if (mc.world != null && mc.player != null) {
                         state = State.READY_WAIT;
                         waitTicks = 0;
                     }
                     break;
                 case READY_WAIT:
                     waitTicks++;
-                    if (mc.level == null || mc.player == null) {
+                    if (mc.world == null || mc.player == null) {
                         return;
                     }
-                    if (mc.player.tickCount > 20 && waitTicks > 20 && mc.getSingleplayerServer() != null) {
+                    if (mc.player.age > 20 && waitTicks > 20 && mc.getServer() != null) {
                         beginPrepare(mc);
                     }
                     break;
@@ -403,7 +403,7 @@ public final class CinematicRunner {
                     break;
                 case DISCONNECTING:
                     waitTicks++;
-                    if (mc.level == null || waitTicks > 100) {
+                    if (mc.world == null || waitTicks > 100) {
                         state = State.POST_RUN;
                         waitTicks = 0;
                     }
@@ -430,18 +430,18 @@ public final class CinematicRunner {
         return 48;
     }
 
-    private int countLoadedChunksAroundCamera(Minecraft mc) {
-        if (mc.level == null) {
+    private int countLoadedChunksAroundCamera(MinecraftClient mc) {
+        if (mc.world == null) {
             return 0;
         }
         com.fpstest.client.bench.camera.Pose pose = CinematicState.currentPose(0.0F);
-        Vec3 pos = pose != null ? pose.pos() : (mc.player != null ? mc.player.position() : Vec3.ZERO);
+        Vec3d pos = pose != null ? pose.pos() : (mc.player != null ? mc.player.getPos() : Vec3d.ZERO);
         int cx = (int) Math.floor(pos.x) >> 4;
         int cz = (int) Math.floor(pos.z) >> 4;
         int loaded = 0;
         for (int dx = -4; dx <= 4; dx++) {
             for (int dz = -4; dz <= 4; dz++) {
-                if (mc.level.isLoaded(new net.minecraft.core.BlockPos((cx + dx) << 4, 0, (cz + dz) << 4))) {
+                if (mc.world.isChunkLoaded((cx + dx), (cz + dz))) {
                     loaded++;
                 }
             }
@@ -449,13 +449,13 @@ public final class CinematicRunner {
         return loaded;
     }
 
-    private int countLevelEntities(Minecraft mc) {
-        if (mc.level == null) {
+    private int countLevelEntities(MinecraftClient mc) {
+        if (mc.world == null) {
             return 0;
         }
         int n = 0;
         try {
-            var it = mc.level.entitiesForRendering().iterator();
+            var it = mc.world.getEntities().iterator();
             while (it.hasNext()) {
                 it.next();
                 n++;
@@ -531,16 +531,16 @@ public final class CinematicRunner {
         );
     }
 
-    private void disconnectWorld(Minecraft mc) {
-        mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core — finishing " + current.displayName() + "…")));
+    private void disconnectWorld(MinecraftClient mc) {
+        mc.setScreen(new MessageScreen(Text.literal("MC Benchmark Core — finishing " + current.displayName() + "…")));
         CinematicState.holdPose = false;
         CinematicState.active = false;
         CinematicState.path = null;
         try {
-            if (mc.level != null) {
-                mc.level.disconnect(Component.literal("MC Benchmark Core — finished"));
+            if (mc.world != null) {
+                mc.world.disconnect();
             }
-            mc.setScreen(new GenericMessageScreen(Component.literal("MC Benchmark Core")));
+            mc.setScreen(new MessageScreen(Text.literal("MC Benchmark Core")));
         } catch (Throwable var3) {
             LOG.warn("[MC Benchmark Core] disconnect failed", var3);
         }
@@ -549,7 +549,7 @@ public final class CinematicRunner {
     }
 
     private void finishSession() {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         List<BenchmarkResult> sessionCopy = List.copyOf(session);
         String sid = sessionId;
         String label = sessionLabel;
@@ -565,7 +565,7 @@ public final class CinematicRunner {
         });
         if (FpsTestConfig.get().completionSound) {
             try {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 0.7F));
+                mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 0.7F));
             } catch (Throwable var8) {
             }
         }
@@ -614,7 +614,7 @@ public final class CinematicRunner {
         return new BenchmarkResult.Builder(current.id(), current.phaseDisplayName(phaseIndex), current.category());
     }
 
-    private void beginPrepare(Minecraft mc) {
+    private void beginPrepare(MinecraftClient mc) {
         ctx = new BenchContext(mc);
         ctx.setPlan(plan);
         phaseIndex = 0;
@@ -623,7 +623,7 @@ public final class CinematicRunner {
         CinematicState.active = true;
         CinematicState.holdPose = false;
         try {
-            mc.getTutorial().setStep(TutorialSteps.NONE);
+            mc.getTutorialManager().setStep(TutorialStep.NONE);
         } catch (Throwable ignored) {
         }
         try {
@@ -652,8 +652,8 @@ public final class CinematicRunner {
      */
     private void saveRenderDistance() {
         try {
-            Minecraft mc = Minecraft.getInstance();
-            originalRenderDistance = mc.options.renderDistance().get();
+            MinecraftClient mc = MinecraftClient.getInstance();
+            originalRenderDistance = mc.options.getViewDistance().getValue();
             renderDistanceSaved = true;
             LOG.info("[MC Benchmark Core] saved original render distance: {} chunks", originalRenderDistance);
         } catch (Throwable t) {
@@ -684,8 +684,8 @@ public final class CinematicRunner {
             rd = 6;
         }
         try {
-            Minecraft mc = Minecraft.getInstance();
-            mc.options.renderDistance().set(rd);
+            MinecraftClient mc = MinecraftClient.getInstance();
+            mc.options.getViewDistance().setValue(rd);
             LOG.info("[MC Benchmark Core] render distance set to {} chunks for benchmark {}", rd, bench.id());
         } catch (Throwable t) {
             LOG.warn("[MC Benchmark Core] could not set render distance to {} for {}", rd, bench.id(), t);
@@ -698,8 +698,8 @@ public final class CinematicRunner {
             return;
         }
         try {
-            Minecraft mc = Minecraft.getInstance();
-            mc.options.renderDistance().set(originalRenderDistance);
+            MinecraftClient mc = MinecraftClient.getInstance();
+            mc.options.getViewDistance().setValue(originalRenderDistance);
             LOG.info("[MC Benchmark Core] restored render distance to {} chunks", originalRenderDistance);
         } catch (Throwable t) {
             LOG.warn("[MC Benchmark Core] could not restore render distance", t);

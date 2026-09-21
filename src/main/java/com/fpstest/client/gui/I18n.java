@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
+import net.minecraft.text.MutableText;
 
 @Environment(EnvType.CLIENT)
 public final class I18n {
@@ -35,8 +35,8 @@ public final class I18n {
         }
     }
 
-    public static MutableComponent t(String key) {
-        return Component.literal(tr(key));
+    public static MutableText t(String key) {
+        return Text.literal(tr(key));
     }
 
     private static synchronized void ensureLoaded() {
@@ -59,7 +59,7 @@ public final class I18n {
             return aliasIso(cfg.locale).toLowerCase(Locale.ROOT);
         } else {
             try {
-                String code = Minecraft.getInstance().getLanguageManager().getSelected();
+                String code = MinecraftClient.getInstance().getLanguageManager().getLanguage();
                 if (code != null && !code.isEmpty()) {
                     return code.toLowerCase(Locale.ROOT);
                 }

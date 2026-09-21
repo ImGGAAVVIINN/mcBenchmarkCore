@@ -12,17 +12,17 @@ import com.fpstest.client.bench.instrumentation.IntSeries;
 import com.fpstest.client.bench.scene.Arena;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.FallingBlockEntity;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public class FallingSandBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int SIDE = 40;
    private static final int INITIAL_ALTITUDE = 120;
    private final String id;
@@ -127,7 +127,7 @@ public class FallingSandBenchmark implements Benchmark {
       this.fallingSeries.clear();
       this.instrStart = null;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 2, 0, 40, 40);
             if (!this.lite) {
@@ -139,7 +139,7 @@ public class FallingSandBenchmark implements Benchmark {
             }
          }
       });
-      Vec3 side = CENTER.add(0.0, 10.0, 38.0);
+      Vec3d side = CENTER.add(0.0, 10.0, 38.0);
       ctx.setCameraPath(new OrbitPath(CENTER.add(0.0, 12.0, 0.0), 40.0, 8.0, 0.8));
       Arena.teleport(ctx, side, 0.0F, 20.0F);
    }
@@ -153,7 +153,7 @@ public class FallingSandBenchmark implements Benchmark {
          if (this.phaseTicks <= sampleEndApprox - 80) {
             if (this.phaseTicks % this.waveInterval == 0) {
                ctx.onServer(s -> {
-                  ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+                  ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                   if (lvl != null) {
                      int half = this.topupSide / 2;
                      int xOffset = 20 - half;
@@ -172,25 +172,25 @@ public class FallingSandBenchmark implements Benchmark {
       }
    }
 
-   private void spawnSand(ServerLevel lvl, int x, int z, double altitude) {
+   private void spawnSand(ServerWorld lvl, int x, int z, double altitude) {
       double sx = CENTER.x + x - 20.0;
       double sz = CENTER.z + z - 20.0;
       double sy = CENTER.y + altitude;
       BlockState state;
       if (!this.mixed) {
-         state = Blocks.SAND.defaultBlockState();
+         state = Blocks.SAND.getDefaultState();
       } else {
          int kind = (x + z) % 3;
 
          state = switch (kind) {
-            case 0 -> Blocks.SAND.defaultBlockState();
-            case 1 -> Blocks.GRAVEL.defaultBlockState();
-            default -> Blocks.ANVIL.defaultBlockState();
+            case 0 -> Blocks.SAND.getDefaultState();
+            case 1 -> Blocks.GRAVEL.getDefaultState();
+            default -> Blocks.ANVIL.getDefaultState();
          };
       }
 
-      FallingBlockEntity e = FallingBlockEntity.fall(lvl, new BlockPos((int)sx, (int)sy, (int)sz), state);
-      e.time = 1;
+      FallingBlockEntity e = FallingBlockEntity.spawnFromBlock(lvl, new BlockPos((int)sx, (int)sy, (int)sz), state);
+      e.timeFalling = 1;
       this.sandSpawned++;
    }
 
@@ -201,11 +201,11 @@ public class FallingSandBenchmark implements Benchmark {
             this.instrStart = Instr.snapshot();
          }
 
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int alive = 0;
 
-            for (Entity e : lvl.getAllEntities()) {
+            for (Entity e : lvl.iterateEntities()) {
                if (e instanceof FallingBlockEntity) {
                   alive++;
                }

@@ -66,9 +66,9 @@ public class FpsTestClient implements ClientModInitializer {
         });
     }
 
-    private void pollAbortKey(net.minecraft.client.Minecraft client) {
+    private void pollAbortKey(net.minecraft.client.MinecraftClient client) {
         if (client != null && client.getWindow() != null) {
-            long handle = client.getWindow().handle();
+            long handle = client.getWindow().getHandle();
             boolean escDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS;
             if (escDown && !this.escWasDown && RUNNER.busy()) {
                 boolean shift = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
@@ -88,9 +88,9 @@ public class FpsTestClient implements ClientModInitializer {
      * Experimental access path: CTRL+ALT+SHIFT+F+J opens the existing benchmark
      * menu (with the experimental warning). It never starts a benchmark itself.
      */
-    private void pollBenchmarkMenuHotkey(net.minecraft.client.Minecraft client) {
+    private void pollBenchmarkMenuHotkey(net.minecraft.client.MinecraftClient client) {
         if (client != null && client.getWindow() != null) {
-            long handle = client.getWindow().handle();
+            long handle = client.getWindow().getHandle();
             boolean ctrl = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS
                     || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
             boolean alt = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_ALT) == GLFW.GLFW_PRESS
@@ -102,7 +102,7 @@ public class FpsTestClient implements ClientModInitializer {
             boolean combo = ctrl && alt && shift && f && j;
             if (combo && !this.hotkeyWasDown && !RUNNER.busy()) {
                 BenchmarkHub.experimentalMenu = true;
-                client.setScreen(new BenchmarkHub(client.screen));
+                client.setScreen(new BenchmarkHub(client.currentScreen));
             }
             this.hotkeyWasDown = combo;
         }

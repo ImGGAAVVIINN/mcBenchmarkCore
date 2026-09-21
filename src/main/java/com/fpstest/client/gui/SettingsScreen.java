@@ -4,10 +4,10 @@ import com.fpstest.client.config.FpsTestConfig;
 import java.util.Objects;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
+import net.minecraft.client.gui.tooltip.Tooltip;
 
 @Environment(EnvType.CLIENT)
 public final class SettingsScreen extends Screen {
@@ -25,7 +25,7 @@ public final class SettingsScreen extends Screen {
     }
 
     private void rebuild() {
-        this.clearWidgets();
+        this.clearChildren();
         FpsTestConfig cfg = FpsTestConfig.get();
         int w = 280;
         int x = (this.width - w) / 2;
@@ -57,18 +57,18 @@ public final class SettingsScreen extends Screen {
             this.rebuild();
         });
         y += rowH + 8;
-        this.addRenderableWidget(FlatButton.flatBuilder(I18n.t("fpstest.settings.back"), b -> this.onClose()).dimensions(x, y, w, 22).build());
+        this.addDrawableChild(FlatButton.flatBuilder(I18n.t("fpstest.settings.back"), b -> this.close()).dimensions(x, y, w, 22).build());
     }
 
     private void addRow(int x, int y, int w, String label, String value, Runnable onClick) {
         int btnW = 110;
         int labelW = w - btnW - 4;
-        FlatButton btn = FlatButton.flatBuilder(Component.literal(value), b -> onClick.run())
+        FlatButton btn = FlatButton.flatBuilder(Text.literal(value), b -> onClick.run())
             .dimensions(x + labelW + 4, y, btnW, 22)
-            .tooltip(Tooltip.create(Component.literal(label)))
+            .tooltip(Tooltip.of(Text.literal(label)))
             .build();
-        this.addRenderableWidget(btn);
-        this.addRenderableOnly((ctx, mx, my, dt) -> ctx.drawString(this.font, Component.literal(label), x, y + 7, -3355444));
+        this.addDrawableChild(btn);
+        this.addDrawable((ctx, mx, my, dt) -> ctx.drawTextWithShadow(this.textRenderer, Text.literal(label), x, y + 7, -3355444));
     }
 
     private static String nextLocale(String cur) {
@@ -82,12 +82,12 @@ public final class SettingsScreen extends Screen {
     }
 
     @Override
-    public void onClose() {
-        this.minecraft.setScreen(this.parent);
+    public void close() {
+        this.client.setScreen(this.parent);
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(DrawContext guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         // The widgets handle their own rendering
     }

@@ -2,16 +2,16 @@ package com.fpstest.client.gui;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.text.Text;
+import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 
 @Environment(EnvType.CLIENT)
-public final class FlatButton extends Button {
+public final class FlatButton extends ButtonWidget {
     private static final int BG_IDLE = -15065048;
     private static final int BG_HOVER = -14537674;
     private static final int BG_DISABLED = -15723496;
@@ -21,21 +21,21 @@ public final class FlatButton extends Button {
     private static final int TEXT_DIS = -9408400;
     private final int accent;
 
-    private FlatButton(int x, int y, int w, int h, Component text, OnPress onPress, int accent) {
-        super(x, y, w, h, text, onPress, DEFAULT_NARRATION);
+    private FlatButton(int x, int y, int w, int h, Text text, PressAction onPress, int accent) {
+        super(x, y, w, h, text, onPress, DEFAULT_NARRATION_SUPPLIER);
         this.accent = accent;
     }
 
-    public static FlatButton create(int x, int y, int w, int h, Component text, OnPress onPress) {
+    public static FlatButton create(int x, int y, int w, int h, Text text, PressAction onPress) {
         return new FlatButton(x, y, w, h, text, onPress, -7686401);
     }
 
-    public static FlatButton withAccent(int x, int y, int w, int h, Component text, OnPress onPress, int accent) {
+    public static FlatButton withAccent(int x, int y, int w, int h, Text text, PressAction onPress, int accent) {
         return new FlatButton(x, y, w, h, text, onPress, accent);
     }
 
     @Override
-    public void renderContents(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
         int x = this.getX();
         int y = this.getY();
         int w = this.getWidth();
@@ -59,23 +59,18 @@ public final class FlatButton extends Button {
         ctx.fill(x, y, x + 1, y + h, OUTLINE);
         ctx.fill(x + w - 1, y, x + w, y + h, OUTLINE);
         ctx.fill(x, y, x + 2, y + h, this.accent);
-        Font tr = Minecraft.getInstance().font;
-        ctx.drawString(tr, this.getMessage(), x + w / 2 - tr.width(this.getMessage()) / 2, y + (h - 8) / 2, textColor);
+        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        ctx.drawTextWithShadow(tr, this.getMessage(), x + w / 2 - tr.getWidth(this.getMessage()) / 2, y + (h - 8) / 2, textColor);
     }
 
-    @Override
-    public void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-        super.updateWidgetNarration(narrationElementOutput);
-    }
-
-    public static Builder flatBuilder(Component text, OnPress onPress) {
+    public static Builder flatBuilder(Text text, PressAction onPress) {
         return new Builder(text, onPress);
     }
 
     @Environment(EnvType.CLIENT)
     public static final class Builder {
-        private final Component text;
-        private final OnPress onPress;
+        private final Text text;
+        private final PressAction onPress;
         private int x;
         private int y;
         private int w;
@@ -83,7 +78,7 @@ public final class FlatButton extends Button {
         private int accent = -7686401;
         private Tooltip tooltip;
 
-        Builder(Component text, OnPress onPress) {
+        Builder(Text text, PressAction onPress) {
             this.text = text;
             this.onPress = onPress;
         }

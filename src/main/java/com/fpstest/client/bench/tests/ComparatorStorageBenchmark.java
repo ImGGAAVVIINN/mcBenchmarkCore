@@ -11,21 +11,21 @@ import com.fpstest.client.bench.instrumentation.Instr;
 import com.fpstest.client.bench.scene.Arena;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.redstone.Orientation;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.state.property.Properties;
+import net.minecraft.world.block.WireOrientation;
+import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class ComparatorStorageBenchmark implements Benchmark {
-   private static final Vec3 CENTER = new Vec3(0.5, 70.0, 0.5);
+   private static final Vec3d CENTER = new Vec3d(0.5, 70.0, 0.5);
    private static final int GRID = 8;
    private static final int CELL_SPACING = 3;
    private static final int PULSE_PERIOD = 20;
@@ -87,22 +87,22 @@ public final class ComparatorStorageBenchmark implements Benchmark {
       this.fullState = true;
       this.instrStart = null;
       ctx.onServer(s -> {
-         ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+         ServerWorld lvl = (ServerWorld) ctx.serverLevel();
          if (lvl != null) {
             int half = 28;
             Arena.stoneSlab(lvl, 0, (int)CENTER.y - 1, 0, half, half);
-            BlockState chest = Blocks.CHEST.defaultBlockState();
-            BlockState comparator = (BlockState)Blocks.COMPARATOR.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
-            BlockState dust = Blocks.REDSTONE_WIRE.defaultBlockState();
+            BlockState chest = Blocks.CHEST.getDefaultState();
+            BlockState comparator = (BlockState)Blocks.COMPARATOR.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+            BlockState dust = Blocks.REDSTONE_WIRE.getDefaultState();
             int by = (int)CENTER.y;
 
             for (int gx = 0; gx < 8; gx++) {
                for (int gz = 0; gz < 8; gz++) {
                   int bx = (int)CENTER.x + (gx - 4) * 3;
                   int bz = (int)CENTER.z + (gz - 4) * 3;
-                  lvl.setBlock(new BlockPos(bx, by, bz), chest, 3);
-                  lvl.setBlock(new BlockPos(bx, by, bz + 1), comparator, 3);
-                  lvl.setBlock(new BlockPos(bx, by, bz + 2), dust, 3);
+                  lvl.setBlockState(new BlockPos(bx, by, bz), chest, 3);
+                  lvl.setBlockState(new BlockPos(bx, by, bz + 1), comparator, 3);
+                  lvl.setBlockState(new BlockPos(bx, by, bz + 2), dust, 3);
                   this.chestsBuilt++;
                   this.comparatorsBuilt++;
                }
@@ -116,7 +116,7 @@ public final class ComparatorStorageBenchmark implements Benchmark {
       Arena.teleport(ctx, CENTER.add(0.0, 14.0, 30.0), 180.0F, 30.0F);
    }
 
-   private void fillAllChests(ServerLevel lvl, boolean full) {
+   private void fillAllChests(ServerWorld lvl, boolean full) {
       int by = (int)CENTER.y;
 
       for (int gx = 0; gx < 8; gx++) {
@@ -125,19 +125,19 @@ public final class ComparatorStorageBenchmark implements Benchmark {
             int bz = (int)CENTER.z + (gz - 4) * 3;
             if (lvl.getBlockEntity(new BlockPos(bx, by, bz)) instanceof ChestBlockEntity chest) {
                if (full) {
-                  for (int slot = 0; slot < chest.getContainerSize(); slot++) {
-                     chest.setItem(slot, new ItemStack(Items.REDSTONE, 64));
+                  for (int slot = 0; slot < chest.size(); slot++) {
+                     chest.setStack(slot, new ItemStack(Items.REDSTONE, 64));
                   }
                } else {
-                  for (int slot = 0; slot < chest.getContainerSize(); slot++) {
-                     chest.setItem(slot, ItemStack.EMPTY);
+                  for (int slot = 0; slot < chest.size(); slot++) {
+                     chest.setStack(slot, ItemStack.EMPTY);
                   }
 
-                  chest.setItem(0, new ItemStack(Items.REDSTONE, 1));
+                  chest.setStack(0, new ItemStack(Items.REDSTONE, 1));
                }
 
-               chest.setChanged();
-               lvl.updateNeighborsAt(new BlockPos(bx, by, bz), chest.getBlockState().getBlock(), Orientation.of(Direction.NORTH, Direction.UP, Orientation.SideBias.LEFT));
+               chest.markDirty();
+               lvl.updateNeighborsAlways(new BlockPos(bx, by, bz), chest.getCachedState().getBlock(), WireOrientation.of(Direction.NORTH, Direction.UP, WireOrientation.SideBias.LEFT));
             }
          }
       }
@@ -155,7 +155,7 @@ public final class ComparatorStorageBenchmark implements Benchmark {
          int sampleEndApprox = ctx.plan() != null ? ctx.plan().warmupTicks + ctx.plan().sampleTicks : this.warmupTicks() + this.sampleTicks();
          if (this.phaseTicks <= sampleEndApprox - 60) {
             ctx.onServer(s -> {
-               ServerLevel lvl = (ServerLevel) ctx.serverLevel();
+               ServerWorld lvl = (ServerWorld) ctx.serverLevel();
                if (lvl != null) {
                   this.fillAllChests(lvl, !this.fullState);
                   this.fullState = !this.fullState;

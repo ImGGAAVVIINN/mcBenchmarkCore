@@ -12,12 +12,12 @@ import java.util.Set;
 import java.util.function.Function;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.screens.ConfirmScreen;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.Tooltip;
+import net.minecraft.client.gui.screen.ConfirmScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
 
 @Environment(EnvType.CLIENT)
 public final class BenchmarkHub extends Screen {
@@ -45,21 +45,21 @@ public final class BenchmarkHub extends Screen {
         return experimentalMenu ? 78 : 56;
     }
 
-    private static String truncate(Font font, String s, int pixelWidth) {
+    private static String truncate(TextRenderer font, String s, int pixelWidth) {
         if (s == null) {
             return "\u2014";
         } else if (pixelWidth <= 0) {
             return "";
-        } else if (font.width(s) <= pixelWidth) {
+        } else if (font.getWidth(s) <= pixelWidth) {
             return s;
         } else {
             String suffix = "\u2026";
-            int suffixW = font.width(suffix);
+            int suffixW = font.getWidth(suffix);
             StringBuilder out = new StringBuilder();
 
             for (int i = 0; i < s.length(); i++) {
                 String candidate = out.toString() + s.charAt(i);
-                if (font.width(candidate) + suffixW > pixelWidth) {
+                if (font.getWidth(candidate) + suffixW > pixelWidth) {
                     if (out.length() == 0) {
                         return suffix;
                     }
@@ -75,7 +75,7 @@ public final class BenchmarkHub extends Screen {
     }
 
     public BenchmarkHub(Screen parent) {
-        super(Component.literal("MC Benchmark Core"));
+        super(Text.literal("MC Benchmark Core"));
         this.preset = HubState.preset;
         this.scroll = 0;
         this.headerRightEdge = Integer.MAX_VALUE;
@@ -93,7 +93,7 @@ public final class BenchmarkHub extends Screen {
     }
 
     private void rebuildAll() {
-        this.clearWidgets();
+        this.clearChildren();
         HubState.tab = this.active;
         HubState.preset = this.preset;
         int pad = 8;
@@ -103,20 +103,20 @@ public final class BenchmarkHub extends Screen {
         int settingsW = 78;
         int reportsW = 78;
         int rx = this.width - pad - closeW;
-        this.addRenderableWidget(
-            FlatButton.flatBuilder(I18n.t("fpstest.button.close"), b -> this.onClose())
+        this.addDrawableChild(
+            FlatButton.flatBuilder(I18n.t("fpstest.button.close"), b -> this.close())
                 .dimensions(rx, topRowY, closeW, 20)
                 .build()
         );
         rx -= settingsW + btnGap;
-        this.addRenderableWidget(
-            FlatButton.flatBuilder(I18n.t("fpstest.button.settings"), b -> this.minecraft.setScreen(new SettingsScreen(this)))
+        this.addDrawableChild(
+            FlatButton.flatBuilder(I18n.t("fpstest.button.settings"), b -> this.client.setScreen(new SettingsScreen(this)))
                 .dimensions(rx, topRowY, settingsW, 20)
                 .build()
         );
         rx -= reportsW + btnGap;
-        this.addRenderableWidget(
-            FlatButton.flatBuilder(I18n.t("fpstest.tab.reports"), b -> this.minecraft.setScreen(new ReportsScreen(this)))
+        this.addDrawableChild(
+            FlatButton.flatBuilder(I18n.t("fpstest.tab.reports"), b -> this.client.setScreen(new ReportsScreen(this)))
                 .dimensions(rx, topRowY, reportsW, 20)
                 .build()
         );
@@ -127,15 +127,15 @@ public final class BenchmarkHub extends Screen {
         for (BenchmarkHub.Preset p : BenchmarkHub.Preset.values()) {
             boolean selected = p == this.preset;
             String lbl = (selected ? "\u00a7l\u00a7n" : "") + presetLabel(p);
-            FlatButton b = FlatButton.flatBuilder(Component.literal(lbl), btn -> {
+            FlatButton b = FlatButton.flatBuilder(Text.literal(lbl), btn -> {
                     this.preset = p;
                     this.rebuildAll();
                 })
                 .dimensions(presetX, presetY, 76, 18)
                 .accent(selected ? -10040065 : -2139062144)
-                .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.tab.tooltip", presetDesc(p)))))
+                .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.tab.tooltip", presetDesc(p)))))
                 .build();
-            this.addRenderableWidget(b);
+            this.addDrawableChild(b);
             presetX += 78;
         }
 
@@ -161,9 +161,9 @@ public final class BenchmarkHub extends Screen {
             this.cancelBtn = FlatButton.flatBuilder(I18n.t("fpstest.footer.cancel"), b -> this.cancelRunning())
                 .dimensions(cancelX, cancelY, cancelW, cancelH)
                 .accent(-34953)
-                .tooltip(Tooltip.create(I18n.t("fpstest.footer.cancel.tooltip")))
+                .tooltip(Tooltip.of(I18n.t("fpstest.footer.cancel.tooltip")))
                 .build();
-            this.addRenderableWidget(this.cancelBtn);
+            this.addDrawableChild(this.cancelBtn);
         } else {
             this.cancelBtn = null;
         }
@@ -180,7 +180,7 @@ public final class BenchmarkHub extends Screen {
         int totalNat = 0;
 
         for (int i = 0; i < n; i++) {
-            nat[i] = Math.max(46, this.font.width(I18n.t(tabTitle(tabs[i]))) + 14);
+            nat[i] = Math.max(46, this.textRenderer.getWidth(I18n.t(tabTitle(tabs[i]))) + 14);
             totalNat += nat[i];
         }
 
@@ -251,9 +251,9 @@ public final class BenchmarkHub extends Screen {
             })
             .dimensions(x, y, w, 26)
             .accent(t.accent)
-            .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.tab.tooltip", tabTitle(t)))))
+            .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.tab.tooltip", tabTitle(t)))))
             .build();
-        this.addRenderableWidget(b);
+        this.addDrawableChild(b);
         if (t == this.active) {
             this.activeTabRect = new int[]{x, y, w};
         }
@@ -274,24 +274,24 @@ public final class BenchmarkHub extends Screen {
         Benchmark showcase = BenchmarkRegistry.get("base_fps_showcase").orElse(null);
         if (showcase != null) {
             long showcaseEtaMs = (long)(RunPlan.fromBench(showcase).estimatedSeconds() * 1000.0);
-            this.addRenderableWidget(
+            this.addDrawableChild(
                 FlatButton.flatBuilder(
-                    Component.literal(I18n.trf("fpstest.overview.showcase_button", fmtDuration(showcaseEtaMs))), b -> this.runSingle(showcase))
+                    Text.literal(I18n.trf("fpstest.overview.showcase_button", fmtDuration(showcaseEtaMs))), b -> this.runSingle(showcase))
                 .dimensions(x, y, btnW, 30)
                 .accent(BenchmarkHub.Tab.SHOWCASE.accent)
-                .tooltip(Tooltip.create(I18n.t("fpstest.overview.showcase_tooltip")))
+                .tooltip(Tooltip.of(I18n.t("fpstest.overview.showcase_tooltip")))
                 .build()
             );
             y += 36;
         }
 
         long fullEtaMs = totalEtaMs(this.fullSuitePlans());
-        this.addRenderableWidget(
+        this.addDrawableChild(
             FlatButton.flatBuilder(
-                Component.literal(I18n.trf("fpstest.overview.full_button", presetLabel(this.preset), fmtDuration(fullEtaMs))), b -> this.runFullSuite())
+                Text.literal(I18n.trf("fpstest.overview.full_button", presetLabel(this.preset), fmtDuration(fullEtaMs))), b -> this.runFullSuite())
             .dimensions(x, y, btnW, 26)
             .accent(-7686401)
-            .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.overview.full_tooltip", presetLabel(this.preset).toLowerCase(), fmtDuration(fullEtaMs)))))
+            .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.overview.full_tooltip", presetLabel(this.preset).toLowerCase(), fmtDuration(fullEtaMs)))))
             .build()
         );
         y += 32;
@@ -304,12 +304,12 @@ public final class BenchmarkHub extends Screen {
             if (!"Showcase".equals(cat)) {
                 List<Benchmark> list = BenchmarkRegistry.byCategory(cat);
                 long catEta = totalEtaMs(list.stream().map(this::planFor).toList());
-                this.addRenderableWidget(
+                this.addDrawableChild(
                     FlatButton.flatBuilder(
-                        Component.literal(I18n.trf("fpstest.overview.run_all", catLabel(cat), list.size(), fmtDuration(catEta))), b -> this.runCategory(cat))
+                        Text.literal(I18n.trf("fpstest.overview.run_all", catLabel(cat), list.size(), fmtDuration(catEta))), b -> this.runCategory(cat))
                     .dimensions(x, y, btnW, 22)
                     .accent(this.accentForCategory(cat))
-                    .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.overview.run_all_tooltip", list.size(), String.join(", ", list.stream().map(Benchmark::displayName).toList()), fmtDuration(catEta)))))
+                    .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.overview.run_all_tooltip", list.size(), String.join(", ", list.stream().map(Benchmark::displayName).toList()), fmtDuration(catEta)))))
                     .build()
                 );
                 y += 26;
@@ -422,12 +422,12 @@ public final class BenchmarkHub extends Screen {
         int runAllX = (this.width - runAllW) / 2;
         int runAllY = this.contentTop() + 22;
         long catEta = totalEtaMs(list.stream().map(this::planFor).toList());
-        this.addRenderableWidget(
+        this.addDrawableChild(
             FlatButton.flatBuilder(
-                Component.literal(I18n.trf("fpstest.category.run_all", catLabel(category), list.size(), presetLabel(this.preset), fmtDuration(catEta))), b -> this.runCategory(category))
+                Text.literal(I18n.trf("fpstest.category.run_all", catLabel(category), list.size(), presetLabel(this.preset), fmtDuration(catEta))), b -> this.runCategory(category))
             .dimensions(runAllX, runAllY, runAllW, 22)
             .accent(tab.accent)
-            .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.tooltip.eta", fmtDuration(catEta)))))
+            .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.tooltip.eta", fmtDuration(catEta)))))
             .build()
         );
         int listTop = runAllY + 30;
@@ -444,17 +444,17 @@ public final class BenchmarkHub extends Screen {
             Benchmark b = list.get(this.scroll + i);
             int rowY = listTop + i * 28;
             long etaMs = (long)(this.preset.factory.apply(b).estimatedSeconds() * 1000.0);
-            this.addRenderableWidget(
-                FlatButton.flatBuilder(Component.literal(I18n.trf("fpstest.row.run", fmtDuration(etaMs))), btn -> this.runSingle(b))
+            this.addDrawableChild(
+                FlatButton.flatBuilder(Text.literal(I18n.trf("fpstest.row.run", fmtDuration(etaMs))), btn -> this.runSingle(b))
                     .dimensions(right - 168, rowY + 3, 80, 20)
                     .accent(tab.accent)
-                    .tooltip(Tooltip.create(Component.literal(I18n.trf("fpstest.row.tooltip", b.description(), b.seed(), presetLabel(this.preset), presetDesc(this.preset), fmtDuration(etaMs)))))
+                    .tooltip(Tooltip.of(Text.literal(I18n.trf("fpstest.row.tooltip", b.description(), b.seed(), presetLabel(this.preset), presetDesc(this.preset), fmtDuration(etaMs)))))
                     .build()
             );
-            this.addRenderableWidget(
+            this.addDrawableChild(
                 FlatButton.flatBuilder(I18n.t(this.customQueue.contains(b.id()) ? "fpstest.button.queued_check" : "fpstest.button.queue_plus"), btn -> this.toggleQueued(b))
                     .dimensions(right - 84, rowY + 3, 76, 20)
-                    .tooltip(Tooltip.create(I18n.t("fpstest.row.queue_tooltip")))
+                    .tooltip(Tooltip.of(I18n.t("fpstest.row.queue_tooltip")))
                     .build()
             );
         }
@@ -463,14 +463,14 @@ public final class BenchmarkHub extends Screen {
     private void buildCustom() {
         int top = this.contentTop() + 32;
         long queueEta = totalEtaMs(this.customQueuePlans());
-        this.addRenderableWidget(
-            FlatButton.flatBuilder(Component.literal(I18n.trf("fpstest.custom.run_queue", presetLabel(this.preset), this.customQueue.size(), fmtDuration(queueEta))), b -> this.runCustomQueue())
+        this.addDrawableChild(
+            FlatButton.flatBuilder(Text.literal(I18n.trf("fpstest.custom.run_queue", presetLabel(this.preset), this.customQueue.size(), fmtDuration(queueEta))), b -> this.runCustomQueue())
                 .dimensions(this.width / 2 - 220, top, 220, 22)
                 .accent(-3355444)
-                .tooltip(Tooltip.create(this.customQueue.isEmpty() ? I18n.t("fpstest.custom.empty") : Component.literal(I18n.trf("fpstest.tooltip.eta", fmtDuration(queueEta)))))
+                .tooltip(Tooltip.of(this.customQueue.isEmpty() ? I18n.t("fpstest.custom.empty") : Text.literal(I18n.trf("fpstest.tooltip.eta", fmtDuration(queueEta)))))
                 .build()
         );
-        this.addRenderableWidget(
+        this.addDrawableChild(
             FlatButton.flatBuilder(I18n.t("fpstest.button.clear_queue"), b -> {
                 this.customQueue.clear();
                 this.rebuildAll();
@@ -492,7 +492,7 @@ public final class BenchmarkHub extends Screen {
         for (int i = 0; i < Math.min(visible, all.size() - this.scroll); i++) {
             Benchmark b = all.get(this.scroll + i);
             int rowY = listTop + i * 28;
-            this.addRenderableWidget(
+            this.addDrawableChild(
                 FlatButton.flatBuilder(I18n.t(this.customQueue.contains(b.id()) ? "fpstest.button.in_queue" : "fpstest.button.add_to_queue"), btn -> this.toggleQueued(b))
                     .dimensions(right - 88, rowY + 3, 80, 20)
                     .accent(this.accentForCategory(b.category()))
@@ -567,17 +567,17 @@ public final class BenchmarkHub extends Screen {
                 body = I18n.trf("fpstest.confirm.heavy_only", heavyList);
             }
 
-            this.minecraft.setScreen(
+            this.client.setScreen(
                 new ConfirmScreen(
                     ok -> {
                         if (ok) {
                             launcher.run();
                         } else {
-                            this.minecraft.setScreen(this);
+                            this.client.setScreen(this);
                         }
                     },
-                    Component.literal(I18n.trf("fpstest.confirm.title_with", label)),
-                    Component.literal(body),
+                    Text.literal(I18n.trf("fpstest.confirm.title_with", label)),
+                    Text.literal(body),
                     I18n.t("fpstest.confirm.run"),
                     I18n.t("fpstest.confirm.cancel")
                 )
@@ -591,13 +591,13 @@ public final class BenchmarkHub extends Screen {
 
     private Runnable backToHub() {
         Screen p = this.parent;
-        return () -> this.minecraft.setScreen(new BenchmarkHub(p));
+        return () -> this.client.setScreen(new BenchmarkHub(p));
     }
 
     @Override
-    public void onClose() {
+    public void close() {
         experimentalMenu = false;
-        super.onClose();
+        super.close();
     }
 
     private void cancelRunning() {
@@ -608,7 +608,7 @@ public final class BenchmarkHub extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
         super.renderBackground(ctx, mouseX, mouseY, delta);
         int cardL = 4;
         int cardR = this.width - 4;
@@ -623,7 +623,7 @@ public final class BenchmarkHub extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
+    public void render(DrawContext ctx, int mouseX, int mouseY, float partialTicks) {
         boolean busyNow = FpsTestClient.RUNNER.busy();
         if (busyNow != this.lastBusy) {
             this.rebuildAll();
@@ -632,21 +632,21 @@ public final class BenchmarkHub extends Screen {
         super.render(ctx, mouseX, mouseY, partialTicks);
         String title = "\u00a7l" + I18n.t("fpstest.title") + "\u00a7r \u00a78\u2014 " + I18n.t("fpstest.subtitle");
         int avail = Math.max(40, this.headerRightEdge - 8 - 4);
-        if (this.font.width(title) > avail) {
+        if (this.textRenderer.getWidth(title) > avail) {
             title = "\u00a7l" + I18n.t("fpstest.title");
         }
 
-        ctx.drawString(this.font, Component.literal(title), 8, 10, -1);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal(title), 8, 10, -1);
         if (experimentalMenu) {
             int warnW = Math.max(40, this.headerRightEdge - 8 - 4);
-            ctx.drawString(this.font, Component.literal("\u00a7l\u00a7e" + I18n.t("fpstest.hub.experimental")), 8, 20, -1);
-            ctx.drawString(this.font, Component.literal("\u00a77" + truncate(this.font, I18n.tr("fpstest.hub.experimental.body"), warnW)), 8, 30, -5592406);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a7l\u00a7e" + I18n.t("fpstest.hub.experimental")), 8, 20, -1);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a77" + truncate(this.textRenderer, I18n.tr("fpstest.hub.experimental.body"), warnW)), 8, 30, -5592406);
         }
         this.renderContent(ctx, mouseX, mouseY);
         this.renderFooter(ctx);
     }
 
-    private void drawActiveTabAccent(GuiGraphics ctx) {
+    private void drawActiveTabAccent(DrawContext ctx) {
         if (this.activeTabRect != null) {
             int x = this.activeTabRect[0];
             int y = this.activeTabRect[1] + 26;
@@ -655,15 +655,15 @@ public final class BenchmarkHub extends Screen {
         }
     }
 
-    private void renderContent(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderContent(DrawContext ctx, int mouseX, int mouseY) {
         switch (this.active) {
             case OVERVIEW:
-                ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.t("fpstest.tab.overview")), 12, this.contentTop() + 6, -1);
-                ctx.drawString(this.font, Component.literal("\u00a77" + I18n.t("fpstest.overview.body")), 12, this.contentTop() + 18, -5592406);
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a7l" + I18n.t("fpstest.tab.overview")), 12, this.contentTop() + 6, -1);
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a77" + I18n.t("fpstest.overview.body")), 12, this.contentTop() + 18, -5592406);
                 break;
             case CUSTOM:
-                ctx.drawString(this.font, Component.literal("\u00a7l" + I18n.t("fpstest.tab.custom") + " \u00a78(" + I18n.trf("fpstest.custom.count", this.customQueue.size()) + ")"), 12, this.contentTop() + 6, -1);
-                ctx.drawString(this.font, Component.literal("\u00a77" + I18n.t("fpstest.custom.body")), 12, this.contentTop() + 18, -5592406);
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a7l" + I18n.t("fpstest.tab.custom") + " \u00a78(" + I18n.trf("fpstest.custom.count", this.customQueue.size()) + ")"), 12, this.contentTop() + 6, -1);
+                ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a77" + I18n.t("fpstest.custom.body")), 12, this.contentTop() + 18, -5592406);
                 this.renderRowsCustom(ctx, mouseX, mouseY);
                 break;
             default:
@@ -671,10 +671,10 @@ public final class BenchmarkHub extends Screen {
         }
     }
 
-    private void renderCategoryRows(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderCategoryRows(DrawContext ctx, int mouseX, int mouseY) {
         String category = categoryFor(this.active);
         List<Benchmark> list = BenchmarkRegistry.byCategory(category);
-        ctx.drawString(this.font, Component.literal("\u00a7l" + catLabel(category) + " \u00a78(" + I18n.trf("fpstest.category.heading_meta", list.size(), presetLabel(this.preset)) + ")"), 12, this.contentTop() + 6, -1);
+        ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a7l" + catLabel(category) + " \u00a78(" + I18n.trf("fpstest.category.heading_meta", list.size(), presetLabel(this.preset)) + ")"), 12, this.contentTop() + 6, -1);
         int listTop = this.contentTop() + 22 + 30;
         int avail = this.contentBottom() - listTop;
         int visible = Math.max(1, avail / 28);
@@ -689,17 +689,17 @@ public final class BenchmarkHub extends Screen {
             ctx.fill(left, rowY, right, rowY + 28 - 2, hovered == 1 ? 1713548031 : 1073741824);
             ctx.fill(left, rowY, left + 3, rowY + 28 - 2, this.active.accent);
             String label = (b.heavy() ? "\u00a7e\u26a0 \u00a7f" : "\u00a7f") + b.displayName();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, label, rowR - 4 - (left + 8))), left + 8, rowY + 4, -1);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(truncate(this.textRenderer, label, rowR - 4 - (left + 8))), left + 8, rowY + 4, -1);
             String desc = "\u00a78seed " + b.seed() + " \u00b7 " + b.description();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, rowR - 4 - (left + 8))), left + 8, rowY + 14, -5592406);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(truncate(this.textRenderer, desc, rowR - 4 - (left + 8))), left + 8, rowY + 14, -5592406);
         }
 
         if (list.size() > visible) {
-            ctx.drawString(this.font, Component.literal("\u00a78" + I18n.trf("fpstest.row.scroll_hint", Math.min(this.scroll + visible, list.size()), list.size())), this.width - 130, this.contentBottom() + 8, -7829368);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a78" + I18n.trf("fpstest.row.scroll_hint", Math.min(this.scroll + visible, list.size()), list.size())), this.width - 130, this.contentBottom() + 8, -7829368);
         }
     }
 
-    private void renderRowsCustom(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderRowsCustom(DrawContext ctx, int mouseX, int mouseY) {
         List<Benchmark> all = new ArrayList<>(BenchmarkRegistry.all().values());
         int listTop = this.contentTop() + 32 + 30;
         int avail = this.contentBottom() - listTop;
@@ -715,9 +715,9 @@ public final class BenchmarkHub extends Screen {
             int accent = this.accentForCategory(b.category());
             ctx.fill(left, rowY, left + 3, rowY + 28 - 2, accent);
             String label = (b.heavy() ? "\u00a7e\u26a0 \u00a7f" : "\u00a7f") + b.displayName();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, label, right - 96 - (left + 8))), left + 8, rowY + 4, -1);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(truncate(this.textRenderer, label, right - 96 - (left + 8))), left + 8, rowY + 4, -1);
             String desc = "\u00a77" + b.category() + " \u00b7\u00a78 seed " + b.seed();
-            ctx.drawString(this.font, Component.literal(truncate(this.font, desc, right - 96 - (left + 8))), left + 8, rowY + 14, -5592406);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(truncate(this.textRenderer, desc, right - 96 - (left + 8))), left + 8, rowY + 14, -5592406);
         }
     }
 
@@ -802,7 +802,7 @@ public final class BenchmarkHub extends Screen {
         };
     }
 
-    private void renderFooter(GuiGraphics ctx) {
+    private void renderFooter(DrawContext ctx) {
         CinematicRunner r = FpsTestClient.RUNNER;
         int y = this.height - 22;
         int x = 8;
@@ -822,10 +822,10 @@ public final class BenchmarkHub extends Screen {
                 + r.phaseTicks()
                 + "t";
             int textMaxW = x + w - 96 - (x + 18);
-            ctx.drawString(this.font, Component.literal(truncate(this.font, label, Math.max(20, textMaxW))), x + 18, y + 5, 16777215);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal(truncate(this.textRenderer, label, Math.max(20, textMaxW))), x + 18, y + 5, 16777215);
         } else {
             ctx.fill(x + 6, y + 6, x + 12, y + 12, -10048769);
-            ctx.drawString(this.font, Component.literal("\u00a77" + I18n.t("fpstest.footer.ready")), x + 18, y + 5, -5592406);
+            ctx.drawTextWithShadow(this.textRenderer, Text.literal("\u00a77" + I18n.t("fpstest.footer.ready")), x + 18, y + 5, -5592406);
         }
     }
 

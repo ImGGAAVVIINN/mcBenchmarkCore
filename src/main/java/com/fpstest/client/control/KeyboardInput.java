@@ -1,34 +1,34 @@
 package com.fpstest.client.control;
 
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.MinecraftClient;
 
 public class KeyboardInput {
-    private static final Minecraft mc = Minecraft.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static boolean isKeyDown(KeyMapping key) {
-        return key.isDown();
+    public static boolean isKeyDown(KeyBinding key) {
+        return key.isPressed();
     }
 
-    public static boolean isKeyPressed(KeyMapping key) {
-        return key.consumeClick();
+    public static boolean isKeyPressed(KeyBinding key) {
+        return key.wasPressed();
     }
 
     public static double getMouseX() {
-        return mc.mouseHandler.xpos();
+        return mc.mouse.getX();
     }
 
     public static double getMouseY() {
-        return mc.mouseHandler.ypos();
+        return mc.mouse.getY();
     }
 
-    // Mouse delta tracking (Minecraft 1.21.11 doesn't expose getXVelocity/getYVelocity)
+    // Mouse delta tracking
     private static double lastMouseX = 0;
     private static double lastMouseY = 0;
     private static boolean firstFrame = true;
 
     public static double getMouseDeltaX() {
-        double currentX = mc.mouseHandler.xpos();
+        double currentX = mc.mouse.getX();
         double delta = firstFrame ? 0 : currentX - lastMouseX;
         lastMouseX = currentX;
         firstFrame = false;
@@ -36,7 +36,7 @@ public class KeyboardInput {
     }
 
     public static double getMouseDeltaY() {
-        double currentY = mc.mouseHandler.ypos();
+        double currentY = mc.mouse.getY();
         double delta = firstFrame ? 0 : currentY - lastMouseY;
         lastMouseY = currentY;
         return delta;

@@ -4,7 +4,7 @@ import com.fpstest.client.FpsTestClient;
 import java.lang.management.ManagementFactory;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 
 /**
  * Live system usage (CPU / GPU / RAM) for the benchmark testing HUD.
@@ -14,8 +14,8 @@ import net.minecraft.client.Minecraft;
  * <ul>
  *   <li><b>CPU</b> — the Java HotSpot JVM's own process CPU load,
  *       {@code com.sun.management.OperatingSystemMXBean.getProcessCpuLoad()}.</li>
- *   <li><b>GPU</b> — Minecraft's existing GPU utilization probe,
- *       {@code Minecraft.getGpuUtilization()} (an OpenGL timer-query estimate).</li>
+ *   <li><b>GPU</b> — MinecraftClient's existing GPU utilization probe,
+ *       {@code MinecraftClient.getGpuUtilization()} (an OpenGL timer-query estimate).</li>
  *   <li><b>RAM</b> — the heap usage already tracked by {@link MemoryTracker}
  *       (used / max).</li>
  * </ul>
@@ -88,10 +88,10 @@ public final class SystemUsageTracker {
     }
 
     private void sampleGpu() {
-        Minecraft mc = Minecraft.getInstance();
+        MinecraftClient mc = MinecraftClient.getInstance();
         try {
-            double util = mc.getGpuUtilization();
-            // Minecraft's timer-query based probe. When the underlying GPU timing
+            double util = mc.getGpuUtilizationPercentage();
+            // MinecraftClient's timer-query based probe. When the underlying GPU timing
             // API is unavailable it reports 0.0. A 0.0 is only treated as a real
             // reading once we have seen a single non-zero value (proving the probe
             // is live); otherwise the metric stays unavailable ('--'). Once live,

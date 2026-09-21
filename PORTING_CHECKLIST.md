@@ -1,10 +1,34 @@
-# FPS TEST Porting Checklist - fpstest 1.0 → Fabric 1.21.11
+# FPS TEST Porting Checklist - fpstest 1.0 → Fabric 1.21.4
 
-## Current Status Audit
+> **CURRENT STATUS: PORT COMPLETE ✅** (branch `port-1.21.4`, base `aaaaf14`).
+> The checklist state below this banner reflects the original 1.21.11 staging audit.
+> Final verification performed on **1.21.4** — see `PORT_STATUS.md` for the authoritative status.
 
-Based on the porting work completed so far, here's the feature parity audit:
+## Final Verification Record (1.21.4)
 
-### ✅ FULLY PORTED (Compiles and Functional)
+### ✅ Verified working at runtime (launch + full benchmark suite, 0 errors)
+
+**Build & Launch:**
+- [x] `./gradlew compileJava` — 0 errors
+- [x] `./gradlew build` — SUCCESS, `build/libs/mcbenchmarkcore-1.0.0.jar` (437 KB) + `-sources.jar`
+- [x] `runClient` launches: **Minecraft 1.21.4 + Fabric Loader 0.16.14, 55 mods, fpstest 1.0**
+- [x] **43 benchmarks registered** — `[fpstest] MC Benchmark Core loaded`
+- [x] **0 mixin apply failures** — SpongePowered MIXIN 0.8.7, all `defaultRequire: 1` satisfied
+
+**Functional checks exercised by the full-suite run (all produced real metrics):**
+- [x] `particle_cycle` — 140.9 fps avg
+- [x] Entity ring benchmarks (cows / sheep / zombies / pigs / villagers) — 30–165 fps
+- [x] `comparator_storage` — 197 fps
+- [x] `pack_shader_showcase` — **all 4 phases**: LowEnd 136 fps, LowEnd+PBR 31.9 fps, HighEnd 30 fps, HighEnd+PBR 26.9 fps
+- [x] Resource-pack reload path (`file/pbr.zip` applied via `setEnabledProfiles` / `getResourcePackManager` / `reloadResources`)
+- [x] ESC abort path — graceful placeholder recording, no crash
+- [x] Session report export (`report.json` / `report.md` / `fps.csv` / `session.csv` / `system.json`)
+
+### ⏳ Not manually exercised (needs manual GUI check)
+- [ ] In-game GUI interaction (BenchmarkHub, ReportsScreen, SettingsScreen clicks) — screens compile & instantiate; button interactions not manually clicked during the headless-style verification run
+- [ ] **Fixed 2026-09-14**: `BenchmarkResultsScreen` text was unreadable (blurred) — in 1.21.4 vanilla `Screen.renderBackground()` now applies a Gaussian menu-blur; the screen was painting its content *before* `super.render()` (which applies the blur), so the blur covered the freshly-drawn text. **Fix**: reorder — call `super.render()` (blur + buttons) first, then paint the report content on top. `render()` rewritten; `BenchmarkHub`, `ReportsScreen`, `SettingsScreen` already used the correct order. Compiles clean, `build` SUCCESS. Manual relaunch + results-screen view needed to visually confirm crisp text.
+
+---
 
 **Mod Metadata:**
 - [x] `fabric.mod.json` - Mod ID, version, entrypoints, mixins, access widener

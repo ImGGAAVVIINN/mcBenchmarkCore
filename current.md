@@ -5,6 +5,11 @@ authors:
   - cassiancc
 ---
 
+> **NOTE**: This file is the Fabric porting guide for 1.21.11 (kept for reference). The actual port in
+> this workspace targets **1.21.4** on branch `port-1.21.4` (base commit `aaaaf14`) and is **COMPLETE** —
+> see `PORT_STATUS.md` and `PORTING_CHECKLIST.md` for the authoritative status. Version matrix:
+> MC 1.21.4, Yarn 1.21.4+build.8 (v2), Loader 0.16.14, Fabric API 0.119.4+1.21.4, Loom 1.9.2.
+
 Minecraft is a game that's constantly evolving, with new versions changing the game in ways that affect modders. This article covers the general steps one might follow to update their mod to the newest stable version of Minecraft.
 
 ::: info

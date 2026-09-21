@@ -1,0 +1,46 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+particle_cycle,Particle cycle (7 types → all together),Particles,140.933,32.826,22.078,1.086,0,432
+entity_cows,Cows ×200 ring,Entities,163.705,40.469,18.966,1.110,1,636
+entity_sheep,Sheep ×200 ring,Entities,144.554,28.437,34.581,1.066,4,188
+entity_zombies,Zombies ×150 ring (AI on),Entities,160.249,46.114,19.284,1.096,2,543
+entity_pigs,Pigs ×250 ring,Entities,165.493,39.285,19.358,1.145,1,192
+entity_villagers,Villagers ×100 ring,Entities,29.954,28.822,34.657,0.903,0,364
+entity_chickens,Chickens ×300 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_chickens,Chickens ×300 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_xp,XP orbs ×500 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+chunk_savanna,Savanna flyby,Chunks,0.000,0.000,0.000,0.000,0,0
+idle_baseline,Idle Baseline,Baseline,0.000,0.000,0.000,0.000,0,0
+idle_baseline,Idle Baseline,Baseline,0.000,0.000,0.000,0.000,0,0
+idle_baseline,Idle Baseline,Baseline,0.000,0.000,0.000,0.000,0,0
+idle_baseline,Idle Baseline,Baseline,0.000,0.000,0.000,0.000,0,0
+idle_baseline,Idle Baseline,Baseline,0.000,0.000,0.000,0.000,0,0
+comparator_storage,Comparator storage (8×8 chests + comparators),Block-Entities,196.990,41.617,20.972,0.796,1,12
+pack_shader_showcase,LowEnd Shader,Showcase,136.010,25.599,35.192,1.217,25,763
+pack_shader_showcase,LowEnd Shader + PBR Textures,Showcase,31.906,18.955,49.913,6.440,17,152
+pack_shader_showcase,HighEnd Shader,Showcase,29.969,25.334,36.254,1.120,16,729
+pack_shader_showcase,HighEnd Shader + PBR Textures,Showcase,26.878,8.809,111.430,6.446,15,63

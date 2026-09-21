@@ -8,16 +8,16 @@ import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.server.IntegratedServer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.text.Text;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.world.World;
+import net.minecraft.world.TeleportTarget;
+import net.minecraft.util.math.Vec3d;
 
 public class EphemeralWorldCommand {
     public static void register() {
@@ -40,9 +40,9 @@ public class EphemeralWorldCommand {
         FabricClientCommandSource source = (FabricClientCommandSource) context.getSource();
         
         // Check if we have an integrated server (singleplayer)
-        Minecraft minecraft = source.getClient();
-        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
+        MinecraftClient minecraft = source.getClient();
+        if (minecraft == null || minecraft.getServer() == null) {
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
@@ -51,7 +51,7 @@ public class EphemeralWorldCommand {
         long testSeed = 12345L;
         EphemeralWorld.create(testSeed, WorldType.OVERWORLD);
         
-        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Ephemeral world created with seed " + testSeed + ". The client will now load the new world."));
+        source.sendFeedback(Text.literal("[MinecraftClient Benchmark Core] Ephemeral world created with seed " + testSeed + ". The client will now load the new world."));
         return 1;
     }
 
@@ -60,16 +60,16 @@ public class EphemeralWorldCommand {
         FabricClientCommandSource source = (FabricClientCommandSource) context.getSource();
         
         // Check if we have an integrated server (singleplayer)
-        Minecraft minecraft = source.getClient();
-        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
+        MinecraftClient minecraft = source.getClient();
+        if (minecraft == null || minecraft.getServer() == null) {
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
         // Destroy the ephemeral world (deletes the save directory)
         EphemeralWorld.destroy();
         
-        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Ephemeral world destroyed."));
+        source.sendFeedback(Text.literal("[MinecraftClient Benchmark Core] Ephemeral world destroyed."));
         return 1;
     }
 
@@ -78,57 +78,57 @@ public class EphemeralWorldCommand {
         FabricClientCommandSource source = (FabricClientCommandSource) context.getSource();
         
         // Check if we have an integrated server (singleplayer)
-        Minecraft minecraft = source.getClient();
-        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] No integrated server running. Please load a singleplayer world first."));
+        MinecraftClient minecraft = source.getClient();
+        if (minecraft == null || minecraft.getServer() == null) {
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] No integrated server running. Please load a singleplayer world first."));
             return 0;
         }
         
-        IntegratedServer server = minecraft.getSingleplayerServer();
+        IntegratedServer server = minecraft.getServer();
         
         // Get the local player (client-side) to find the corresponding server-side player
-        net.minecraft.client.player.LocalPlayer localPlayer = source.getPlayer();
+        net.minecraft.client.network.ClientPlayerEntity localPlayer = source.getPlayer();
         if (localPlayer == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] No local player found."));
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] No local player found."));
             return 0;
         }
         
         // Get the server-side player from the integrated server using the local player's UUID
-        ServerPlayer player = server.getPlayerList().getPlayer(localPlayer.getUUID());
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(localPlayer.getUuid());
         if (player == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] No server-side player found for local player."));
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] No server-side player found for local player."));
             return 0;
         }
         
         // Get the overworld dimension (the ephemeral world is the current singleplayer world)
-        ServerLevel overworld = server.getLevel(Level.OVERWORLD);
+        ServerWorld overworld = server.getWorld(World.OVERWORLD);
         if (overworld == null) {
-            source.sendError(Component.literal("[Minecraft Benchmark Core] Overworld not found in server."));
+            source.sendError(Text.literal("[MinecraftClient Benchmark Core] Overworld not found in server."));
             return 0;
         }
         
-        // Create TeleportTransition to move player to overworld at 0, 100, 0
-        Vec3 targetPos = new Vec3(0, 100, 0);
-        Vec3 deltaMovement = Vec3.ZERO;
-        TeleportTransition transition = new TeleportTransition(
+        // Create TeleportTarget to move player to overworld at 0, 100, 0
+        Vec3d targetPos = new Vec3d(0, 100, 0);
+        Vec3d deltaMovement = Vec3d.ZERO;
+        TeleportTarget transition = new TeleportTarget(
             overworld,
             targetPos,
             deltaMovement,
             0.0f, // yRot
             0.0f, // xRot
-            TeleportTransition.DO_NOTHING
+            TeleportTarget.NO_OP
         );
         
         // Attempt to teleport the player
         boolean teleportResult = false;
         try {
-            player.teleport(transition);
+            player.teleportTo(transition);
             teleportResult = true;
         } catch (Exception e) {
-            FpsTestClient.LOG.error("[Minecraft Benchmark Core] Teleport failed with exception", e);
+            FpsTestClient.LOG.error("[MinecraftClient Benchmark Core] Teleport failed with exception", e);
         }
         
-        source.sendFeedback(Component.literal("[Minecraft Benchmark Core] Attempted to teleport to overworld at 0, 100, 0. Teleport call success: " + teleportResult));
+        source.sendFeedback(Text.literal("[MinecraftClient Benchmark Core] Attempted to teleport to overworld at 0, 100, 0. Teleport call success: " + teleportResult));
         return 1;
     }
 }
