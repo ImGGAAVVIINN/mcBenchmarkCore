@@ -45,8 +45,8 @@ public final class DistantHorizonsVoxyController {
     private static final String VOXY_MOD_ID = "voxy";
 
     // Target values for chunk-loading test
-    private static final int DH_TARGET_CHUNK_RENDER_DISTANCE = 4096;
-    private static final float VOXY_TARGET_SECTION_RENDER_DISTANCE = 1024.0f;
+    private static final int DH_TARGET_CHUNK_RENDER_DISTANCE = 1024;
+    private static final float VOXY_TARGET_SECTION_RENDER_DISTANCE = 32.0f;
 
     // Saved original state
     private boolean dhModPresent;
