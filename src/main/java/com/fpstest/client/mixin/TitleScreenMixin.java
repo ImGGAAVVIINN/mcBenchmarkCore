@@ -7,6 +7,7 @@ import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
@@ -39,23 +40,18 @@ public abstract class TitleScreenMixin extends Screen {
     }
 
     /**
-     * Adds the "Run Benchmark" button as a PlainTextButton at the top-right
-     * so FancyMenu can discover and customize it (Button widgets are skipped by FancyMenu).
+     * Adds the "Run Benchmark" button as a vanilla Button widget at the top-right.
+     * Uses the standard Minecraft button with gray background and hover/pressed states.
      */
     private void fpstest$addRunBenchmarkWidget() {
-        String buttonText = I18n.tr("fpstest.button.run_benchmark");
-        int width = this.font.width(buttonText) + 20; // add padding
-        int height = this.font.lineHeight + 4; // add padding
-        int x = this.width - width - 4;
-        int y = 4;
-        
-        PlainTextButton benchmarkWidget = new PlainTextButton(
-            x, y, width, height,
-            Component.literal(buttonText),
-            b -> BenchmarkHub.startFullBenchmark(),
-            this.font
-        );
-        this.addRenderableWidget(benchmarkWidget);
+        Button btn = Button.builder(
+                Component.literal(I18n.tr("fpstest.button.run_benchmark")),
+                b -> BenchmarkHub.startFullBenchmark()
+        )
+        .bounds(this.width - 110, 4, 100, 20)
+        .build();
+
+        this.addRenderableWidget(btn);
     }
 
     /**
