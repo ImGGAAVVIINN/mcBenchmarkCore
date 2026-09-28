@@ -208,13 +208,13 @@ public final class CinematicRunner {
                         dhVoxyEnabledForChunks = false;
                     }
                 }
-                if ("Chunks".equals(newCategory)) {
+                if ("Chunks".equals(newCategory) && !"static_dense_forest".equals(next.bench.id())) {
                     // Entering Chunks category - enable DH/Voxy
                     LOG.info("[MC Benchmark Core] entering Chunks category, enabling DH/Voxy");
                     enableDhVoxyForChunks.run();
                     dhVoxyEnabledForChunks = true;
                 }
-            } else if (previousCategory.isEmpty() && "Chunks".equals(newCategory)) {
+            } else if (previousCategory.isEmpty() && "Chunks".equals(newCategory) && !"static_dense_forest".equals(next.bench.id())) {
                 // First benchmark is in Chunks category
                 LOG.info("[MC Benchmark Core] first benchmark is Chunks category, enabling DH/Voxy");
                 enableDhVoxyForChunks.run();
