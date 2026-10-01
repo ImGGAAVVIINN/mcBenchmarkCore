@@ -3,6 +3,8 @@ package com.fpstest.client;
 import com.fpstest.client.bench.BenchmarkRegistry;
 import com.fpstest.client.bench.CinematicRunner;
 import com.fpstest.client.bench.world.EphemeralWorld;
+import com.fpstest.client.command.EphemeralWorldCommand;
+import com.fpstest.client.command.FullBenchmarkCommand;
 import com.fpstest.client.gui.BenchmarkHub;
 import com.fpstest.client.hud.PerfHud;
 import com.fpstest.client.metrics.FpsTracker;
@@ -31,6 +33,7 @@ public class FpsTestClient implements ClientModInitializer {
     public static final MemoryTracker MEMORY = new MemoryTracker();
     public static final SystemUsageTracker SYSTEM_USAGE = new SystemUsageTracker();
     public static final CinematicRunner RUNNER = new CinematicRunner();
+    public static final com.fpstest.client.bench.DistantHorizonsVoxyController DH_VOXY_CONTROLLER = new com.fpstest.client.bench.DistantHorizonsVoxyController();
 
     private boolean escWasDown = false;
     private boolean hotkeyWasDown = false;
@@ -41,6 +44,9 @@ public class FpsTestClient implements ClientModInitializer {
     public void onInitializeClient() {
         BenchmarkRegistry.bootstrap();
         LOG.info("MC Benchmark Core loaded — {} benchmarks registered", BenchmarkRegistry.all().size());
+
+        EphemeralWorldCommand.register();
+        FullBenchmarkCommand.register();
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             TICKS.onTickStart();

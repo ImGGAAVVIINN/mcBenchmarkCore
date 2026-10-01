@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Minecraft Benchmark Client",
+			"type": "shell",
+			"command": "./gradlew runClient",
+			"args": [
+				"runClient"
+			],
+			"isBackground": true,
+			"group": "run"
+		}
+	]
+}

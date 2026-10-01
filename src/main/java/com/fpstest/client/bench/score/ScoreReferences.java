@@ -35,26 +35,27 @@ public final class ScoreReferences {
     public static final double SCALE = 10000.0;
 
     // ---- GPU references (FPS, higher is better) ----
-    /** Reference average FPS for ordinary world/terrain rendering (chunk flybys etc.). */
-    public static final double GPU_RASTER_FPS = 8.0;
-    /** Reference average FPS for shader-heavy rendering. */
-    public static final double GPU_SHADER_FPS = 6.0;
-    /** Reference average FPS for PBR / texture-material-heavy rendering. */
-    public static final double GPU_PBR_FPS = 7.0;
-    /** Reference average FPS for particle / effects rendering. */
-    public static final double GPU_EFFECTS_FPS = 8.0;
+    /** Reference average FPS for ordinary world/terrain rendering (chunk flybys etc.). Calibrated: hmean=9.6921, ref=4.7550, target GPU=20383 pts */
+    public static final double GPU_RASTER_FPS = 4.7550;
+    /** Reference average FPS for shader-heavy rendering. Calibrated: hmean=9.8939, ref=4.8540, target GPU=20383 pts */
+    public static final double GPU_SHADER_FPS = 4.8540;
+    /** Reference average FPS for PBR / texture-material-heavy rendering. Calibrated: hmean=9.8534, ref=4.8341, target GPU=20383 pts */
+    public static final double GPU_PBR_FPS = 4.8341;
+    /** Reference average FPS for particle / effects rendering. Calibrated: hmean=17.7080, ref=8.6876, target GPU=20383 pts */
+    public static final double GPU_EFFECTS_FPS = 8.6876;
 
     // ---- CPU references (FPS, higher is better) ----
-    /** Reference average FPS for single-thread / client-tick workloads. */
-    public static final double CPU_SINGLE_THREAD_FPS = 12.0;
-    /** Reference average FPS for entity-simulation / physics / game-logic workloads. */
-    public static final double CPU_SIMULATION_FPS = 10.0;
+    /** Reference average FPS for single-thread / client-tick workloads. Calibrated: hmean=9.7847, ref=8.0091, target CPU=12217 pts */
+    public static final double CPU_SINGLE_THREAD_FPS = 8.0091;
+    /** Reference average FPS for entity-simulation / physics / game-logic workloads. Calibrated: hmean=21.4627, ref=17.5679, target CPU=12217 pts */
+    public static final double CPU_SIMULATION_FPS = 17.5679;
     /**
      * Reference chunk-preload duration (ms) for terrain-generation workloads.
      * Lower is better; a machine that generates the benchmark's world area with
      * this much preload time scores exactly {@link #SCALE} points.
+     * Calibrated: hmean=6.2694 ms, ref=7.66, target CPU=12217 pts.
      */
-    public static final double CPU_WORLD_PRELOAD_MS = 400.0;
+    public static final double CPU_WORLD_PRELOAD_MS = 7.66;
 
     // ---- CPU — Parallel ----
     /**
@@ -64,40 +65,36 @@ public final class ScoreReferences {
      * parallel server work at an average tick of this many milliseconds scores
      * exactly {@link #SCALE} points.
      */
-    public static final double CPU_PARALLEL_TICK_TIME_MS = 10.0;
+    public static final double CPU_PARALLEL_TICK_TIME_MS = 0.7689;
 
     // ---- RAM references ----
-    /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). */
-    public static final double RAM_JVM_GC_TIME_MS = 100.0;
+    /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). Calibrated: hmean=20.96 ms, ref=24.04, target RAM=11469 pts */
+    public static final double RAM_JVM_GC_TIME_MS = 24.04;
     /**
      * Reference heap-growth footprint (MB) per test (peak minus start) for the
      * Allocation workload. Lower is better; a machine that allocates exactly
      * this much heap during a test scores {@link #SCALE} points.
+     * Calibrated: hmean=180.26 MB, ref=206.75, target RAM=11469 pts.
      */
-    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 512.0;
+    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 206.75;
     /**
      * Reference heap-allocation rate (MiB/s) per test (heap peak minus start,
      * divided by test duration) for the memory Bandwidth workload. Higher is
      * better; a machine that sustains exactly this allocation rate during a
-     * test scores {@link #SCALE} points. Calibrated like the other references
-     * against a slow reference machine (compare the 6-8 FPS GPU references):
-     * a reference machine sustaining ~5 MiB/s of heap allocation scores
-     * exactly 10,000 points, and a normal modern machine's measured rates
-     * (roughly 5-60 MiB/s on the benchmark's allocation-heavy tests) score in
-     * the same 10,000-13,000 point range as the other RAM workloads.
+     * test scores {@link #SCALE} points.
+     * Calibrated: hmean=6.3604 MB/s, ref=5.5457, target RAM=11469 pts.
      */
-    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 5.0;
+    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 5.5457;
     /**
      * Reference average GC stop-the-world pause (ms per GC event) for the
      * memory Latency workload. A test's GC-pause length is the measured
      * memory-stall latency: total GC time divided by GC event count for that
      * test (only tests that actually triggered GC contribute). Lower is better;
      * a machine whose garbage collector pauses for exactly this long per event
-     * during a test scores {@link #SCALE} points. Calibrated against the
-     * reference run: chunk-generation tests (the heaviest allocators) pause
-     * ~6-8 ms per event, entity/simulation tests ~2-4 ms.
+     * during a test scores {@link #SCALE} points.
+     * Calibrated: hmean=4.2756 ms, ref=4.9037, target RAM=11469 pts.
      */
-    public static final double RAM_LATENCY_GC_PAUSE_MS = 6.0;
+    public static final double RAM_LATENCY_GC_PAUSE_MS = 4.9037;
 
     private ScoreReferences() {
     }

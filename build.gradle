@@ -139,7 +139,3 @@ tasks.register('debugClientClasspath') {
         }
     }
 }
-
-runClient {
-    jvmArgs "-Xmx4096m", "-Xms4096m"
-}
