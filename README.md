@@ -6,6 +6,7 @@ For setup instructions, please see the [Fabric Documentation page](https://docs.
 
 ## todo
 - [ ] in benchmark loading name dynamntic (core/non core)
-- [ ] 70 % actual gpu = 110% in hud
+- [ ] 70% actual gpu = 110% in hud
+- [ ] 88% actual cpu = 50% in hud
 
  
