@@ -6,6 +6,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import net.fabricmc.api.EnvType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.fabricmc.api.Environment;
 
 /**
@@ -58,6 +60,8 @@ public final class BenchmarkScoreCalculator {
 
     private BenchmarkScoreCalculator() {
     }
+
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkScoreCalculator.class);
 
     /**
      * Calculates the score for a complete benchmark session.
@@ -128,6 +132,42 @@ public final class BenchmarkScoreCalculator {
 
         // 4. Overall = weighted harmonic mean of the three categories.
         double overall = overallScore(gpu, cpu, ram);
+
+        // Diagnostic: print the final master report score for verification
+        LOG.info("=== FINAL MASTER REPORT SCORE ===");
+        LOG.info("  Overall = {}", (long) overall);
+        LOG.info("  GPU     = {}", (long) gpu);
+        LOG.info("  CPU     = {}", (long) cpu);
+        LOG.info("  RAM     = {}", (long) ram);
+        LOG.info("--- Workload breakdown ---");
+        for (ScoreWorkload w : ScoreWorkload.values()) {
+            BenchmarkScore.WorkloadScore ws = workloads.get(w);
+            double wsScore = ws != null ? ws.score() : Double.NaN;
+            LOG.info("  {} (w={}{}) = {}", w.name(), String.format("%.2f", w.weight), w.category, (long) wsScore);
+            if (ws != null) {
+                for (BenchmarkScore.TestScore t : ws.tests()) {
+                    LOG.info("    - {} : {} pts (meas={} ref={})", t.testId(), (long) t.points(), t.measured(), t.reference());
+                }
+            }
+        }
+        LOG.info("================================");
+        System.out.println("=== FINAL MASTER REPORT SCORE ===");
+        System.out.println("Overall = " + (long) overall);
+        System.out.println("GPU     = " + (long) gpu);
+        System.out.println("CPU     = " + (long) cpu);
+        System.out.println("RAM     = " + (long) ram);
+        System.out.println("--- Workload breakdown ---");
+        for (ScoreWorkload w : ScoreWorkload.values()) {
+            BenchmarkScore.WorkloadScore ws = workloads.get(w);
+            double wsScore = ws != null ? ws.score() : Double.NaN;
+            System.out.printf("  %s (w=%.2f%s) = %d%n", w.name(), w.weight, w.category, (long) wsScore);
+            if (ws != null) {
+                for (BenchmarkScore.TestScore t : ws.tests()) {
+                    System.out.printf("    - %s : %d pts (meas=%.4g ref=%.4g)%n", t.testId(), (long) t.points(), t.measured(), t.reference());
+                }
+            }
+        }
+        System.out.println("================================");
 
         return new BenchmarkScore(overall, gpu, cpu, ram, Map.copyOf(workloads));
     }

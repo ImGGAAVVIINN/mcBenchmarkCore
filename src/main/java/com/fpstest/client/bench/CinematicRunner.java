@@ -215,8 +215,17 @@ public final class CinematicRunner {
                     dhVoxyEnabledForChunks = true;
                 }
             } else if (previousCategory.isEmpty() && "Chunks".equals(newCategory) && !"static_dense_forest".equals(next.bench.id())) {
-                // First benchmark is in Chunks category
+                // First benchmark is in Chunks category (not the baseline static_dense_forest)
                 LOG.info("[MC Benchmark Core] first benchmark is Chunks category, enabling DH/Voxy");
+                enableDhVoxyForChunks.run();
+                dhVoxyEnabledForChunks = true;
+            } else if ("Chunks".equals(newCategory)
+                    && dhVoxyEnabledForChunks == false
+                    && previousCategory.equals("Chunks")
+                    && !"static_dense_forest".equals(next.bench.id())) {
+                // Transitioning FROM a Chunks benchmark (like static_dense_forest) TO another Chunks benchmark
+                // Enable DH/Voxy now that the baseline test has finished
+                LOG.info("[MC Benchmark Core] entering Chunks category after baseline, enabling DH/Voxy");
                 enableDhVoxyForChunks.run();
                 dhVoxyEnabledForChunks = true;
             }
@@ -375,6 +384,13 @@ public final class CinematicRunner {
                     int ready = countLoadedChunksAroundCamera(mc);
                     preloadedChunks = ready;
                     int target = desiredLoadedChunks();
+                    // Log diagnostic at preload start
+                    if (phaseTicks == 1) {
+                        LodRuntimeDiagnostic.takeObservation(
+                            current.category() + ":" + current.id() + ":CHUNK_PRELOAD",
+                            mc.player != null ? mc.player.tickCount : 0
+                        );
+                    }
                     if (ready >= target || phaseTicks >= plan.preloadTicks) {
                         preloadDurationMs = (System.nanoTime() - preloadStartNanos) / 1000000L;
                         state = State.WARMUP;
@@ -387,6 +403,13 @@ public final class CinematicRunner {
                     phaseTicks++;
                     CinematicState.pathTick++;
                     safeTick();
+                    // Log diagnostic at warmup start
+                    if (phaseTicks == 1) {
+                        LodRuntimeDiagnostic.takeObservation(
+                            current.category() + ":" + current.id() + ":WARMUP",
+                            mc.player != null ? mc.player.tickCount : 0
+                        );
+                    }
                     if (phaseTicks >= plan.warmupTicks) {
                         FpsTestClient.FPS.stopAndGetSamples();
                         FpsTestClient.TICKS.stopAndGetSamples();
@@ -402,6 +425,11 @@ public final class CinematicRunner {
                     phaseTicks++;
                     CinematicState.pathTick++;
                     safeTick();
+                    // Sample DH/Voxy runtime state every tick during sampling
+                    LodRuntimeDiagnostic.takeObservation(
+                        current.category() + ":" + current.id() + ":SAMPLING",
+                        mc.player != null ? mc.player.tickCount : 0
+                    );
                     if (phaseTicks >= plan.sampleTicks) {
                         entityCountAtSampleEnd = countLevelEntities(mc);
                         finishSampling();
@@ -578,6 +606,12 @@ public final class CinematicRunner {
             "[MC Benchmark Core] {} done — avg {} fps, 1%low {} fps, tick {} ms",
             current.id(), (int) r.fps().avg(), (int) com.fpstest.client.metrics.Stats.lowPercentFps(r.frameTimesMs(), 0.01), (int) r.tickTimeMs().avg()
         );
+        // Log diagnostic snapshot after sampling completes
+        Minecraft mc = Minecraft.getInstance();
+        LodRuntimeDiagnostic.takeObservation(
+            current.category() + ":" + current.id() + ":END",
+            mc.player != null ? mc.player.tickCount : 0
+        );
     }
 
     private void disconnectWorld(Minecraft mc) {
@@ -625,6 +659,8 @@ public final class CinematicRunner {
             disableDhVoxyForChunks.run();
             dhVoxyEnabledForChunks = false;
         }
+        // Print diagnostic report at session end
+        LodRuntimeDiagnostic.printFinalResult();
         // Session-level cleanup (restore the user's original config) before showing results.
         if (sessionCleanup != null) {
             try {
@@ -684,6 +720,8 @@ public final class CinematicRunner {
             mc.getTutorial().setStep(TutorialSteps.NONE);
         } catch (Throwable ignored) {
         }
+        // Reset diagnostic at benchmark start
+        LodRuntimeDiagnostic.resetObservations();
         try {
             current.prepare(ctx);
         } catch (Throwable t) {
