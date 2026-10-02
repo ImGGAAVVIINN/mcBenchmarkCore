@@ -619,6 +619,14 @@ public final class CinematicRunner {
         CinematicState.holdPose = false;
         CinematicState.active = false;
         CinematicState.path = null;
+        // Disable DH/Voxy before disconnecting to avoid a race condition where the DH
+        // renderer is still active during world teardown, causing a native SIGSEGV
+        // in the OpenGL driver (observed on NVIDIA with Distant Horizons).
+        if (dhVoxyEnabledForChunks) {
+            LOG.info("[MC Benchmark Core] disabling DH/Voxy before disconnect");
+            disableDhVoxyForChunks.run();
+            dhVoxyEnabledForChunks = false;
+        }
         try {
             if (mc.level != null) {
                 mc.level.disconnect(Component.literal(ModDetector.getBenchmarkTitle(" — finished")));
