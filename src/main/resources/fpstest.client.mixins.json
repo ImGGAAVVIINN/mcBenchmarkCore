@@ -16,7 +16,6 @@
 		"FallingBlockEntityMixin",
 		"ItemInHandRendererMixin",
 		"GuiMixin",
-		"MinecraftGpuUtilizationMixin",
 		"MinecraftServerAccessor",
 		"GlCommandEncoderMixin",
                 "GlCommandEncoderAccessor"
