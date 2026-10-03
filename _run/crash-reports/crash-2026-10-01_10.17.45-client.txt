@@ -1,0 +1,282 @@
+---- Minecraft Crash Report ----
+// Don't do that.
+
+Time: 2026-10-01 10:17:45
+Description: Unexpected error
+
+java.util.ServiceConfigurationError: net.caffeinemc.mods.sodium.client.services.FluidRendererFactory: Error accessing configuration file
+	at java.base/java.util.ServiceLoader.fail(ServiceLoader.java:586)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.parse(ServiceLoader.java:1180)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.nextProviderClass(ServiceLoader.java:1213)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.hasNextService(ServiceLoader.java:1228)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.hasNext(ServiceLoader.java:1273)
+	at java.base/java.util.ServiceLoader$2.hasNext(ServiceLoader.java:1309)
+	at java.base/java.util.ServiceLoader$3.hasNext(ServiceLoader.java:1393)
+	at java.base/java.util.ServiceLoader.findFirst(ServiceLoader.java:1812)
+	at knot//net.caffeinemc.mods.sodium.client.services.Services.load(Services.java:17)
+	at knot//net.caffeinemc.mods.sodium.client.services.FluidRendererFactory.<clinit>(FluidRendererFactory.java:11)
+	at knot//net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry.installOverrides(ColorProviderRegistry.java:46)
+	at knot//net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry.<init>(ColorProviderRegistry.java:33)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache.<init>(BlockRenderCache.java:28)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildContext.<init>(ChunkBuildContext.java:14)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder.<init>(ChunkBuilder.java:34)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.RenderSectionManager.<init>(RenderSectionManager.java:128)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.initRenderer(SodiumWorldRenderer.java:311)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.loadLevel(SodiumWorldRenderer.java:126)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.setLevel(SodiumWorldRenderer.java:118)
+	at knot//net.minecraft.client.renderer.LevelRenderer.handler$bce000$sodium$onWorldChanged(LevelRenderer.java:7169)
+	at knot//net.minecraft.client.renderer.LevelRenderer.setLevel(LevelRenderer.java:274)
+	at knot//net.minecraft.client.Minecraft.updateLevelInEngines(Minecraft.java:2232)
+	at knot//net.minecraft.client.Minecraft.updateLevelInEngines(Minecraft.java:2222)
+	at knot//net.minecraft.client.Minecraft.setLevel(Minecraft.java:2092)
+	at knot//net.minecraft.client.multiplayer.ClientPacketListener.handleLogin(ClientPacketListener.java:523)
+	at knot//net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:67)
+	at knot//net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java)
+	at knot//net.minecraft.network.PacketProcessor$ListenerAndPacket.handle(PacketProcessor.java:51)
+	at knot//net.minecraft.network.PacketProcessor.processQueuedPackets(PacketProcessor.java:37)
+	at knot//net.minecraft.client.Minecraft.runTick(Minecraft.java:1259)
+	at knot//net.minecraft.client.Minecraft.run(Minecraft.java:908)
+	at knot//net.minecraft.client.main.Main.main(Main.java:224)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:514)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+Caused by: java.nio.file.NoSuchFileException: /home/ascend/randomBullshit/mcBenchmarkCore/run/.fabric/processedMods/sodium-0.8.12+mc1.21.11-64b5720b4b825f21.jar
+	at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:92)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111)
+	at java.base/sun.nio.fs.UnixFileAttributeViews$Basic.readAttributes(UnixFileAttributeViews.java:55)
+	at java.base/sun.nio.fs.UnixFileSystemProvider.readAttributes(UnixFileSystemProvider.java:171)
+	at java.base/sun.nio.fs.LinuxFileSystemProvider.readAttributes(LinuxFileSystemProvider.java:99)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1854)
+	at java.base/java.util.zip.ZipFile$Source.get(ZipFile.java:1445)
+	at java.base/java.util.zip.ZipFile$CleanableResource.<init>(ZipFile.java:724)
+	at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:251)
+	at java.base/java.util.zip.ZipFile.<init>(ZipFile.java:180)
+	at java.base/java.util.jar.JarFile.<init>(JarFile.java:345)
+	at java.base/sun.net.www.protocol.jar.URLJarFile.<init>(URLJarFile.java:100)
+	at java.base/sun.net.www.protocol.jar.URLJarFile.getJarFile(URLJarFile.java:69)
+	at java.base/sun.net.www.protocol.jar.JarFileFactory.get(JarFileFactory.java:168)
+	at java.base/sun.net.www.protocol.jar.JarFileFactory.getOrCreate(JarFileFactory.java:91)
+	at java.base/sun.net.www.protocol.jar.JarURLConnection.connect(JarURLConnection.java:117)
+	at java.base/sun.net.www.protocol.jar.JarURLConnection.getInputStream(JarURLConnection.java:160)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.parse(ServiceLoader.java:1172)
+	... 34 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: Render thread
+Stacktrace:
+	at java.base/java.util.ServiceLoader.fail(ServiceLoader.java:586)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.parse(ServiceLoader.java:1180)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.nextProviderClass(ServiceLoader.java:1213)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.hasNextService(ServiceLoader.java:1228)
+	at java.base/java.util.ServiceLoader$LazyClassPathLookupIterator.hasNext(ServiceLoader.java:1273)
+	at java.base/java.util.ServiceLoader$2.hasNext(ServiceLoader.java:1309)
+	at java.base/java.util.ServiceLoader$3.hasNext(ServiceLoader.java:1393)
+	at java.base/java.util.ServiceLoader.findFirst(ServiceLoader.java:1812)
+	at knot//net.caffeinemc.mods.sodium.client.services.Services.load(Services.java:17)
+	at knot//net.caffeinemc.mods.sodium.client.services.FluidRendererFactory.<clinit>(FluidRendererFactory.java:11)
+	at knot//net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry.installOverrides(ColorProviderRegistry.java:46)
+	at knot//net.caffeinemc.mods.sodium.client.model.color.ColorProviderRegistry.<init>(ColorProviderRegistry.java:33)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache.<init>(BlockRenderCache.java:28)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.ChunkBuildContext.<init>(ChunkBuildContext.java:14)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder.<init>(ChunkBuilder.java:34)
+	at knot//net.caffeinemc.mods.sodium.client.render.chunk.RenderSectionManager.<init>(RenderSectionManager.java:128)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.initRenderer(SodiumWorldRenderer.java:311)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.loadLevel(SodiumWorldRenderer.java:126)
+	at knot//net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.setLevel(SodiumWorldRenderer.java:118)
+	at knot//net.minecraft.client.renderer.LevelRenderer.handler$bce000$sodium$onWorldChanged(LevelRenderer.java:7169)
+	at knot//net.minecraft.client.renderer.LevelRenderer.setLevel(LevelRenderer.java:274)
+	at knot//net.minecraft.client.Minecraft.updateLevelInEngines(Minecraft.java:2232)
+	at knot//net.minecraft.client.Minecraft.updateLevelInEngines(Minecraft.java:2222)
+	at knot//net.minecraft.client.Minecraft.setLevel(Minecraft.java:2092)
+	at knot//net.minecraft.client.multiplayer.ClientPacketListener.handleLogin(ClientPacketListener.java:523)
+	at knot//net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java:67)
+	at knot//net.minecraft.network.protocol.game.ClientboundLoginPacket.handle(ClientboundLoginPacket.java)
+	at knot//net.minecraft.network.PacketProcessor$ListenerAndPacket.handle(PacketProcessor.java:51)
+
+-- Uptime --
+Details:
+	JVM uptime: 26.604s
+	Wall uptime: 12.177s
+	High-res time: 11.404s
+	Client ticks: 123 ticks / 6.150s
+Stacktrace:
+	at knot//net.minecraft.client.Minecraft.fillReport(Minecraft.java:2331)
+	at knot//net.minecraft.client.Minecraft.emergencySaveAndCrash(Minecraft.java:972)
+	at knot//net.minecraft.client.Minecraft.run(Minecraft.java:931)
+	at knot//net.minecraft.client.main.Main.main(Main.java:224)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:514)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+
+-- Affected level --
+Details:
+	All players: 0 total; 
+	Chunk stats: 729, 0
+	Level dimension: minecraft:overworld
+	Level spawn location: World: (8,64,8), Section: (at 8,0,8 in 0,4,0; chunk contains blocks 0,-64,0 to 15,319,15), Region: (0,0; contains chunks 0,0 to 31,31, blocks 0,-64,0 to 511,319,511)
+	Level time: 0 game time, 0 day time
+	Server brand: ~~ERROR~~ NullPointerException: Cannot read field "connection" because "this.minecraft.player" is null
+	Server type: Integrated singleplayer server
+	Tracked entity count: 0
+
+-- Last reload --
+Details:
+	Reload number: 2
+	Reload reason: manual
+	Finished: Yes
+	Packs: vanilla, distanthorizons, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-client-gametest-api-v1, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-key-binding-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, fancymenu, fpstest, iris, sodium, voxy, voxyworldgenv2
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21.11
+	Minecraft Version ID: 1.21.11
+	Operating System: Linux (amd64) version 6.8.0-60-generic
+	Java Version: 21.0.12.1, Ubuntu
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Ubuntu
+	Memory: 1871708160 bytes (1785 MiB) / 4294967296 bytes (4096 MiB) up to 4294967296 bytes (4096 MiB)
+	CPUs: 16
+	Processor Vendor: AuthenticAMD
+	Processor Name: AMD Ryzen 7 7700 8-Core Processor
+	Identifier: AuthenticAMD Family 25 Model 97 Stepping 2
+	Microarchitecture: Zen 3
+	Frequency (GHz): 5.39
+	Number of physical packages: 1
+	Number of physical CPUs: 8
+	Number of logical CPUs: 16
+	Graphics card #0 name: Device
+	Graphics card #0 vendor: NVIDIA Corporation (0x10de)
+	Graphics card #0 VRAM (MiB): 288.00
+	Graphics card #0 deviceId: 0x2783
+	Graphics card #0 versionInfo: unknown
+	Graphics card #1 name: Baffin [Radeon RX 460/560D / Pro 450/455/460/555/555X/560/560X]
+	Graphics card #1 vendor: Advanced Micro Devices, Inc. [AMD/ATI] (0x1002)
+	Graphics card #1 VRAM (MiB): 258.00
+	Graphics card #1 deviceId: 0x67ef
+	Graphics card #1 versionInfo: unknown
+	Graphics card #2 name: Device
+	Graphics card #2 vendor: Advanced Micro Devices, Inc. [AMD/ATI] (0x1002)
+	Graphics card #2 VRAM (MiB): 258.00
+	Graphics card #2 deviceId: 0x164e
+	Graphics card #2 versionInfo: unknown
+	Virtual memory max (MiB): 52476.29
+	Virtual memory used (MiB): 47461.94
+	Swap memory total (MiB): 36864.00
+	Swap memory used (MiB): 22184.69
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 15550.71, total: 15612.29
+	Space in storage for workdir (MiB): available: 116985.56, total: 960040.69
+	JVM Flags: 3 total; -XX:StackShadowPages=32 -Xms4096m -Xmx4096m
+	Debug Flags: 0 total; 
+	Loaded Shaderpack: (off)
+	Fabric Mods: 
+		dh-api: DhApi 1.0
+		distanthorizons: Distant Horizons 3.3.0
+		fabric-api: Fabric API 0.141.6+1.21.11
+		fabric-api-base: Fabric API Base 1.0.5+4ebb5c083e
+		fabric-api-lookup-api-v1: Fabric API Lookup API (v1) 1.6.114+20dc27073e
+		fabric-biome-api-v1: Fabric Biome API (v1) 17.1.1+4fc5413f3e
+		fabric-block-api-v1: Fabric Block API (v1) 1.1.10+4ebb5c083e
+		fabric-block-view-api-v2: Fabric BlockView API (v2) 1.0.39+4ebb5c083e
+		fabric-client-gametest-api-v1: Fabric Client Game Test API (v1) 4.3.5+bfe9fcf43e
+		fabric-command-api-v2: Fabric Command API (v2) 2.4.7+6b42a6003e
+		fabric-content-registries-v0: Fabric Content Registries (v0) 10.2.14+4fc5413f3e
+		fabric-convention-tags-v1: Fabric Convention Tags 2.1.55+7f945d5b3e
+		fabric-convention-tags-v2: Fabric Convention Tags (v2) 2.17.3+8ef948ba3e
+		fabric-crash-report-info-v1: Fabric Crash Report Info (v1) 0.3.23+4ebb5c083e
+		fabric-data-attachment-api-v1: Fabric Data Attachment API (v1) 1.8.48+eed0806f3e
+		fabric-data-generation-api-v1: Fabric Data Generation API (v1) 23.5.0+88d7da613e
+		fabric-dimensions-v1: Fabric Dimensions API (v1) 4.0.28+4fc5413f3e
+		fabric-entity-events-v1: Fabric Entity Events (v1) 3.1.1+1d0ab4303e
+		fabric-events-interaction-v0: Fabric Events Interaction (v0) 4.1.1+3b89ecf63e
+		fabric-game-rule-api-v1: Fabric Game Rule API (v1) 2.0.3+4fc5413f3e
+		fabric-gametest-api-v1: Fabric Game Test API (v1) 3.1.27+4fc5413f3e
+		fabric-item-api-v1: Fabric Item API (v1) 11.6.0+67f17bb43e
+		fabric-item-group-api-v1: Fabric Item Group API (v1) 4.2.36+4fc5413f3e
+		fabric-key-binding-api-v1: Fabric Key Binding API (v1) 1.1.7+4fc5413f3e
+		fabric-lifecycle-events-v1: Fabric Lifecycle Events (v1) 2.6.15+4ebb5c083e
+		fabric-loot-api-v2: Fabric Loot API (v2) 3.0.73+3f89f5a53e
+		fabric-loot-api-v3: Fabric Loot API (v3) 2.0.20+78c8b4663e
+		fabric-message-api-v1: Fabric Message API (v1) 6.1.12+4ebb5c083e
+		fabric-model-loading-api-v1: Fabric Model Loading API (v1) 6.0.15+4fc5413f3e
+		fabric-networking-api-v1: Fabric Networking API (v1) 5.1.6+6b6d71a53e
+		fabric-object-builder-api-v1: Fabric Object Builder API (v1) 21.1.40+4fc5413f3e
+		fabric-particles-v1: Fabric Particles (v1) 4.2.12+4fc5413f3e
+		fabric-recipe-api-v1: Fabric Recipe API (v1) 8.2.4+4ebb5c083e
+		fabric-registry-sync-v0: Fabric Registry Sync (v0) 6.2.6+1718722b3e
+		fabric-renderer-api-v1: Fabric Renderer API (v1) 8.0.3+f4ffd2e53e
+		fabric-renderer-indigo: Fabric Renderer - Indigo 5.0.3+f4ffd2e53e
+		fabric-rendering-fluids-v1: Fabric Rendering Fluids (v1) 3.1.43+4ebb5c083e
+		fabric-rendering-v1: Fabric Rendering (v1) 16.2.10+0290ad933e
+		fabric-resource-conditions-api-v1: Fabric Resource Conditions API (v1) 5.0.35+4fc5413f3e
+		fabric-resource-loader-v0: Fabric Resource Loader (v0) 3.3.4+4fc5413f3e
+		fabric-resource-loader-v1: Fabric Resource Loader (v1) 1.0.10+78c8b4663e
+		fabric-screen-api-v1: Fabric Screen API (v1) 3.1.7+4ebb5c083e
+		fabric-screen-handler-api-v1: Fabric Screen Handler API (v1) 1.3.162+4fc5413f3e
+		fabric-serialization-api-v1: Fabric Serialization API (v1) 1.0.5+4ebb5c083e
+		fabric-sound-api-v1: Fabric Sound API (v1) 1.0.51+4fc5413f3e
+		fabric-tag-api-v1: Fabric Tag API (v1) 1.3.0+88d7da613e
+		fabric-transfer-api-v1: Fabric Transfer API (v1) 6.0.25+4fc5413f3e
+		fabric-transitive-access-wideners-v1: Fabric Transitive Access Wideners (v1) 7.1.0+014c8cec3e
+		fabricloader: Fabric Loader 0.19.3
+		fancymenu: FancyMenu 3.9.12
+			com_github_keksuccino_japng: japng 0.5.3
+			com_github_rtyley_animated-gif-lib-for-java: animated-gif-lib-for-java animated-gif-lib-1.7
+		fpstest: MC Benchmark Core 1.0
+		iris: Iris 1.10.7+mc1.21.11
+			io_github_douira_glsl-transformer: glsl-transformer 3.0.0-pre3
+			org_anarres_jcpp: jcpp 1.4.14
+			org_antlr_antlr4-runtime: antlr4-runtime 4.13.1
+		java: OpenJDK 64-Bit Server VM 21
+		konkrete: Konkrete 1.9.18
+		melody: Melody 1.0.15
+		minecraft: Minecraft 1.21.11
+		mixinextras: MixinExtras 0.5.4
+		sodium: Sodium 0.8.12+mc1.21.11
+		voxy: Voxy 0.2.16-beta
+			org_apache_commons_commons-pool2: commons-pool2 2.12.0
+			org_lwjgl_lwjgl-lmdb: lwjgl-lmdb 3.3.3
+			org_lwjgl_lwjgl-lmdb_natives-linux: lwjgl-lmdb 3.3.3
+			org_lwjgl_lwjgl-lmdb_natives-windows: lwjgl-lmdb 3.3.3
+			org_lwjgl_lwjgl-zstd: lwjgl-zstd 3.3.3
+			org_lwjgl_lwjgl-zstd_natives-linux: lwjgl-zstd 3.3.3
+			org_lwjgl_lwjgl-zstd_natives-windows: lwjgl-zstd 3.3.3
+			org_lz4_lz4-java: lz4-java 1.8.0
+			org_rocksdb_rocksdbjni: rocksdbjni 10.2.1
+			org_tukaani_xz: xz 1.10
+			redis_clients_jedis: jedis 5.1.0
+		voxyworldgenv2: Voxy World Gen V2 2.2.4
+	Launched Version: Fabric
+	Backend library: LWJGL version 3.3.3-snapshot
+	Backend API: NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2 GL version 3.3.0 NVIDIA 580.178.04, NVIDIA Corporation
+	Window size: 1904x964
+	GFLW Platform: x11
+	Render Extensions: GL_ARB_buffer_storage, GL_KHR_debug, GL_ARB_vertex_attrib_binding, GL_ARB_direct_state_access, GL_EXT_texture_filter_anisotropic
+	GL debug messages: 
+	Is Modded: Definitely; Client brand changed to 'fabric'; Server brand changed to 'fabric'
+	Universe: 400921fb54442d18
+	Type: Integrated Server (map_client.txt)
+	Transparency: regular
+	Render Distance: 6/6 chunks
+	Resource Packs: vanilla, distanthorizons, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-client-gametest-api-v1, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-key-binding-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, fancymenu (incompatible), fpstest, iris, sodium, voxy, voxyworldgenv2
+	Current Language: en_us
+	Locale: en_AU
+	System encoding: UTF-8
+	File encoding: UTF-8
+	CPU: 16x AMD Ryzen 7 7700 8-Core Processor
+	Server Running: true
+	Player Count: 1 / 8; [ServerPlayer['Player327'/1, l='ServerLevel[MC Benchmark Core Arena]', x=-4.50, y=-60.00, z=-6.50]]
+	Active Data Packs: vanilla, fabric-convention-tags-v2, fabric-gametest-api-v1
+	Available Data Packs: fabric-convention-tags-v2, fabric-gametest-api-v1, minecart_improvements, redstone_experiments, trade_rebalance, vanilla
+	Enabled Feature Flags: minecraft:vanilla
+	World Generation: Experimental
+	World Seed: 2503
+	Suppressed Exceptions: ~~NONE~~

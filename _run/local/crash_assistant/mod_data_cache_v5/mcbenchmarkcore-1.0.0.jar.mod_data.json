@@ -1,0 +1,1 @@
+{"fileSize":422947,"lastModifiedMillis":1790643768363,"mod":{"jarName":"mcbenchmarkcore-1.0.0.jar","modId":"fpstest","name":"MC Benchmark Core","version":"1.0","mixinConfigs":["fpstest.client.mixins.json","mcbenchmarkcore.mixins.json"],"jarJarMods":[],"curseForgeHash":304965456,"modrinthHash":"b703d43a16108a0c22dcfb111a8e3c2261a8c3d5"}}

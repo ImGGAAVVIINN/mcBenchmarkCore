@@ -1,0 +1,46 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+particle_cycle,Particle cycle (7 types → all together),Particles,1364.579,47.080,18.868,0.823,75,1187
+entity_cows,Cows ×200 ring,Entities,1001.362,48.028,19.024,0.825,54,591
+entity_sheep,Sheep ×200 ring,Entities,887.763,49.065,18.418,0.785,55,148
+entity_zombies,Zombies ×150 ring (AI on),Entities,593.801,46.665,19.202,0.783,55,263
+entity_pigs,Pigs ×250 ring,Entities,1027.194,49.929,18.275,0.775,56,903
+entity_villagers,Villagers ×100 ring,Entities,975.737,48.772,18.732,0.598,50,451
+entity_chickens,Chickens ×300 ring,Entities,894.129,48.971,18.271,0.809,51,1115
+entity_items,Item entities ×500,Entities,429.079,44.725,19.664,1.266,46,738
+entity_xp,XP orbs ×500 ring,Entities,1211.004,46.323,18.600,3.386,47,394
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,226.813,32.047,25.498,4.205,27,1169
+entity_zombies_obstacle_pathfinding,Zombies obstacle pathfinding (150 + pillar maze),Entities,649.624,48.460,18.771,1.070,52,1078
+villager_ai_village,"Villager AI village (80, brain on)",Entities,597.386,47.867,18.816,0.557,40,1054
+tnt_field,TNT field (14×14 staggered fuses),Physics,664.053,43.981,19.291,3.659,26,791
+tnt_field_destructive,TNT field destructive (breaks terrain),Physics,815.015,47.349,18.062,2.747,23,471
+falling_sand,Falling sand wall 40×40 (heavy),Physics,1000.375,23.553,37.038,14.603,23,608
+falling_gravel_mixed,Falling gravel mixed heavy (sand+gravel+concrete),Physics,958.070,21.973,40.499,15.124,20,96
+falling_sand_lite,"Falling sand wall (lite, staggered)",Physics,1393.099,48.791,18.097,1.978,46,906
+falling_gravel_mixed_lite,"Falling gravel mixed (lite, staggered)",Physics,1333.581,45.977,18.925,2.125,45,596
+projectile_storm,Projectile storm (arrows + snowballs),Physics,828.523,49.322,18.206,0.677,49,1178
+redstone_clocks,Redstone clocks (6×6),Redstone,1799.793,50.233,18.200,0.327,41,910
+redstone_dust_grid,Redstone dust grid (16 trails ×32 + repeaters + lamps),Redstone,1846.307,52.337,17.273,0.320,45,292
+piston_slime_array,Piston/slime array (8×8 toggled every 8t),Redstone,1554.682,47.575,19.227,0.378,39,1087
+static_dense_forest,"Static dense forest (orbit canopy, no worldgen)",Chunks,1724.821,51.133,17.757,0.345,46,209
+chunk_plains,Plains flyby (single-biome world),Chunks,1720.415,46.914,18.241,0.416,40,411
+chunk_jungle,Jungle flyby (single-biome world),Chunks,1510.197,47.013,18.682,0.427,35,396
+chunk_desert,Desert flyby (single-biome world),Chunks,1852.792,51.090,16.885,0.355,30,1414
+chunk_taiga,Taiga flyby (single-biome world),Chunks,1694.497,49.115,17.347,0.358,30,374
+chunk_snowy,Snowy plains flyby,Chunks,1787.864,50.309,17.341,0.359,27,1158
+chunk_forest,Forest flyby,Chunks,1730.507,49.453,17.839,0.374,27,1145
+chunk_savanna,Savanna flyby,Chunks,1865.080,50.474,17.469,0.392,23,673
+chunk_swamp,Swamp flyby,Chunks,1587.241,44.480,18.358,0.359,25,1205
+chunk_cherry,Cherry grove flyby,Chunks,1631.490,48.993,17.524,0.411,20,1745
+chunk_badlands,Badlands flyby,Chunks,1920.101,50.842,16.988,0.341,21,244
+chunk_dark_forest,Dark forest flyby (dense canopy),Chunks,1596.051,48.092,18.059,0.433,21,766
+chunk_mountain,Windswept hills flyby,Chunks,1887.740,50.172,17.333,0.359,21,943
+idle_baseline,Idle Baseline,Baseline,1910.380,51.537,17.687,0.283,22,854
+particle_diversity_stress,Particle diversity stress (16 types simultaneously),Stress,189.819,25.732,32.295,4.006,20,1215
+fluid_spread,"Fluid spread (water basin, 4-step periodic reset)",Fluids,1766.344,49.321,18.365,0.312,22,627
+lighting_update,Lighting update (16×16 glowstone reveal/hide),Lighting,1827.402,51.363,17.870,0.342,24,1778
+hopper_grid,Hopper grid 20×20 (transfer storm),Block-Entities,1562.401,49.823,18.313,0.326,21,1964
+comparator_storage,Comparator storage (8×8 chests + comparators),Block-Entities,1440.618,51.052,18.212,0.319,25,440
+pack_shader_showcase,LowEnd Shader,Showcase,180.389,18.854,37.511,0.972,233,883
+pack_shader_showcase,LowEnd Shader + PBR Textures,Showcase,186.997,21.086,39.481,0.897,235,2710
+pack_shader_showcase,HighEnd Shader,Showcase,112.159,21.117,45.348,0.728,27,2276
+pack_shader_showcase,HighEnd Shader + PBR Textures,Showcase,95.201,17.904,52.902,0.705,26,1450

@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-09-02T10:00:06.35189993+10:00",
+  "system": {"minecraft":"Fabric","os":"Linux 6.8.0-60-generic (amd64)","cpu_cores":16,"java_version":"21.0.12","java_vm":"OpenJDK 64-Bit Server VM","max_heap_mb":7808,"total_memory_mb":1120,"free_memory_mb":193,"gpu_vendor":"NVIDIA Corporation","gpu_renderer":"NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2","gpu_version":"3.3.0 NVIDIA 580.173.02"},
+  "results": [
+    {
+      "id": "pack_shader_showcase",
+      "display_name": "Pack + Shader Benchmark (showcase)",
+      "category": "Showcase",
+      "duration_ms": 36,
+      "sample_ticks": 0,
+      "fps": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "frame_time_ms": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "tick_time_ms": {"avg":0.0000,"min":0.0000,"max":0.0000,"p50":0.0000,"p95":0.0000,"p99":0.0000,"p999":0.0000,"std_dev":0.0000,"samples":0},
+      "heap_used_start": 0,
+      "heap_used_end": 0,
+      "heap_peak": 0,
+      "gc_events": 0,
+      "gc_time_ms": 0,
+      "extras": {},
+      "string_extras": {"fail_reason":"prepare failed: resource pack 'pbr' not found (available: [fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-client-gametest-api-v1, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-item-group-api-v1_programmer_art, fabric-key-binding-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, file/pbr.zip, fpstest, high_contrast, iris, programmer_art, sodium, vanilla])","aborted_state":"READY_WAIT","status":"failed"},
+      "frame_time_histogram": {},
+      "frame_times_ms": [],
+      "tick_times_ms": []
+    }
+  ]
+}

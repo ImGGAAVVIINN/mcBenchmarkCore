@@ -1,0 +1,7 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+particle_cycle,Particle cycle (7 types → all together),Particles,112.094,46.331,20.414,0.615,3,136
+entity_cows,Cows ×200 ring,Entities,112.330,46.077,20.770,0.643,4,369
+entity_sheep,Sheep ×200 ring,Entities,111.609,46.443,20.871,0.636,2,180
+entity_zombies,Zombies ×150 ring (AI on),Entities,109.110,22.737,41.175,0.661,7,195
+entity_pigs,Pigs ×250 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_villagers,Villagers ×100 ring,Entities,0.000,0.000,0.000,0.000,0,0

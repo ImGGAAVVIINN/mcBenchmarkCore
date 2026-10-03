@@ -69,6 +69,14 @@ dependencies {
 	// `modCompileOnly` = compile against Voxy classes, but do NOT bundle
 	// into the mod jar and do NOT make it a runtime requirement.
 	modCompileOnly files("run/mods/voxy-0.2.16-beta+1.21.11.jar")
+
+        // OSHI (Operating System and Hardware Information) — real system metrics for HUD.
+        // Bundled into the mod JAR via `include` so GPU/CPU/RAM telemetry works at runtime.
+        // Also added to compileClasspath so OSHI 7.7.0 APIs are available at compile time.
+        implementation "com.github.oshi:oshi-core:7.7.0"
+        implementation "com.github.oshi:oshi-common:7.7.0"
+        include "com.github.oshi:oshi-core:7.7.0"
+        include "com.github.oshi:oshi-common:7.7.0"
 }
 
 processResources {

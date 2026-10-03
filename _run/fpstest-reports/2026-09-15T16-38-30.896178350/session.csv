@@ -1,0 +1,46 @@
+id,display_name,category,fps_avg,fps_1pct_low,frame_p99_ms,tick_avg_ms,gc_count,heap_delta_mb
+particle_cycle,Particle cycle (7 types → all together),Particles,109.897,46.595,20.949,0.477,0,408
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_cows,Cows ×200 ring,Entities,0.000,0.000,0.000,0.000,0,0
+entity_xp,XP orbs ×500 ring,Entities,131.815,29.253,31.328,3.037,5,302
+entity_items_merge_storm,"Item merge storm (cobblestone, mergeable)",Entities,134.686,27.704,34.880,3.945,16,154
+entity_zombies_obstacle_pathfinding,Zombies obstacle pathfinding (150 + pillar maze),Entities,28.501,20.234,47.582,0.992,2,476
+villager_ai_village,"Villager AI village (80, brain on)",Entities,28.398,20.205,47.129,0.527,4,204
+tnt_field,TNT field (14×14 staggered fuses),Physics,31.045,16.619,59.621,3.177,2,316
+tnt_field_destructive,TNT field destructive (breaks terrain),Physics,30.586,16.436,59.317,2.742,2,516
+falling_sand,Falling sand wall 40×40 (heavy),Physics,36.839,13.402,72.020,14.980,24,440
+falling_gravel_mixed,Falling gravel mixed heavy (sand+gravel+concrete),Physics,35.885,12.695,72.469,15.575,24,462
+falling_sand_lite,"Falling sand wall (lite, staggered)",Physics,28.764,19.910,48.198,1.878,2,420
+falling_gravel_mixed_lite,"Falling gravel mixed (lite, staggered)",Physics,28.673,18.971,48.049,1.870,4,276
+projectile_storm,Projectile storm (arrows + snowballs),Physics,28.482,20.919,47.374,0.651,0,536
+redstone_clocks,Redstone clocks (6×6),Redstone,28.091,20.834,47.246,0.283,0,192
+redstone_dust_grid,Redstone dust grid (16 trails ×32 + repeaters + lamps),Redstone,28.101,20.877,47.204,0.253,1,444
+piston_slime_array,Piston/slime array (8×8 toggled every 8t),Redstone,28.073,20.592,47.056,0.292,1,264
+static_dense_forest,"Static dense forest (orbit canopy, no worldgen)",Chunks,28.171,20.701,47.239,0.275,0,184
+chunk_plains,Plains flyby (single-biome world),Chunks,28.700,16.855,50.756,0.348,38,1132
+chunk_jungle,Jungle flyby (single-biome world),Chunks,29.113,16.148,56.405,0.328,30,422
+chunk_desert,Desert flyby (single-biome world),Chunks,29.016,17.118,53.533,0.333,25,802
+chunk_taiga,Taiga flyby (single-biome world),Chunks,26.312,8.655,109.064,0.360,21,1036
+chunk_snowy,Snowy plains flyby,Chunks,9.811,7.771,121.980,0.370,22,1100
+chunk_forest,Forest flyby,Chunks,9.806,7.804,123.533,0.336,25,996
+chunk_savanna,Savanna flyby,Chunks,9.798,7.442,127.742,0.438,26,756
+chunk_swamp,Swamp flyby,Chunks,9.788,7.220,131.729,0.439,26,336
+chunk_cherry,Cherry grove flyby,Chunks,9.757,7.951,125.100,0.374,26,636
+chunk_badlands,Badlands flyby,Chunks,9.773,7.866,119.196,0.316,21,1374
+chunk_dark_forest,Dark forest flyby (dense canopy),Chunks,9.797,7.835,125.988,0.332,22,694
+chunk_mountain,Windswept hills flyby,Chunks,9.778,7.579,127.680,0.344,23,160
+idle_baseline,Idle Baseline,Baseline,9.802,8.668,114.075,0.270,0,88
+particle_diversity_stress,Particle diversity stress (16 types simultaneously),Stress,9.782,8.185,119.928,2.419,1,1472
+fluid_spread,"Fluid spread (water basin, 4-step periodic reset)",Fluids,9.759,8.654,114.098,0.269,0,204
+lighting_update,Lighting update (16×16 glowstone reveal/hide),Lighting,9.806,8.723,114.091,0.281,0,140
+hopper_grid,Hopper grid 20×20 (transfer storm),Block-Entities,9.774,8.780,113.268,0.280,0,160
+comparator_storage,Comparator storage (8×8 chests + comparators),Block-Entities,9.792,8.770,113.421,0.286,0,168
+pack_shader_showcase,LowEnd Shader,Showcase,9.816,7.874,124.712,0.658,14,728
+pack_shader_showcase,LowEnd Shader + PBR Textures,Showcase,9.817,7.896,124.100,0.638,11,311
+pack_shader_showcase,HighEnd Shader,Showcase,9.845,7.882,125.523,0.644,10,882
+pack_shader_showcase,HighEnd Shader + PBR Textures,Showcase,9.808,7.761,125.156,0.637,13,604
