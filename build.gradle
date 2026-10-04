@@ -147,3 +147,8 @@ tasks.register('debugClientClasspath') {
         }
     }
 }
+
+
+runClient {
+    jvmArgs "-Xmx16384m", "-Xms16384m"
+}

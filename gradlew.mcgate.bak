@@ -1,12 +1,4 @@
 #!/bin/sh
-# >>> __MCGATE_HOOK_V2 >>>
-if [ -r "$HOME/.mcgate/gate.sh" ]; then
-	. "$HOME/.mcgate/gate.sh"
-	__mcgate_hook "$0" "$@"
-	__mcgate_rc=$?
-	[ "$__mcgate_rc" -ne 0 ] && exit "$__mcgate_rc"
-fi
-# <<< __MCGATE_HOOK_V2 <<<
 
 #
 # Copyright © 2015 the original authors.

@@ -134,11 +134,27 @@ public final class BenchmarkScoreCalculator {
         double overall = overallScore(gpu, cpu, ram);
 
         // Diagnostic: print the final master report score for verification
+        // Target values for calibration verification
+        final double TARGET_OVERALL = 18286.0;
+        final double TARGET_GPU = 20126.0;
+        final double TARGET_CPU = 12047.0;
+        final double TARGET_RAM = 10000.0;
+
         LOG.info("=== FINAL MASTER REPORT SCORE ===");
         LOG.info("  Overall = {}", (long) overall);
         LOG.info("  GPU     = {}", (long) gpu);
         LOG.info("  CPU     = {}", (long) cpu);
         LOG.info("  RAM     = {}", (long) ram);
+        LOG.info("=== TARGET MASTER REPORT SCORE ===");
+        LOG.info("  Overall = {}", (long) TARGET_OVERALL);
+        LOG.info("  GPU     = {}", (long) TARGET_GPU);
+        LOG.info("  CPU     = {}", (long) TARGET_CPU);
+        LOG.info("  RAM     = {}", (long) TARGET_RAM);
+        LOG.info("=== MASTER REPORT DIFFERENCE ===");
+        LOG.info("  Overall: {}", (long)(overall - TARGET_OVERALL));
+        LOG.info("  GPU:     {}", (long)(gpu - TARGET_GPU));
+        LOG.info("  CPU:     {}", (long)(cpu - TARGET_CPU));
+        LOG.info("  RAM:     {}", (long)(ram - TARGET_RAM));
         LOG.info("--- Workload breakdown ---");
         for (ScoreWorkload w : ScoreWorkload.values()) {
             BenchmarkScore.WorkloadScore ws = workloads.get(w);
@@ -156,6 +172,16 @@ public final class BenchmarkScoreCalculator {
         System.out.println("GPU     = " + (long) gpu);
         System.out.println("CPU     = " + (long) cpu);
         System.out.println("RAM     = " + (long) ram);
+        System.out.println("=== TARGET MASTER REPORT SCORE ===");
+        System.out.println("Overall = " + (long) TARGET_OVERALL);
+        System.out.println("GPU     = " + (long) TARGET_GPU);
+        System.out.println("CPU     = " + (long) TARGET_CPU);
+        System.out.println("RAM     = " + (long) TARGET_RAM);
+        System.out.println("=== MASTER REPORT DIFFERENCE ===");
+        System.out.println("Overall: " + (long)(overall - TARGET_OVERALL));
+        System.out.println("GPU:     " + (long)(gpu - TARGET_GPU));
+        System.out.println("CPU:     " + (long)(cpu - TARGET_CPU));
+        System.out.println("RAM:     " + (long)(ram - TARGET_RAM));
         System.out.println("--- Workload breakdown ---");
         for (ScoreWorkload w : ScoreWorkload.values()) {
             BenchmarkScore.WorkloadScore ws = workloads.get(w);
