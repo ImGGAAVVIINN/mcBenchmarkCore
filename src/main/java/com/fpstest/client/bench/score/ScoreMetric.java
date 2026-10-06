@@ -16,6 +16,11 @@ public enum ScoreMetric {
     FPS(true),
     /** Total garbage-collection time in milliseconds — lower is better. */
     GC_TIME_MS(false),
+    /** Garbage-collection cost per megabyte of heap growth (total GC time /
+     *  heap peak-minus-start) — lower is better. Normalizes GC cost by how much
+     *  memory the test actually allocated, so a session that merely does little
+     *  allocation is not rewarded for doing little GC work. */
+    GC_MS_PER_MB(false),
     /** Heap-growth footprint (peak minus start) in megabytes — lower is better. */
     HEAP_DELTA_MB(false),
     /** Chunk-preload duration in milliseconds (terrain generation) — lower is better. */

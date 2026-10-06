@@ -45,10 +45,19 @@ public final class ScoreReferences {
     public static final double GPU_EFFECTS_FPS = 98.75;
 
     // ---- CPU references (FPS, higher is better) ----
-    /** Reference average FPS for single-thread / client-tick workloads. Calibrated target: CPU≈12,047 pts */
-    public static final double CPU_SINGLE_THREAD_FPS = 1537.5;
-    /** Reference average FPS for entity-simulation / physics / game-logic workloads. Calibrated target: CPU≈12,047 pts */
-    public static final double CPU_SIMULATION_FPS = 746.5;
+    /**
+     * Reference average FPS for single-thread / client-tick workloads.
+     * Recalibrated so the unmodded 1.21.11 reference instance scores
+     * CPU≈12,047 with the LOD-modified scoring (WORLD + PARALLEL excluded
+     * when Distant Horizons/Voxy are active).
+     */
+    public static final double CPU_SINGLE_THREAD_FPS = 1428.6;
+    /**
+     * Reference average FPS for entity-simulation / physics / game-logic
+     * workloads. Recalibrated together with the single-thread reference so
+     * the reference instance scores CPU≈12,047 under LOD-modified scoring.
+     */
+    public static final double CPU_SIMULATION_FPS = 693.6;
     /**
      * Reference chunk-preload duration (ms) for terrain-generation workloads.
      * Lower is better; a machine that generates the benchmark's world area with
@@ -69,23 +78,31 @@ public final class ScoreReferences {
     public static final double CPU_PARALLEL_TICK_TIME_MS = 1.254;
 
     // ---- RAM references ----
-    /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). Calibrated target: RAM≈10,000 pts */
-    public static final double RAM_JVM_GC_TIME_MS = 706.8;
+    /**
+     * Reference GC cost per megabyte of heap growth (GC ms / heap delta MB)
+     * per test for the JVM/GC workload (lower is better). Work-normalized so a
+     * session that allocates little is not rewarded for accumulating little GC
+     * time. Anchored to the Fabulously Optimized reference instance's own
+     * measured value, so that instance scores exactly 10,000 on this workload.
+     */
+    public static final double RAM_JVM_GC_PER_MB = 0.1631421761;
     /**
      * Reference heap-growth footprint (MB) per test (peak minus start) for the
      * Allocation workload. Lower is better; a machine that allocates exactly
      * this much heap during a test scores {@link #SCALE} points.
-     * Calibrated target: RAM≈10,000 pts.
+     * Anchored to the Fabulously Optimized reference instance's own measured
+     * value.
      */
-    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 4184.5;
+    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 5185.5083625793;
     /**
      * Reference heap-allocation rate (MiB/s) per test (heap peak minus start,
      * divided by test duration) for the memory Bandwidth workload. Higher is
      * better; a machine that sustains exactly this allocation rate during a
      * test scores {@link #SCALE} points.
-     * Calibrated target: RAM≈10,000 pts.
+     * Anchored to the Fabulously Optimized reference instance's own measured
+     * value.
      */
-    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 101.0;
+    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 173.5560909651;
     /**
      * Reference average GC stop-the-world pause (ms per GC event) for the
      * memory Latency workload. A test's GC-pause length is the measured
@@ -93,9 +110,10 @@ public final class ScoreReferences {
      * test (only tests that actually triggered GC contribute). Lower is better;
      * a machine whose garbage collector pauses for exactly this long per event
      * during a test scores {@link #SCALE} points.
-     * Calibrated target: RAM≈10,000 pts.
+     * Anchored to the Fabulously Optimized reference instance's own measured
+     * value.
      */
-    public static final double RAM_LATENCY_GC_PAUSE_MS = 29.4;
+    public static final double RAM_LATENCY_GC_PAUSE_MS = 34.6102440336;
 
     private ScoreReferences() {
     }
@@ -114,7 +132,7 @@ public final class ScoreReferences {
             case CPU_SIMULATION -> CPU_SIMULATION_FPS;
             case CPU_WORLD -> CPU_WORLD_PRELOAD_MS;
             case CPU_PARALLEL -> CPU_PARALLEL_TICK_TIME_MS;
-            case RAM_JVM_GC -> RAM_JVM_GC_TIME_MS;
+            case RAM_JVM_GC -> RAM_JVM_GC_PER_MB;
             case RAM_ALLOCATION -> RAM_ALLOCATION_HEAP_DELTA_MB;
             case RAM_BANDWIDTH -> RAM_BANDWIDTH_ALLOC_RATE_MBPS;
             case RAM_LATENCY -> RAM_LATENCY_GC_PAUSE_MS;

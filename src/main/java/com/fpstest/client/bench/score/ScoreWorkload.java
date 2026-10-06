@@ -49,8 +49,12 @@ public enum ScoreWorkload {
     /** Object allocation / allocation-heavy workloads, measured via the heap-growth
      *  footprint (peak minus start, in megabytes) per test. */
     RAM_ALLOCATION(ScoreCategory.RAM, 0.25, ScoreMetric.HEAP_DELTA_MB),
-    /** Garbage collection / heap / JVM memory-management workloads. */
-    RAM_JVM_GC(ScoreCategory.RAM, 0.10, ScoreMetric.GC_TIME_MS);
+    /** Garbage collection / heap / JVM memory-management workloads. Scored on
+     *  the GC cost per megabyte of heap growth (total GC time / heap delta), a
+     *  work-normalized quantity: it reflects how the collector copes with the
+     *  memory the test actually allocated, rather than rewarding a low
+     *  allocation session for accumulating little GC time. */
+    RAM_JVM_GC(ScoreCategory.RAM, 0.10, ScoreMetric.GC_MS_PER_MB);
 
     /** The top-level category this workload belongs to. */
     public final ScoreCategory category;

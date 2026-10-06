@@ -73,6 +73,23 @@ public final class MemoryTracker {
         snapshotGcTime = gcTimeMs();
     }
 
+    /**
+     * Runs a full garbage collection then forgets all baseline state.
+     *
+     * <p>Session-wide heaps (e.g. Distant Horizons + Voxy terrain) keep the
+     * used-heap high, so without this the {@code heap_used_start} baseline of a
+     * test is whatever G1 happened to leave after the previous test — never the
+     * same between runs. That collapses {@code peak - start} heap deltas
+     * arbitrarily and destroys the reproducibility of every RAM workload. A
+     * forced collect right before the per-test snapshot makes the baseline the
+     * (stable, reproducible) live-set floor instead.</p>
+     */
+    public void collect() {
+        heap.gc();
+        sample();
+        peakHeapSinceSnapshot = usedNow;
+    }
+
     public long snapshotHeap() {
         return snapshotHeap;
     }

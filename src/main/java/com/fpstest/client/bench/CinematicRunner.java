@@ -47,6 +47,7 @@ public final class CinematicRunner {
     private int preloadedChunks;
     private long preloadStartNanos;
     private long preloadDurationMs;
+    private boolean preloadTimedOut;
     private int totalQueued;
     private int completedInQueue;
     private String sessionId;
@@ -236,6 +237,7 @@ public final class CinematicRunner {
             phaseTicks = 0;
             waitTicks = 0;
             preloadedChunks = 0;
+            preloadTimedOut = false;
             // Part tracking: a multi-phase benchmark begins a new part (Parts 2-5 of the
             // FULL BENCHMARK); single-phase benchmarks stay in the current part (Part 1).
             if (current.phaseCount() > 1) {
@@ -392,6 +394,7 @@ public final class CinematicRunner {
                         );
                     }
                     if (ready >= target || phaseTicks >= plan.preloadTicks) {
+                        preloadTimedOut = ready < target;
                         preloadDurationMs = (System.nanoTime() - preloadStartNanos) / 1000000L;
                         state = State.WARMUP;
                         phaseTicks = 0;
@@ -413,6 +416,13 @@ public final class CinematicRunner {
                     if (phaseTicks >= plan.warmupTicks) {
                         FpsTestClient.FPS.stopAndGetSamples();
                         FpsTestClient.TICKS.stopAndGetSamples();
+                        // Force the heap down to its stable live-set floor before
+                        // establishing this test's memory baseline. Without this the
+                        // heap_used_start seen by a test is whatever G1 happened to
+                        // leave after the previous test, so peak-min(start) deltas
+                        // (and every RAM workload derived from them) are not
+                        // reproducible between runs.
+                        FpsTestClient.MEMORY.collect();
                         FpsTestClient.FPS.startRecording(plan.sampleTicks * 50 + 1000);
                         FpsTestClient.TICKS.startRecording(plan.sampleTicks + 20);
                         FpsTestClient.MEMORY.snapshot();
@@ -582,6 +592,8 @@ public final class CinematicRunner {
             .extra("seed", (double) current.seed())
             .extra("preload_chunks", (double) preloadedChunks)
             .extra("preload_duration_ms", (double) preloadDurationMs)
+            .extra("preload_timed_out", preloadTimedOut ? 1.0 : 0.0)
+            .extra("lod_chunk_loading", dhVoxyEnabledForChunks ? 1.0 : 0.0)
             .extra("entity_count_sample_start", (double) entityCountAtSampleStart)
             .extra("entity_count_sample_end", (double) entityCountAtSampleEnd)
             .extra("entity_count_delta", (double) (entityCountAtSampleEnd - entityCountAtSampleStart))

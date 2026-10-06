@@ -77,6 +77,13 @@ public final class BenchmarkScoreCalculator {
         }
 
         if (results != null) {
+            // Run-level LOD detection: when any test in the session reports LOD
+            // chunk loading (Distant Horizons + Voxy active), the server-tick
+            // time measured by the Parallel workload is unreliable — LOD worker
+            // threads drain the main-thread tick loop, collapsing tick times to
+            // "unrealistic" lows that vary with LOD configuration rather than CPU
+            // speed (same rationale as the CPU_WORLD exclusion below).
+            boolean lodActiveRun = results.stream().anyMatch(r -> r.extras().getOrDefault("lod_chunk_loading", 0.0) > 0.0);
             for (BenchmarkResult r : results) {
                 if (!isValid(r)) {
                     continue;
@@ -111,7 +118,7 @@ public final class BenchmarkScoreCalculator {
                 // Parallel workload via their measured average server tick
                 // time. Single-thread tests (redstone clocks/dust) stay in the
                 // Single-thread workload and are deliberately excluded here.
-                if (primary == ScoreWorkload.CPU_SIMULATION) {
+                if (primary == ScoreWorkload.CPU_SIMULATION && !lodActiveRun) {
                     addTest(byWorkload, r, ScoreWorkload.CPU_PARALLEL);
                 }
                 // The pack-shader showcase is a ~200 s shader-compilation phase.
@@ -301,6 +308,10 @@ public final class BenchmarkScoreCalculator {
         return switch (metric) {
             case FPS -> r.fps().avg();
             case GC_TIME_MS -> (double) r.gcTimeMs();
+            case GC_MS_PER_MB -> {
+                double heapDeltaMb = (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
+                yield heapDeltaMb <= 0 ? Double.NaN : r.gcTimeMs() / heapDeltaMb;
+            }
             case HEAP_DELTA_MB -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
             case PRELOAD_MS -> r.extras().getOrDefault("preload_timed_out", 0.0) > 0.0
                     ? Double.NaN
