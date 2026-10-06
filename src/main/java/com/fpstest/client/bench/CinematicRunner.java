@@ -386,7 +386,7 @@ public final class CinematicRunner {
                     int target = desiredLoadedChunks();
                     // Log diagnostic at preload start
                     if (phaseTicks == 1) {
-                        LodRuntimeDiagnostic.takeObservation(
+                        LodDiagnosticBridge.takeObservation(
                             current.category() + ":" + current.id() + ":CHUNK_PRELOAD",
                             mc.player != null ? mc.player.tickCount : 0
                         );
@@ -405,7 +405,7 @@ public final class CinematicRunner {
                     safeTick();
                     // Log diagnostic at warmup start
                     if (phaseTicks == 1) {
-                        LodRuntimeDiagnostic.takeObservation(
+                        LodDiagnosticBridge.takeObservation(
                             current.category() + ":" + current.id() + ":WARMUP",
                             mc.player != null ? mc.player.tickCount : 0
                         );
@@ -426,7 +426,7 @@ public final class CinematicRunner {
                     CinematicState.pathTick++;
                     safeTick();
                     // Sample DH/Voxy runtime state every tick during sampling
-                    LodRuntimeDiagnostic.takeObservation(
+                    LodDiagnosticBridge.takeObservation(
                         current.category() + ":" + current.id() + ":SAMPLING",
                         mc.player != null ? mc.player.tickCount : 0
                     );
@@ -608,7 +608,7 @@ public final class CinematicRunner {
         );
         // Log diagnostic snapshot after sampling completes
         Minecraft mc = Minecraft.getInstance();
-        LodRuntimeDiagnostic.takeObservation(
+        LodDiagnosticBridge.takeObservation(
             current.category() + ":" + current.id() + ":END",
             mc.player != null ? mc.player.tickCount : 0
         );
@@ -668,7 +668,7 @@ public final class CinematicRunner {
             dhVoxyEnabledForChunks = false;
         }
         // Print diagnostic report at session end
-        LodRuntimeDiagnostic.printFinalResult();
+        LodDiagnosticBridge.printFinalResult();
         // Session-level cleanup (restore the user's original config) before showing results.
         if (sessionCleanup != null) {
             try {
@@ -729,7 +729,7 @@ public final class CinematicRunner {
         } catch (Throwable ignored) {
         }
         // Reset diagnostic at benchmark start
-        LodRuntimeDiagnostic.resetObservations();
+        LodDiagnosticBridge.resetObservations();
         try {
             current.prepare(ctx);
         } catch (Throwable t) {

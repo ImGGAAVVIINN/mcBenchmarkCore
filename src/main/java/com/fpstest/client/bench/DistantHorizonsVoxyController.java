@@ -52,6 +52,19 @@ public final class DistantHorizonsVoxyController {
     private boolean dhModPresent;
     private boolean voxyModPresent;
 
+    /**
+     * Whether any LOD mod (Distant Horizons and/or Voxy) was detected when the
+     * session was captured. Statically readable so scorers can tell a genuine
+     * LOD chunk-loading run apart from one on a vanilla chunk map, where the
+     * DH/Voxy callbacks still fire but change nothing.
+     */
+    private static volatile boolean lodModsPresent = false;
+
+    /** True if Distant Horizons or Voxy is installed in this session. */
+    public static boolean lodModsPresent() {
+        return lodModsPresent;
+    }
+
     // DH original state
     private Boolean originalDhRenderingEnabled;
     private Integer originalDhChunkRenderDistance;
@@ -85,7 +98,8 @@ public final class DistantHorizonsVoxyController {
         }
 
         captured = true;
-        LOG.info("[Minecraft Benchmark Core] DH/Voxy controller: captureAndDisable complete");
+        lodModsPresent = dhModPresent || voxyModPresent;
+        LOG.info("[Minecraft Benchmark Core] DH/Voxy controller: captureAndDisable complete, lodModsPresent={}", lodModsPresent);
     }
 
     /** Enable DH and Voxy for chunk-loading test with target distances. */
@@ -109,7 +123,7 @@ public final class DistantHorizonsVoxyController {
             voxyOk = enableVoxyForChunkLoading();
         }
 
-        chunkLoadingEnabled = dhOk && voxyOk;
+        chunkLoadingEnabled = lodModsPresent && dhOk && voxyOk;
         LOG.info("[Minecraft Benchmark Core] DH/Voxy controller: enableForChunkLoading complete, dhOk={}, voxyOk={}", dhOk, voxyOk);
     }
 

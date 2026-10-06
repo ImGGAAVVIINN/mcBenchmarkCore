@@ -45,12 +45,12 @@ public enum ScoreWorkload {
     /** Memory access latency, measured via average GC stop-the-world pause
      *  (ms per GC event) per test — a memory-stalled machine pauses garbage
      *  collection longer. Only tests that actually triggered GC contribute. */
-    RAM_LATENCY(ScoreCategory.RAM, 0.25, ScoreMetric.GC_PAUSE_MS),
+    RAM_LATENCY(ScoreCategory.RAM, 0.30, ScoreMetric.GC_PAUSE_MS),
     /** Object allocation / allocation-heavy workloads, measured via the heap-growth
      *  footprint (peak minus start, in megabytes) per test. */
-    RAM_ALLOCATION(ScoreCategory.RAM, 0.20, ScoreMetric.HEAP_DELTA_MB),
+    RAM_ALLOCATION(ScoreCategory.RAM, 0.25, ScoreMetric.HEAP_DELTA_MB),
     /** Garbage collection / heap / JVM memory-management workloads. */
-    RAM_JVM_GC(ScoreCategory.RAM, 0.20, ScoreMetric.GC_TIME_MS);
+    RAM_JVM_GC(ScoreCategory.RAM, 0.10, ScoreMetric.GC_TIME_MS);
 
     /** The top-level category this workload belongs to. */
     public final ScoreCategory category;

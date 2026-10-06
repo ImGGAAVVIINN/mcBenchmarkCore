@@ -90,7 +90,20 @@ public final class BenchmarkScoreCalculator {
                 // feeds the CPU World workload (in addition to their FPS
                 // feeding the GPU Raster workload above).
                 if (r.id().startsWith("chunk_")) {
-                    addTest(byWorkload, r, ScoreWorkload.CPU_WORLD);
+                    // The Chunks category deliberately enables Distant Horizons
+                    // and Voxy (see FullBenchmarkConfig#enableDhVoxyForChunkLoading)
+                    // with a 1024-block target render distance. Their LOD workers
+                    // stream terrain into their own structures asynchronously, so
+                    // the vanilla chunk map polled by the preload timer never
+                    // fills: preload times collapse to either "already cached"
+                    // (tens of ms) or "LOD worker contention" (~10 s), and some
+                    // biomes never report a single loaded chunk. The measurement
+                    // cannot represent worldgen throughput on such a run, so it
+                    // is excluded rather than scored.
+                    boolean lodActive = r.extras().getOrDefault("lod_chunk_loading", 0.0) > 0.0;
+                    if (!lodActive) {
+                        addTest(byWorkload, r, ScoreWorkload.CPU_WORLD);
+                    }
                 }
                 // Server-tick-heavy parallel CPU tests (entity simulation,
                 // physics, block-entity and scheduled-tick updates — the
@@ -101,19 +114,28 @@ public final class BenchmarkScoreCalculator {
                 if (primary == ScoreWorkload.CPU_SIMULATION) {
                     addTest(byWorkload, r, ScoreWorkload.CPU_PARALLEL);
                 }
-                // Every valid test also contributes to the allocation workload
-                // via its measured heap-growth footprint (peak minus start) and
-                // to the JVM/GC workload via its recorded GC time — both are
-                // genuinely measured per test.
-                addTest(byWorkload, r, ScoreWorkload.RAM_ALLOCATION);
-                addTest(byWorkload, r, ScoreWorkload.RAM_JVM_GC);
-                // Every valid test also feeds the memory Bandwidth workload via
-                // its measured heap-allocation rate (heap delta MiB / duration)
-                // and the memory Latency workload via its measured average GC
-                // pause (GC time / GC events). Only tests that actually
-                // triggered GC contribute to Latency.
-                addTest(byWorkload, r, ScoreWorkload.RAM_BANDWIDTH);
-                addTest(byWorkload, r, ScoreWorkload.RAM_LATENCY);
+                // The pack-shader showcase is a ~200 s shader-compilation phase.
+                // Its allocation/GC profile reflects one-time cold-start shader
+                // compilation, not steady-state memory management, and its
+                // extreme values dominate the harmonic mean of every RAM
+                // workload. It is excluded from the RAM workloads only; its FPS
+                // still scores normally in the GPU Shader/PBR workloads.
+                boolean shaderCompilePhase = "pack_shader_showcase".equals(r.id());
+                if (!shaderCompilePhase) {
+                    // Every valid test also contributes to the allocation workload
+                    // via its measured heap-growth footprint (peak minus start) and
+                    // to the JVM/GC workload via its recorded GC time — both are
+                    // genuinely measured per test.
+                    addTest(byWorkload, r, ScoreWorkload.RAM_ALLOCATION);
+                    addTest(byWorkload, r, ScoreWorkload.RAM_JVM_GC);
+                    // Every valid test also feeds the memory Bandwidth workload via
+                    // its measured heap-allocation rate (heap delta MiB / duration)
+                    // and the memory Latency workload via its measured average GC
+                    // pause (GC time / GC events). Only tests that actually
+                    // triggered GC contribute to Latency.
+                    addTest(byWorkload, r, ScoreWorkload.RAM_BANDWIDTH);
+                    addTest(byWorkload, r, ScoreWorkload.RAM_LATENCY);
+                }
             }
         }
 
@@ -280,7 +302,9 @@ public final class BenchmarkScoreCalculator {
             case FPS -> r.fps().avg();
             case GC_TIME_MS -> (double) r.gcTimeMs();
             case HEAP_DELTA_MB -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
-            case PRELOAD_MS -> r.extras().getOrDefault("preload_duration_ms", Double.NaN);
+            case PRELOAD_MS -> r.extras().getOrDefault("preload_timed_out", 0.0) > 0.0
+                    ? Double.NaN
+                    : r.extras().getOrDefault("preload_duration_ms", Double.NaN);
             // Average server tick time per test — the benchmark's real parallel work.
             case TICK_TIME_MS -> r.tickTimeMs() == null ? Double.NaN : r.tickTimeMs().avg();
             // Heap-allocation rate in MiB/s: heap delta MiB divided by test duration seconds.

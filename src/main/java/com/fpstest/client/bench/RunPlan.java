@@ -26,15 +26,15 @@ public final class RunPlan {
    }
 
    public static RunPlan quick(Benchmark b) {
-      return new RunPlan(b, 60, 400, 30, 80, "quick");
+      return new RunPlan(b, 60, 400, 30, 240, "quick");
    }
 
    public static RunPlan full(Benchmark b) {
-      return new RunPlan(b, 100, 1200, 40, 120, "full");
+      return new RunPlan(b, 100, 1200, 40, 360, "full");
    }
 
    public static RunPlan longRun(Benchmark b) {
-      return new RunPlan(b, 140, 4000, 60, 160, "long");
+      return new RunPlan(b, 140, 4000, 60, 480, "long");
    }
 
    public double estimatedSeconds() {

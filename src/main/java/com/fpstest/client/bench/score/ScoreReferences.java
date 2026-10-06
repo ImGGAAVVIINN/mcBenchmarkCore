@@ -46,16 +46,16 @@ public final class ScoreReferences {
 
     // ---- CPU references (FPS, higher is better) ----
     /** Reference average FPS for single-thread / client-tick workloads. Calibrated target: CPU≈12,047 pts */
-    public static final double CPU_SINGLE_THREAD_FPS = 788.29;
+    public static final double CPU_SINGLE_THREAD_FPS = 1537.5;
     /** Reference average FPS for entity-simulation / physics / game-logic workloads. Calibrated target: CPU≈12,047 pts */
-    public static final double CPU_SIMULATION_FPS = 308.16;
+    public static final double CPU_SIMULATION_FPS = 746.5;
     /**
      * Reference chunk-preload duration (ms) for terrain-generation workloads.
      * Lower is better; a machine that generates the benchmark's world area with
      * this much preload time scores exactly {@link #SCALE} points.
      * Calibrated target: CPU≈12,047 pts.
      */
-    public static final double CPU_WORLD_PRELOAD_MS = 218.23;
+    public static final double CPU_WORLD_PRELOAD_MS = 605.9;
 
     // ---- CPU — Parallel ----
     /**
@@ -66,18 +66,18 @@ public final class ScoreReferences {
      * exactly {@link #SCALE} points.
      * Calibrated target: CPU≈12,047 pts.
      */
-    public static final double CPU_PARALLEL_TICK_TIME_MS = 2.89;
+    public static final double CPU_PARALLEL_TICK_TIME_MS = 1.254;
 
     // ---- RAM references ----
     /** Reference total GC time (ms) per test for the JVM/GC workload (lower is better). Calibrated target: RAM≈10,000 pts */
-    public static final double RAM_JVM_GC_TIME_MS = 865.82;
+    public static final double RAM_JVM_GC_TIME_MS = 706.8;
     /**
      * Reference heap-growth footprint (MB) per test (peak minus start) for the
      * Allocation workload. Lower is better; a machine that allocates exactly
      * this much heap during a test scores {@link #SCALE} points.
      * Calibrated target: RAM≈10,000 pts.
      */
-    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 1430.77;
+    public static final double RAM_ALLOCATION_HEAP_DELTA_MB = 4184.5;
     /**
      * Reference heap-allocation rate (MiB/s) per test (heap peak minus start,
      * divided by test duration) for the memory Bandwidth workload. Higher is
@@ -85,7 +85,7 @@ public final class ScoreReferences {
      * test scores {@link #SCALE} points.
      * Calibrated target: RAM≈10,000 pts.
      */
-    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 1.466;
+    public static final double RAM_BANDWIDTH_ALLOC_RATE_MBPS = 101.0;
     /**
      * Reference average GC stop-the-world pause (ms per GC event) for the
      * memory Latency workload. A test's GC-pause length is the measured
@@ -95,7 +95,7 @@ public final class ScoreReferences {
      * during a test scores {@link #SCALE} points.
      * Calibrated target: RAM≈10,000 pts.
      */
-    public static final double RAM_LATENCY_GC_PAUSE_MS = 33.76;
+    public static final double RAM_LATENCY_GC_PAUSE_MS = 29.4;
 
     private ScoreReferences() {
     }
