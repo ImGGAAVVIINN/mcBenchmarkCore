@@ -17,6 +17,13 @@ public final class FpsTestConfig {
     public boolean hudCompact = false;
     public boolean completionSound = true;
     public String locale = null;
+    /**
+     * Per-instance multiplier applied to every GPU reference value, so GPU scores
+     * can be detuned for an instance that renders faster than the shared
+     * reference machine without disturbing any other instance (or the CPU/RAM
+     * workloads). {@code 1.0} leaves GPU scoring unchanged.
+     */
+    public double gpuReferenceScale = 1.0;
     private static FpsTestConfig INSTANCE;
 
     public static synchronized FpsTestConfig get() {
@@ -64,6 +71,11 @@ public final class FpsTestConfig {
                     LOG.warn("[Minecraft Benchmark Core] config: unknown locale '{}', falling back to vanilla", loc);
                 }
             }
+
+            Double scale = grabDouble(text, "gpu_reference_scale");
+            if (scale != null && scale > 0 && Double.isFinite(scale)) {
+                c.gpuReferenceScale = scale;
+            }
         } catch (Throwable var8) {
             LOG.warn("[Minecraft Benchmark Core] config load failed, using defaults", var8);
         }
@@ -78,7 +90,8 @@ public final class FpsTestConfig {
             sb.append("  \"hud_anchor\": \"").append(this.hudAnchor.name().toLowerCase(Locale.ROOT)).append("\",\n");
             sb.append("  \"hud_compact\": ").append(this.hudCompact).append(",\n");
             sb.append("  \"completion_sound\": ").append(this.completionSound).append(",\n");
-            sb.append("  \"locale\": ").append(this.locale == null ? "null" : "\"" + this.locale + "\"").append("\n");
+            sb.append("  \"locale\": ").append(this.locale == null ? "null" : "\"" + this.locale + "\"").append(",\n");
+            sb.append("  \"gpu_reference_scale\": ").append(this.gpuReferenceScale).append("\n");
             sb.append("}\n");
             Files.writeString(p, sb.toString());
         } catch (IOException var3) {
@@ -135,6 +148,39 @@ public final class FpsTestConfig {
             }
         }
         return null;
+    }
+
+    private static Double grabDouble(String src, String key) {
+        int i = src.indexOf("\"" + key + "\"");
+        if (i < 0) {
+            return null;
+        }
+        int colon = src.indexOf(':', i);
+        if (colon < 0) {
+            return null;
+        }
+        String tail = src.substring(colon + 1).trim();
+        StringBuilder num = new StringBuilder();
+        int j = 0;
+        while (j < tail.length()) {
+            char ch = tail.charAt(j);
+            if (Character.isDigit(ch) || ch == '.' || ch == '-' || ch == '+' || ch == 'e' || ch == 'E') {
+                num.append(ch);
+            } else if (num.length() > 0) {
+                break;
+            } else if (ch != ' ' && ch != '\t') {
+                return null;
+            }
+            j++;
+        }
+        if (num.length() == 0) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(num.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static Boolean grabBool(String src, String key) {

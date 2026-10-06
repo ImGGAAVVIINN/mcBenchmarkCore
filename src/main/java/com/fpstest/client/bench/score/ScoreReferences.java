@@ -1,5 +1,6 @@
 package com.fpstest.client.bench.score;
 
+import com.fpstest.client.config.FpsTestConfig;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
@@ -124,10 +125,10 @@ public final class ScoreReferences {
      */
     public static double referenceFor(ScoreWorkload workload) {
         return switch (workload) {
-            case GPU_RASTER -> GPU_RASTER_FPS;
-            case GPU_SHADER -> GPU_SHADER_FPS;
-            case GPU_PBR -> GPU_PBR_FPS;
-            case GPU_EFFECTS -> GPU_EFFECTS_FPS;
+            case GPU_RASTER -> GPU_RASTER_FPS * gpuScale();
+            case GPU_SHADER -> GPU_SHADER_FPS * gpuScale();
+            case GPU_PBR -> GPU_PBR_FPS * gpuScale();
+            case GPU_EFFECTS -> GPU_EFFECTS_FPS * gpuScale();
             case CPU_SINGLE_THREAD -> CPU_SINGLE_THREAD_FPS;
             case CPU_SIMULATION -> CPU_SIMULATION_FPS;
             case CPU_WORLD -> CPU_WORLD_PRELOAD_MS;
@@ -137,5 +138,17 @@ public final class ScoreReferences {
             case RAM_BANDWIDTH -> RAM_BANDWIDTH_ALLOC_RATE_MBPS;
             case RAM_LATENCY -> RAM_LATENCY_GC_PAUSE_MS;
         };
+    }
+
+    /**
+     * Per-instance GPU reference scale, so a render-faster-than-reference
+     * instance can be detuned without changing any other score or instance.
+     */
+    private static double gpuScale() {
+        try {
+            return FpsTestConfig.get().gpuReferenceScale;
+        } catch (Throwable t) {
+            return 1.0;
+        }
     }
 }
