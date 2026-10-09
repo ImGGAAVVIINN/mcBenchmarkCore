@@ -5,8 +5,9 @@ import net.fabricmc.api.Environment;
 
 /**
  * Top-level score categories (3DMark-style). Each category aggregates its
- * workload groups via a weighted harmonic mean, and the three categories are
- * combined into the overall score with the declared overall weights.
+ * heterogeneous workload groups via a weighted geometric mean, and the three
+ * categories are combined into the overall score with the declared overall
+ * weights.
  */
 @Environment(EnvType.CLIENT)
 public enum ScoreCategory {

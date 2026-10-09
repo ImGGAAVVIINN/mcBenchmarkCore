@@ -29,7 +29,7 @@ import net.fabricmc.api.Environment;
  *              ↓
  *        workload score = harmonic mean of its tests' points
  *              ↓
- *        category score = weighted harmonic mean of its workload scores
+ *        category score = weighted geometric mean of its workload scores
  *              ↓
  *        overall score = weighted harmonic mean of GPU / CPU / RAM
  * </pre>
@@ -48,9 +48,24 @@ import net.fabricmc.api.Environment;
  *       GC events).</li>
  *   <li>A workload's score is the <em>harmonic mean</em> of its tests' points,
  *       so a workload with many tests is not automatically more important than
- *       one with a single test (the declared weight is what matters).</li>
- *   <li>Category and overall scores use <em>weighted harmonic means</em> so a
- *       single extremely strong workload cannot hide a substantially weaker one.</li>
+ *       one with a single test (the declared weight is what matters). The
+ *       harmonic mean is the correct average for repeated samples of one
+ *       throughput (it is the rate implied by the combined frame time).</li>
+ *   <li>A category's score is the <em>weighted geometric mean</em> of its
+ *       workload scores. A category combines <em>heterogeneous</em> workloads
+ *       (e.g. GPU raster vs shader vs PBR rendering) that probe genuinely
+ *       different performance dimensions, not repeated samples of one
+ *       quantity. The geometric mean is the correct aggregate for such
+ *       multiplicative dimensions: it expresses the category as the
+ *       reference-normalized product of the workloads' relative performance,
+ *       so uniformly-<em>k</em>-times-faster hardware scores exactly
+ *       <em>k</em> times higher, and a single workload that is several times
+ *       weaker cannot collapse the whole category to its own floor the way a
+ *       harmonic mean does.</li>
+ *   <li>The overall score remains a <em>weighted harmonic mean</em> of the
+ *       three categories, so the slowest category still limits the overall
+ *       result (3DMark's overall score is likewise harmonic in Graphics and
+ *       CPU).</li>
  *   <li>Missing/invalid data is NaN (never zero, never substituted). The overall
  *       score requires all three categories; otherwise it is NaN.</li>
  * </ul>
@@ -154,7 +169,7 @@ public final class BenchmarkScoreCalculator {
             workloads.put(w, new BenchmarkScore.WorkloadScore(w, score, tests.size(), List.copyOf(tests)));
         }
 
-        // 3. Category scores = weighted harmonic mean of present workload scores.
+        // 3. Category scores = weighted geometric mean of present workload scores.
         double gpu = categoryScore(ScoreCategory.GPU, workloads);
         double cpu = categoryScore(ScoreCategory.CPU, workloads);
         double ram = categoryScore(ScoreCategory.RAM, workloads);
@@ -440,15 +455,25 @@ public final class BenchmarkScoreCalculator {
     }
 
     /**
-     * Weighted harmonic mean of a category's present workload scores.
+     * Weighted geometric mean of a category's present workload scores.
+     *
+     * <p>A category combines <em>heterogeneous</em> workloads (different
+     * bottlenecks, different metrics) rather than repeated samples of one
+     * quantity, so the aggregate is a product rather than a sum of times. The
+     * geometric mean is the mean that is correct for a product of independent,
+     * multiplicative performance ratios: it is scale-invariant (uniformly
+     * <em>k</em>-times-faster hardware scores exactly <em>k</em> times higher)
+     * and it avoids the harmonic mean's cliff, where a single workload several
+     * times weaker than the rest drags the entire category down to its own
+     * value.</p>
      *
      * <p>Weights are renormalized over the workloads that actually have a valid
      * score, so a missing workload does not silently become zero and does not
      * distort the remaining weights.</p>
      */
-    private static double categoryScore(ScoreCategory category, Map<ScoreWorkload, BenchmarkScore.WorkloadScore> workloads) {
+    static double categoryScore(ScoreCategory category, Map<ScoreWorkload, BenchmarkScore.WorkloadScore> workloads) {
         double weightSum = 0.0;
-        double weightedReciprocalSum = 0.0;
+        double weightedLogSum = 0.0;
         for (ScoreWorkload w : ScoreWorkload.values()) {
             if (w.category != category) {
                 continue;
@@ -457,13 +482,13 @@ public final class BenchmarkScoreCalculator {
             double score = ws == null ? Double.NaN : ws.score();
             if (!Double.isNaN(score) && score > 0) {
                 weightSum += w.weight;
-                weightedReciprocalSum += w.weight / score;
+                weightedLogSum += w.weight * Math.log(score);
             }
         }
-        if (weightSum == 0.0 || weightedReciprocalSum == 0.0) {
+        if (weightSum == 0.0) {
             return Double.NaN;
         }
-        return weightSum / weightedReciprocalSum;
+        return Math.exp(weightedLogSum / weightSum);
     }
 
     /**

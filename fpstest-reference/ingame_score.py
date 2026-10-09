@@ -57,16 +57,21 @@ def hmean(vals):
     return float('nan') if c==0 else c/s
 
 def cat_score(cat, workloads):
-    wsum=0.0; rsum=0.0
+    # Category = weighted GEOMETRIC mean of its heterogeneous workload scores.
+    # (Workloads within a category probe different bottlenecks, so they combine
+    # multiplicatively; a harmonic mean here produced a score cliff whenever one
+    # workload was several times weaker than the rest. See BenchmarkScoreCalculator.)
+    wsum=0.0; lsum=0.0
     for w,(weight,c) in WEIGHTS.items():
         if c!=cat: continue
         score=workloads.get(w)
         if score is not None and not math.isnan(score) and score>0:
-            wsum+=weight; rsum+=weight/score
-    return float('nan') if wsum==0 or rsum==0 else wsum/rsum
+            wsum+=weight; lsum+=weight*math.log(score)
+    return float('nan') if wsum==0 else math.exp(lsum/wsum)
 
 def calc(path, gpu_scale=1.0):
-    d=json.load(open(path)); rs=d['results']
+    with open(path) as fh: d=json.load(fh)
+    rs=d['results']
     by={w:[] for w in WEIGHTS}
     lod_run=any(r['extras'].get('lod_chunk_loading',0.0)>0 for r in rs)
     for r in rs:
