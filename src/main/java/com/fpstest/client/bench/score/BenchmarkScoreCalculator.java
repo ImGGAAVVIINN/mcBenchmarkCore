@@ -240,6 +240,30 @@ public final class BenchmarkScoreCalculator {
     }
 
     /**
+     * The average FPS a test is scored on: total frames rendered divided by
+     * total elapsed time. That quantity is the harmonic mean of the per-frame
+     * instantaneous FPS (weighted by frame count), i.e.
+     * {@code 1000 / mean(frameMs)} — the value stored as {@code fps_harmonic_avg}
+     * by {@code CinematicRunner#finishSampling}.
+     *
+     * <p>It is deliberately <em>not</em> the arithmetic mean of the per-frame
+     * instantaneous FPS ({@link BenchmarkResult.FrameStats#avg()}). By Jensen's
+     * inequality that mean is always >= the true average frame rate, and the
+     * error grows with per-frame-time variance: a platform that produces a few
+     * ultra-fast frames is rewarded even when its overall throughput is
+     * unchanged. Scoring that quantity compared two platforms at the same true
+     * frame rate but different frame-time variance, which is the measurement
+     * defect this method removes.</p>
+     */
+    private static double scoredFps(BenchmarkResult r) {
+        double harmonic = r.extras().getOrDefault("fps_harmonic_avg", Double.NaN);
+        if (Double.isFinite(harmonic) && harmonic > 0.0) {
+            return harmonic;
+        }
+        return r.fps().avg();
+    }
+
+    /**
      * Classifies a test into its primary workload group based on the benchmark's
      * actual test definitions. Returns {@code null} for non-scoring tests
      * (e.g. the idle baseline, which is not a workload).
@@ -306,11 +330,11 @@ public final class BenchmarkScoreCalculator {
     /** Extracts the raw measured value for a metric from a result. */
     private static double measuredFor(BenchmarkResult r, ScoreMetric metric) {
         return switch (metric) {
-            case FPS -> r.fps().avg();
+            case FPS -> scoredFps(r);
             case GC_TIME_MS -> (double) r.gcTimeMs();
             case GC_MS_PER_MB -> {
                 double heapDeltaMb = (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
-                yield heapDeltaMb <= 0 ? Double.NaN : r.gcTimeMs() / heapDeltaMb;
+                yield heapDeltaMb <= 0 ? Double.NaN : effectiveGcTimeMs(r) / heapDeltaMb;
             }
             case HEAP_DELTA_MB -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0;
             case PRELOAD_MS -> r.extras().getOrDefault("preload_timed_out", 0.0) > 0.0
@@ -320,10 +344,53 @@ public final class BenchmarkScoreCalculator {
             case TICK_TIME_MS -> r.tickTimeMs() == null ? Double.NaN : r.tickTimeMs().avg();
             // Heap-allocation rate in MiB/s: heap delta MiB divided by test duration seconds.
             case ALLOC_RATE_MBPS -> (r.heapPeak() - r.heapUsedStart()) / 1048576.0 / (r.durationMillis() / 1000.0);
-            // Average stop-the-world GC pause (ms) per GC event; only present when the
-            // test actually triggered garbage collection.
-            case GC_PAUSE_MS -> r.gcEvents() == 0 ? Double.NaN : (double) r.gcTimeMs() / r.gcEvents();
+            // Average memory-led stall (ms) per stall event; only present when the test
+            // actually experienced a stall.
+            case GC_PAUSE_MS -> {
+                int events = effectiveGcEvents(r);
+                yield events == 0 ? Double.NaN : effectiveGcTimeMs(r) / events;
+            }
         };
+    }
+
+    /**
+     * The collector-time totals are used only when they are not dwarfed by
+     * concurrent collector work the benchmark thread never stalled on — and only
+     * when the run actually used a concurrent collector (ZGC/Shenandoah), whose
+     * MXBean collection time includes background phases that do not suspend the
+     * workload. On genuinely stop-the-world collectors (G1, Parallel, Serial) the
+     * recorded time was real stall and is never replaced. The true machine
+     * signal — the time the benchmark's own thread was actually suspended — is
+     * recorded per test as {@code stall_time_ms} / {@code stall_events}; when the
+     * run is concurrent and that stall is clearly shorter than the collected
+     * time, it replaces the MXBean totals.
+     */
+    private static boolean useStallInputs(BenchmarkResult r) {
+        return r.extras().getOrDefault("concurrent_gc", 0.0) >= 1.0
+            && r.extras().containsKey("stall_time_ms")
+            && r.extras().containsKey("stall_events");
+    }
+
+    private static long effectiveGcTimeMs(BenchmarkResult r) {
+        if (!useStallInputs(r)) {
+            return r.gcTimeMs();
+        }
+        double stall = r.extras().getOrDefault("stall_time_ms", -1.0);
+        if (stall >= 0.0 && stall < r.gcTimeMs() * 0.8) {
+            return (long) stall;
+        }
+        return r.gcTimeMs();
+    }
+
+    private static int effectiveGcEvents(BenchmarkResult r) {
+        if (!useStallInputs(r)) {
+            return r.gcEvents();
+        }
+        double stallEvents = r.extras().getOrDefault("stall_events", -1.0);
+        if (stallEvents >= 0.0 && stallEvents < r.gcEvents() * 0.8) {
+            return (int) stallEvents;
+        }
+        return r.gcEvents();
     }
 
     /**

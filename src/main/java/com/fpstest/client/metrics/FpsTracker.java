@@ -39,6 +39,15 @@ public final class FpsTracker {
    public void startRecording(int capacity) {
       this.recording_ = new RingBuffer(capacity);
       this.recording = true;
+      // Discard the first inter-frame delta captured after recording starts.
+      // The benchmark forces a full-heap GC (MEMORY.collect) immediately before
+      // startRecording, and that stop-the-world pause is not rendering work.
+      // Without this reset the first recorded delta spans from the last
+      // pre-recording frame to the first post-GC frame, so the entire pause
+      // (~0.2 s on Linux, but several seconds on Windows where the forced GC is
+      // far more expensive) is charged to a single "frame" — crushing the
+      // scored average FPS and the 1% low on the slower platform.
+      this.lastFrameNs = 0L;
    }
 
    public double[] stopAndGetSamples() {

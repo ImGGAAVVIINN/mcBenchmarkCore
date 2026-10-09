@@ -289,6 +289,39 @@ public final class SystemUsageTracker {
     }
 
     /**
+     * Model name string of the host CPU, or "unknown" when no processor data exists.
+     */
+    public String cpuModel() {
+        try {
+            return processor == null ? "unknown" : processor.getProcessorIdentifier().getName();
+        } catch (Throwable t) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * Physical RAM installed on the host, in MiB. Returns 0 when unavailable.
+     */
+    public long physicalMemoryMiB() {
+        try {
+            return memory == null ? 0L : memory.getTotal() / 1048576L;
+        } catch (Throwable t) {
+            return 0L;
+        }
+    }
+
+    /**
+     * Physical RAM currently available to the OS, in MiB. Returns 0 when unavailable.
+     */
+    public long availableMemoryMiB() {
+        try {
+            return memory == null ? 0L : memory.getAvailable() / 1048576L;
+        } catch (Throwable t) {
+            return 0L;
+        }
+    }
+
+    /**
      * Release resources on shutdown.
      */
     public void close() {

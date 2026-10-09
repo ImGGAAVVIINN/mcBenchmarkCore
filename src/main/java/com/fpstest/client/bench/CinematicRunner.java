@@ -434,7 +434,14 @@ public final class CinematicRunner {
                 case SAMPLING:
                     phaseTicks++;
                     CinematicState.pathTick++;
-                    safeTick();
+                    {
+                        long stallWall = System.nanoTime();
+                        long stallCpu = FpsTestClient.MEMORY.currentThreadCpuNanos();
+                        safeTick();
+                        long wallDelta = System.nanoTime() - stallWall;
+                        long cpuDelta = stallCpu < 0L ? -1L : FpsTestClient.MEMORY.currentThreadCpuNanos() - stallCpu;
+                        FpsTestClient.MEMORY.recordStall(wallDelta, cpuDelta);
+                    }
                     // Sample DH/Voxy runtime state every tick during sampling
                     LodDiagnosticBridge.takeObservation(
                         current.category() + ":" + current.id() + ":SAMPLING",
@@ -600,6 +607,14 @@ public final class CinematicRunner {
             .extra("preset_quick", "quick".equals(plan.presetName) ? 1.0 : 0.0)
             .extra("preset_full", "full".equals(plan.presetName) ? 1.0 : 0.0)
             .extra("preset_long", "long".equals(plan.presetName) ? 1.0 : 0.0);
+
+        if (FpsTestClient.MEMORY.isThreadInfoSupported()) {
+            builder = builder
+                .extra("alloc_mb", FpsTestClient.MEMORY.allocatedBytes() / 1048576.0)
+                .extra("stall_time_ms", (double) FpsTestClient.MEMORY.stallTimeMs())
+                .extra("stall_events", (double) FpsTestClient.MEMORY.stallEvents())
+                .extra("concurrent_gc", FpsTestClient.MEMORY.isConcurrentCollector() ? 1.0 : 0.0);
+        }
 
         if (hasParts()) {
             builder.extra("part", currentPartNumber());

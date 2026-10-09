@@ -35,30 +35,40 @@ public final class ScoreReferences {
      */
     public static final double SCALE = 10000.0;
 
-    // ---- GPU references (FPS, higher is better) ----
-    /** Reference average FPS for ordinary world/terrain rendering (chunk flybys etc.). Calibrated target: GPU≈20,126 pts */
-    public static final double GPU_RASTER_FPS = 289.04;
-    /** Reference average FPS for shader-heavy rendering. Calibrated target: GPU≈20,126 pts */
-    public static final double GPU_SHADER_FPS = 58.06;
-    /** Reference average FPS for PBR / texture-material-heavy rendering. Calibrated target: GPU≈20,126 pts */
-    public static final double GPU_PBR_FPS = 59.31;
-    /** Reference average FPS for particle / effects rendering. Calibrated target: GPU≈20,126 pts */
-    public static final double GPU_EFFECTS_FPS = 98.75;
+    // ---- GPU references (average FPS, higher is better) ----
+    // These are anchored to the reference instance's *harmonic* mean FPS
+    // (1000 / mean frame time — total frames over total time), which is the
+    // statistic BenchmarkScoreCalculator now scores. The earlier values were
+    // anchored to the arithmetic mean of per-frame instantaneous FPS, which is
+    // Jensen-biased upward and rewarded frame-time variance rather than
+    // throughput. Each value was re-derived on a fresh reference-instance run
+    // (value * harmonic/arithmetic for that workload) so the reference machine
+    // still scores exactly the same GPU points as before the metric correction.
+    /** Reference average (harmonic) FPS for ordinary world/terrain rendering (chunk flybys etc.). Calibrated target: GPU≈20,126 pts */
+    public static final double GPU_RASTER_FPS = 161.918378;
+    /** Reference average (harmonic) FPS for shader-heavy rendering. Calibrated target: GPU≈20,126 pts */
+    public static final double GPU_SHADER_FPS = 36.714698;
+    /** Reference average (harmonic) FPS for PBR / texture-material-heavy rendering. Calibrated target: GPU≈20,126 pts */
+    public static final double GPU_PBR_FPS = 34.338078;
+    /** Reference average (harmonic) FPS for particle / effects rendering. Calibrated target: GPU≈20,126 pts */
+    public static final double GPU_EFFECTS_FPS = 78.158965;
 
     // ---- CPU references (FPS, higher is better) ----
     /**
-     * Reference average FPS for single-thread / client-tick workloads.
-     * Recalibrated so the unmodded 1.21.11 reference instance scores
-     * CPU≈12,047 with the LOD-modified scoring (WORLD + PARALLEL excluded
-     * when Distant Horizons/Voxy are active).
+     * Reference average (harmonic) FPS for single-thread / client-tick workloads.
+     * Anchored to the reference instance's harmonic mean FPS so it scores the
+     * same CPU points as before the arithmetic→harmonic metric correction
+     * (CALIBRATED target: CPU≈12,047 with the LOD-modified scoring — WORLD +
+     * PARALLEL excluded when Distant Horizons/Voxy are active).
      */
-    public static final double CPU_SINGLE_THREAD_FPS = 1428.6;
+    public static final double CPU_SINGLE_THREAD_FPS = 821.652654;
     /**
-     * Reference average FPS for entity-simulation / physics / game-logic
-     * workloads. Recalibrated together with the single-thread reference so
-     * the reference instance scores CPU≈12,047 under LOD-modified scoring.
+     * Reference average (harmonic) FPS for entity-simulation / physics /
+     * game-logic workloads. Anchored together with the single-thread reference
+     * to the reference instance's harmonic mean FPS so the reference instance
+     * scores the same CPU points under LOD-modified scoring.
      */
-    public static final double CPU_SIMULATION_FPS = 693.6;
+    public static final double CPU_SIMULATION_FPS = 390.357215;
     /**
      * Reference chunk-preload duration (ms) for terrain-generation workloads.
      * Lower is better; a machine that generates the benchmark's world area with

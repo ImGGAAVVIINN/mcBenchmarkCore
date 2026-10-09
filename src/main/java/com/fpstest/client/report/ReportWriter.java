@@ -1,6 +1,7 @@
 package com.fpstest.client.report;
 
 import com.fpstest.client.bench.BenchmarkResult;
+import com.fpstest.client.FpsTestClient;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
@@ -579,8 +580,10 @@ public final class ReportWriter {
       String gpuVendor = safeGl(() -> GL11.glGetString(7936));
       String gpuRenderer = safeGl(() -> GL11.glGetString(7937));
       String gpuVersion = safeGl(() -> GL11.glGetString(7938));
+      Minecraft mc = Minecraft.getInstance();
+      var window = mc.getWindow();
       return "{\"minecraft\":"
-         + jsonStr(Minecraft.getInstance().getLaunchedVersion())
+         + jsonStr(mc.getLaunchedVersion())
          + ",\"os\":"
          + jsonStr(os.getName() + " " + os.getVersion() + " (" + os.getArch() + ")")
          + ",\"cpu_cores\":"
@@ -589,12 +592,44 @@ public final class ReportWriter {
          + jsonStr(System.getProperty("java.version"))
          + ",\"java_vm\":"
          + jsonStr(System.getProperty("java.vm.name"))
+         + ",\"cpu_model\":"
+         + jsonStr(FpsTestClient.SYSTEM_USAGE.cpuModel())
          + ",\"max_heap_mb\":"
          + rt.maxMemory() / 1048576L
          + ",\"total_memory_mb\":"
          + rt.totalMemory() / 1048576L
          + ",\"free_memory_mb\":"
          + rt.freeMemory() / 1048576L
+         + ",\"physical_ram_mb\":"
+         + FpsTestClient.SYSTEM_USAGE.physicalMemoryMiB()
+         + ",\"physical_ram_free_mb\":"
+         + FpsTestClient.SYSTEM_USAGE.availableMemoryMiB()
+         + ",\"cpu_load_pct\":"
+         + num(FpsTestClient.SYSTEM_USAGE.cpuPercent())
+         + ",\"gpu_util_pct\":"
+         + num(FpsTestClient.SYSTEM_USAGE.gpuPercent())
+         + ",\"ram_used_pct\":"
+         + num(FpsTestClient.SYSTEM_USAGE.ramPercent())
+         + ",\"window_mode\":"
+         + jsonStr(window.isFullscreen() ? "fullscreen" : "windowed")
+         + ",\"framebuffer_w\":"
+         + window.getScreenWidth()
+         + ",\"framebuffer_h\":"
+         + window.getScreenHeight()
+         + ",\"window_w\":"
+         + window.getWidth()
+         + ",\"window_h\":"
+         + window.getHeight()
+         + ",\"vsync\":"
+         + (mc.options.enableVsync().get() ? 1 : 0)
+         + ",\"fps_limit\":"
+         + mc.options.framerateLimit().get()
+         + ",\"shader_pack\":"
+         + jsonStr(readConfigValue("iris.properties", "shaderPack"))
+         + ",\"voxy_enabled\":"
+         + jsonStr(readConfigValue("voxyworldgenv2.json", "\"enabled\""))
+         + ",\"dh_renderer\":"
+         + jsonStr(readConfigValue("DistantHorizons.toml", "rendererMode"))
          + ",\"gpu_vendor\":"
          + jsonStr(gpuVendor)
          + ",\"gpu_renderer\":"
@@ -613,6 +648,63 @@ public final class ReportWriter {
       }
    }
 
+   /**
+    * Reads a {@code key} value line out of a file under the instance's config/
+    * directory (iris.properties, voxyworldgenv2.json, DistantHorizons.toml ...).
+    * Defensive: any missing/unreadable file or unmatched key yields "unknown".
+    */
+   private static String readConfigValue(String fileName, String key) {
+      String firstPrefix = key;
+      String secondPrefix = "";
+      int eq = key.indexOf('=');
+      if (eq >= 0) {
+         firstPrefix = key.substring(0, eq);
+         secondPrefix = key.substring(eq + 1);
+      }
+      try {
+         Path p = Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve(fileName);
+         if (Files.isDirectory(p) || !Files.isReadable(p)) {
+            try {
+               p = Files.list(Minecraft.getInstance().gameDirectory.toPath().resolve("config"))
+                  .filter(f -> f.getFileName().toString().equals(fileName) && !Files.isDirectory(f))
+                  .findFirst()
+                  .orElse(p);
+            } catch (Throwable ignored) {}
+         }
+         if (!Files.exists(p) || Files.isDirectory(p) || !Files.isReadable(p)) {
+            return "unknown";
+         }
+         for (String line : Files.readAllLines(p, StandardCharsets.UTF_8)) {
+            String t = line.trim();
+            if (t.isEmpty() || t.startsWith("#") || t.startsWith("//")) {
+               continue;
+            }
+            if (!t.startsWith(firstPrefix)) {
+               continue;
+            }
+            String rest = t.substring(firstPrefix.length());
+            if (!secondPrefix.isEmpty()) {
+               int idx = rest.indexOf(secondPrefix);
+               rest = idx >= 0 ? rest.substring(idx + secondPrefix.length()) : "";
+            } else {
+               int sep = rest.indexOf('=');
+               if (sep < 0) {
+                  sep = rest.indexOf(':');
+               }
+               if (sep < 0) {
+                  continue;
+               }
+               rest = rest.substring(sep + 1);
+            }
+            rest = rest.trim().replace("\"", "").replace(",", "");
+            return rest.isEmpty() ? "unknown" : rest;
+         }
+         return "unknown";
+      } catch (Throwable t) {
+         return "unknown";
+      }
+   }
+
    private static String systemMarkdown() {
       OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
       Runtime rt = Runtime.getRuntime();
@@ -627,13 +719,25 @@ public final class ReportWriter {
          + os.getArch()
          + ")`\n- CPU cores: `"
          + os.getAvailableProcessors()
-         + "`\n- Java: `"
+         + " ("
+         + FpsTestClient.SYSTEM_USAGE.cpuModel()
+         + ")\n- Java: `"
          + System.getProperty("java.version")
          + "` ("
          + System.getProperty("java.vm.name")
          + ")\n- Max heap: `"
          + rt.maxMemory() / 1048576L
-         + " MB`\n- GPU: `"
+         + " MB`\n- Physical RAM: `"
+         + FpsTestClient.SYSTEM_USAGE.physicalMemoryMiB()
+         + " MB ("
+         + FpsTestClient.SYSTEM_USAGE.availableMemoryMiB()
+         + " MB free)`\n- Window: `"
+         + (Minecraft.getInstance().getWindow().isFullscreen() ? "fullscreen" : "windowed")
+         + " "
+         + Minecraft.getInstance().getWindow().getScreenWidth()
+         + "x"
+         + Minecraft.getInstance().getWindow().getScreenHeight()
+         + "`\n- GPU: `"
          + gpu
          + "`";
    }
